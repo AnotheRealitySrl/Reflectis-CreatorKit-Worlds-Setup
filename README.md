@@ -1,3 +1,3 @@
-# SPACS-SysTemplate
+# Reflectis-Setup
 
 [Documentation here](Documentation~/index.md)
