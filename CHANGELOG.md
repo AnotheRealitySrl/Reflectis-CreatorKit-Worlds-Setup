@@ -1,4 +1,4 @@
-# SPACS-SysTemplate
+# Reflectis-Setup
 
 ## Realease notes:
 ### v.1.0
