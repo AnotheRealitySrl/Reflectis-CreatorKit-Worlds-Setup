@@ -1,0 +1,19 @@
+{
+    "name": "Reflectis.SetupEditor",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "UNITY_URP",
+            "expression": "com.unity.render-pipelines.universal",
+            "define": "UNITY_URP_INSTALLED"
+        }
+    ],
+    "noEngineReferences": false
+}

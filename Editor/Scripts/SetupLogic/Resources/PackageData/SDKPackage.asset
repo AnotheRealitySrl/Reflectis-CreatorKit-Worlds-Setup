@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 969bb252f1dd44047a2553e5b2f1480c, type: 3}
+  m_Name: SDKPackage
+  m_EditorClassIdentifier: 
+  packageName: com.anotherealitysrl.reflectis-sdk
+  displayedName: ReflectisSDK
+  gitURL: https://github.com/AnotheRealitySrl/Reflectis-SDK.git
+  assemblyGUID: ab59f74e483e1ee4595bfefea56493f2
+  isGitPackage: 1
+  installed: 1
