@@ -10,7 +10,16 @@
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": [],
+    "defineConstraints": [
+        "UNITY_URP_INSTALLED"
+    ],
+    "versionDefines": [
+    {
+      "name": "UNITY_URP",
+      "expression": "com.unity.render-pipelines.universal",
+      "define": "UNITY_URP_INSTALLED"
+    }
+    ],
     "versionDefines": [],
     "noEngineReferences": false
 }
