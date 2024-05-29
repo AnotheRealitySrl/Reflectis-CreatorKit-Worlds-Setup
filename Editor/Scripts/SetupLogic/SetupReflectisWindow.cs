@@ -202,14 +202,14 @@ namespace Reflectis.SetupEditor
 
                     if (process.ExitCode == 0)
                     {
-                        UnityEngine.Debug.LogError("Git is installed with version " + output);
+                        //UnityEngine.Debug.LogError("Git is installed with version " + output);
                         gitVersion = output;
                         isGitInstalled = true;
                     }
                     else
                     {
                         isGitInstalled = false;
-                        UnityEngine.Debug.LogError("Git not installed");
+                        //UnityEngine.Debug.LogError("Git not installed");
                     }
                 }
             }
@@ -359,7 +359,7 @@ namespace Reflectis.SetupEditor
             {
                 buttonFunction = new Action(() =>
                 {
-                    if (EditorUtility.DisplayDialog("Build Support", "You need to install the " + element.Key + " build support from the Unity Hub", "Ok"))
+                    if (EditorUtility.DisplayDialog("Build Support", "You need to install the " + element.Key + " build support from the Unity Hub. If already installed try to close the setup window and reopen it or reopen the project", "Ok"))
                     {
 
                     }
@@ -494,6 +494,9 @@ namespace Reflectis.SetupEditor
                 finally
                 {
                     EditorUtility.ClearProgressBar();
+                    AssetDatabase.SaveAssets();
+                    AssetDatabase.Refresh();
+                    RefreshWindow();
                 }
 
             }
