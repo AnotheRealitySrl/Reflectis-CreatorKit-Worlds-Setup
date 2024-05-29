@@ -10,6 +10,7 @@ using UnityEditorInternal;
 using UnityEngine;
 
 #if UNITY_URP_INSTALLED
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 #endif
 
@@ -21,6 +22,7 @@ namespace Reflectis.SetupEditor
         #region booleanValues
         private bool isGitInstalled = false;
         private string gitVersion = "";
+        private bool URPInstalled = false;
         private bool renderPipelineURP = false;
         private bool netFramework = false;
         #endregion
@@ -114,6 +116,21 @@ namespace Reflectis.SetupEditor
             foreach (PackageSetupScriptable packageScriptable in packageList)
             {
                 packageScriptable.installed = CheckPackageInstallation(packageScriptable.packageName, packageScriptable.assemblyGUID);
+                if (packageScriptable.packageName == "com.unity.render-pipelines.universal")
+                {
+                    if (packageScriptable.installed)
+                    {
+                        //add UNITY_URP_INSTALLED to player settings
+                        var buildTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
+                        var symbols = PlayerSettings.GetScriptingDefineSymbolsForGroup(buildTargetGroup);
+                        if (!symbols.Contains("UNITY_URP_INSTALLED"))
+                        {
+                            symbols += ";" + "UNITY_URP_INSTALLED";
+                            PlayerSettings.SetScriptingDefineSymbolsForGroup(buildTargetGroup, symbols);
+                        }
+                        URPInstalled = true;
+                    }
+                }
             }
         }
 
@@ -202,7 +219,7 @@ namespace Reflectis.SetupEditor
             {
                 renderPipelineURP = false;
             }
-#endif
+# endif
 
             //NET Framework
             if (PlayerSettings.GetApiCompatibilityLevel(BuildTargetGroup.Standalone) == ApiCompatibilityLevel.NET_Unity_4_8)
@@ -324,14 +341,19 @@ namespace Reflectis.SetupEditor
             GUILayout.Space(6);
 
             //Graphic Setting
-            buttonFunction = new Action(() =>
+
+            //if urp package is installed do this, otherwise don't show it
+            if (URPInstalled)
             {
-                SetURPRenderPipeline();
+                buttonFunction = new Action(() =>
+                {
+                    SetURPRenderPipeline();
 
-            });
+                });
 
-            CreateSettingFixField("URP as Render Pipeline", renderPipelineURP, "You need to set URP as your render pipeline", currentLineStyleIndex, buttonFunction);
-            currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
+                CreateSettingFixField("URP as Render Pipeline", renderPipelineURP, "You need to set URP as your render pipeline", currentLineStyleIndex, buttonFunction);
+                currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
+            }
 
             //Net Framework
             buttonFunction = new Action(() =>
@@ -418,7 +440,6 @@ namespace Reflectis.SetupEditor
                 {
                     EditorUtility.DisplayProgressBar("Loading", "Applying Changes...", 0.75f);
                     buttonFunction();
-
                     AssetDatabase.SaveAssets();
                     AssetDatabase.Refresh();
                     RefreshWindow();
@@ -470,9 +491,9 @@ namespace Reflectis.SetupEditor
             string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
 
 #if UNITY_URP_INSTALLED
-                var urpAsset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(assetPath);
-                GraphicsSettings.renderPipelineAsset = urpAsset;
-                QualitySettings.renderPipeline = urpAsset;
+            var urpAsset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(assetPath);
+            GraphicsSettings.renderPipelineAsset = urpAsset;
+            QualitySettings.renderPipeline = urpAsset;
 #endif
 
         }
@@ -499,6 +520,21 @@ namespace Reflectis.SetupEditor
                 InstallPackages(packageList[i].packageName, packageList[i].gitURL, packageList[i].isGitPackage);
             }
         }
+
+        /*public bool URPPackageInstalled()
+        {
+            for (int i = 0; i < packageList.Count; i++)
+            {
+                if (packageList[i].packageName == "com.unity.render-pipelines.universal")
+                {
+                    if (packageList[i].installed)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }*/
 
 
         private void Progress()
