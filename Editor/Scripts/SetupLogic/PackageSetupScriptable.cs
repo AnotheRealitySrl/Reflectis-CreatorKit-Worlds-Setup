@@ -12,5 +12,6 @@ namespace Reflectis.SetupEditor
 
         public bool isGitPackage = true;
         public bool installed = false;
+        public bool isCore = true;
     }
 }

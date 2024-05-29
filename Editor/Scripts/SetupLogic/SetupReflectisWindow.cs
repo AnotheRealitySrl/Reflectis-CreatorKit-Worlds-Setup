@@ -34,7 +34,8 @@ namespace Reflectis.SetupEditor
             { "WebGL", false },
             { "Windows", false }
         };
-        [SerializeField] private List<PackageSetupScriptable> packageList = new List<PackageSetupScriptable>();
+        [SerializeField] private List<PackageSetupScriptable> corePackageList = new List<PackageSetupScriptable>();
+        [SerializeField] private List<PackageSetupScriptable> optionalPackageList = new List<PackageSetupScriptable>();
         #endregion
 
         #region GuiElements
@@ -45,6 +46,9 @@ namespace Reflectis.SetupEditor
         GUIStyle arrowStyle;
         GUIStyle fixAllStyle;
         GUIStyle[] lineStyles; // Different line styles for alternating colors
+        GUIContent warningIconContent;
+        GUIContent errorIconContent;
+        GUIContent confirmedIcon;
         #endregion
 
         private AddRequest addRequest;
@@ -66,6 +70,8 @@ namespace Reflectis.SetupEditor
         [MenuItem("Reflectis/Setup Window")]
         public static void ShowWindow()
         {
+            /*EditorWindow window = EditorWindow.GetWindow<AddressablesConfigurationWindow>(typeof(SetupReflectisWindow));
+            window.Show();*/
             //Show existing window instance. If one doesn't exist, make one.
             GetWindow(typeof(SetupReflectisWindow));
         }
@@ -73,12 +79,26 @@ namespace Reflectis.SetupEditor
         private void Awake()
         {
             PackagesDetails myScriptableObject = Resources.Load<PackagesDetails>("PackagesSetup");
+            corePackageList = new List<PackageSetupScriptable>();
+            optionalPackageList = new List<PackageSetupScriptable>();
 
-            if (myScriptableObject != null)
+            foreach (PackageSetupScriptable packageScriptable in myScriptableObject.packageDetailsList)
+            {
+                if (packageScriptable.isCore)
+                {
+                    corePackageList.Add(packageScriptable);
+                }
+                else
+                {
+                    optionalPackageList.Add(packageScriptable);
+                }
+            }
+
+            /*if (myScriptableObject != null)
             {
                 packageList = myScriptableObject.packageDetailsList;
 
-            }
+            }*/
 
             GetAllAssemblyFiles();
             CheckGitInstallation();
@@ -112,8 +132,12 @@ namespace Reflectis.SetupEditor
                 // Wait for the list request to complete
             }
 
+            List<PackageSetupScriptable> allpackageList = new List<PackageSetupScriptable>();
+            allpackageList.AddRange(corePackageList);
+            allpackageList.AddRange(optionalPackageList);
+
             // Initialize the package list with some sample data
-            foreach (PackageSetupScriptable packageScriptable in packageList)
+            foreach (PackageSetupScriptable packageScriptable in allpackageList)
             {
                 packageScriptable.installed = CheckPackageInstallation(packageScriptable.packageName, packageScriptable.assemblyGUID);
                 if (packageScriptable.packageName == "com.unity.render-pipelines.universal")
@@ -278,6 +302,9 @@ namespace Reflectis.SetupEditor
             titleStyle.alignment = TextAnchor.MiddleCenter;
             labelStyle.fontSize = 12;
             arrowStyle.fontSize = 16;
+            warningIconContent = EditorGUIUtility.IconContent("console.warnicon");
+            errorIconContent = EditorGUIUtility.IconContent("console.erroricon");
+            confirmedIcon = EditorGUIUtility.IconContent("d_winbtn_mac_max");
             //-----------------------------------------------------
 
 
@@ -298,7 +325,12 @@ namespace Reflectis.SetupEditor
             EditorGUILayout.Space();
             EditorGUI.DrawRect(lineRect, Color.black);
 
-            CreatePackagesSetupGUI();
+            //Core Packages
+            CreatePackagesSetupGUI(true, corePackageList);
+            //Optional Packages
+            CreatePackagesSetupGUI(false, optionalPackageList);
+
+            //Create multiple tabs or give button logic to open the other configuration windows.
 
             GUILayout.FlexibleSpace();
             GUILayout.BeginHorizontal();
@@ -308,6 +340,8 @@ namespace Reflectis.SetupEditor
                 Application.OpenURL("https://reflectis.io/docs/2024.4/CK/intro");
             }
             GUILayout.EndHorizontal();
+
+
         }
 
         private void CreateGeneralSetupGUI()
@@ -330,7 +364,7 @@ namespace Reflectis.SetupEditor
 
                     }
                 });
-                CreateSettingFixField(element.Key, element.Value, "You have to install the " + element.Key + " build support from the Unity Hub", currentLineStyleIndex, buttonFunction);
+                CreateSettingFixField(element.Key, element.Value, "You have to install the " + element.Key + " build support from the Unity Hub", currentLineStyleIndex, buttonFunction, errorIconContent);
                 currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
             }
 
@@ -351,7 +385,7 @@ namespace Reflectis.SetupEditor
 
                 });
 
-                CreateSettingFixField("URP as Render Pipeline", renderPipelineURP, "You need to set URP as your render pipeline", currentLineStyleIndex, buttonFunction);
+                CreateSettingFixField("URP as Render Pipeline", renderPipelineURP, "You need to set URP as your render pipeline", currentLineStyleIndex, buttonFunction, errorIconContent);
                 currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
             }
 
@@ -361,7 +395,7 @@ namespace Reflectis.SetupEditor
                 SetNetFramework();
             });
 
-            CreateSettingFixField("Net Framework compability Level", netFramework, "You need to set .NET Framework in the Api Compability Level field", currentLineStyleIndex, buttonFunction);
+            CreateSettingFixField("Net Framework compability Level", netFramework, "You need to set .NET Framework in the Api Compability Level field", currentLineStyleIndex, buttonFunction, errorIconContent);
             currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
             //---------------------------------------------------------------
 
@@ -374,30 +408,41 @@ namespace Reflectis.SetupEditor
             GUILayout.EndHorizontal();
         }
 
-        private void CreatePackagesSetupGUI()
+        private void CreatePackagesSetupGUI(bool isCore, List<PackageSetupScriptable> packageList)
         {
+            GUIContent iconContent = warningIconContent;
             GUILayout.BeginVertical();
-
-            GUILayout.Label("Packages", EditorStyles.boldLabel);
-            GUILayout.Space(5);
-            //Github part
-            GUILayout.BeginHorizontal(lineStyles[1]);
-            EditorGUILayout.LabelField($"{(isGitInstalled ? "<b>[<color=lime>√</color>]</b>" : "<b>[<color=red>X</color>]</b>")}", iconStyle, GUILayout.Width(20));
-            GUILayout.Label("Github v. " + gitVersion, labelStyle);
-            GUILayout.FlexibleSpace();
-            if (isGitInstalled)
-                GUI.enabled = false;
-            if (GUILayout.Button(new GUIContent("Fix", "You have to install github in order to install packages"), GUILayout.Width(80)))
+            if (isCore)
             {
-                string gitDownloadUrl = "https://git-scm.com/downloads";
-                Application.OpenURL(gitDownloadUrl);
+                iconContent = errorIconContent;
+                GUILayout.Label("Core Packages", EditorStyles.boldLabel);
+                GUILayout.Space(5);
+                //Github part
+                GUILayout.BeginHorizontal(lineStyles[1]);
+                //EditorGUILayout.LabelField($"{(isGitInstalled ? "<b>[<color=lime>√</color>]</b>" : "<b>[<color=red>X</color>]</b>")}", iconStyle, GUILayout.Width(20));
+                EditorGUILayout.LabelField(new GUIContent(isGitInstalled ? confirmedIcon.image : iconContent.image), GUILayout.Width(20));
+                GUILayout.Label("Github v. " + gitVersion, labelStyle);
+                GUILayout.FlexibleSpace();
+                if (isGitInstalled)
+                    GUI.enabled = false;
+                if (GUILayout.Button(new GUIContent("Fix", "You have to install github in order to install packages"), GUILayout.Width(80)))
+                {
+                    string gitDownloadUrl = "https://git-scm.com/downloads";
+                    Application.OpenURL(gitDownloadUrl);
+                }
+                GUI.enabled = true;
+                GUILayout.EndHorizontal();
             }
-            GUI.enabled = true;
-            GUILayout.EndHorizontal();
+            else
+            {
+                GUILayout.Label("Optional Packages", EditorStyles.boldLabel);
+                GUILayout.Space(5);
+            }
 
             int currentLineStyleIndex = 0;
             GUIStyle lineStyle = lineStyles[currentLineStyleIndex];
-            //Packages
+
+            //Core Packages
             for (int i = 0; i < packageList.Count; i++)
             {
 
@@ -406,7 +451,7 @@ namespace Reflectis.SetupEditor
                     InstallPackages(packageList[i].packageName, packageList[i].gitURL, packageList[i].isGitPackage);
                 });
 
-                CreateSettingFixField(packageList[i].displayedName, packageList[i].installed, "You need to install the " + packageList[i].displayedName + " package using the package manager", currentLineStyleIndex, buttonFunction);
+                CreateSettingFixField(packageList[i].displayedName, packageList[i].installed, "You need to install the " + packageList[i].displayedName + " package using the package manager", currentLineStyleIndex, buttonFunction, iconContent);
                 currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
             }
 
@@ -414,19 +459,21 @@ namespace Reflectis.SetupEditor
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Fix All", fixAllStyle, GUILayout.Width(80)))
             {
-                FixAllPackages();
+                FixAllPackages(packageList);
             }
             GUILayout.EndHorizontal();
 
             GUILayout.EndVertical();
         }
 
-        private void CreateSettingFixField(string name, bool valueToCheck, string buttonDescription, int currentLineStyleIndex, Action buttonFunction)
+        private void CreateSettingFixField(string name, bool valueToCheck, string buttonDescription, int currentLineStyleIndex, Action buttonFunction, GUIContent errorIcon)
         {
             GUIStyle lineStyle = lineStyles[currentLineStyleIndex];
 
             GUILayout.BeginHorizontal(lineStyle);
-            EditorGUILayout.LabelField($"{(valueToCheck ? "<b>[<color=lime>√</color>]</b>" : "<b>[<color=red>X</color>]</b>")}", iconStyle, GUILayout.Width(20));
+
+            //EditorGUILayout.LabelField($"{(valueToCheck ? "<b>[<color=lime>√</color>]</b>" : "<b>[<color=red>X</color>]</b>")}", iconStyle, GUILayout.Width(20));
+            EditorGUILayout.LabelField(new GUIContent(valueToCheck ? confirmedIcon.image : errorIcon.image), GUILayout.Width(20));
             GUILayout.Label(name, labelStyle);
             GUILayout.FlexibleSpace();
 
@@ -513,29 +560,13 @@ namespace Reflectis.SetupEditor
             RefreshWindow();
         }
 
-        private void FixAllPackages()
+        private void FixAllPackages(List<PackageSetupScriptable> packageList)
         {
             for (int i = 0; i < packageList.Count; i++)
             {
                 InstallPackages(packageList[i].packageName, packageList[i].gitURL, packageList[i].isGitPackage);
             }
         }
-
-        /*public bool URPPackageInstalled()
-        {
-            for (int i = 0; i < packageList.Count; i++)
-            {
-                if (packageList[i].packageName == "com.unity.render-pipelines.universal")
-                {
-                    if (packageList[i].installed)
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }*/
-
 
         private void Progress()
         {

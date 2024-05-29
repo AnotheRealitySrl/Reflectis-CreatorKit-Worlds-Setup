@@ -15,4 +15,7 @@ MonoBehaviour:
   packageName: com.anotherealitysrl.reflectis-tasksimporter
   displayedName: Tasks
   gitURL: https://github.com/AnotheRealitySrl/Reflectis-TasksImporter.git
+  assemblyGUID: 
+  isGitPackage: 1
   installed: 1
+  isCore: 0
