@@ -142,11 +142,11 @@ namespace Reflectis.SetupEditor
                 packageScriptable.installed = CheckPackageInstallation(packageScriptable.packageName, packageScriptable.assemblyGUID);
                 if (packageScriptable.packageName == "com.unity.render-pipelines.universal")
                 {
+                    var buildTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
+                    var symbols = PlayerSettings.GetScriptingDefineSymbolsForGroup(buildTargetGroup);
                     if (packageScriptable.installed)
                     {
                         //add UNITY_URP_INSTALLED to player settings
-                        var buildTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
-                        var symbols = PlayerSettings.GetScriptingDefineSymbolsForGroup(buildTargetGroup);
                         if (!symbols.Contains("UNITY_URP_INSTALLED"))
                         {
                             symbols += ";" + "UNITY_URP_INSTALLED";
