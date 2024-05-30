@@ -143,7 +143,14 @@ namespace Reflectis.SetupEditor
             // Initialize the package list with some sample data
             foreach (PackageSetupScriptable packageScriptable in allpackageList)
             {
-                packageScriptable.installed = CheckPackageInstallation(packageScriptable.packageName, packageScriptable.assemblyGUID);
+                if (packageScriptable.packageName == "com.unity.render-pipelines.universal")
+                {
+                    packageScriptable.installed = true;
+                }
+                else
+                {
+                    packageScriptable.installed = CheckPackageInstallation(packageScriptable.packageName, packageScriptable.assemblyGUID);
+                }
                 /*if (packageScriptable.packageName == "com.unity.render-pipelines.universal")
                 {
                     var buildTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
