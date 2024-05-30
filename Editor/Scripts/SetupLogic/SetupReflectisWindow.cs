@@ -58,6 +58,8 @@ namespace Reflectis.SetupEditor
         ListRequest listRequest; //used to keep track of the installed packages
         private List<string> assemblyFileNames = new List<string>();
 
+        private string URPKey = "UNITY_URP_INSTALLED";
+
         static SetupReflectisWindow()
         {
             EditorApplication.delayCall += () =>
@@ -147,9 +149,9 @@ namespace Reflectis.SetupEditor
                     if (packageScriptable.installed)
                     {
                         //add UNITY_URP_INSTALLED to player settings
-                        if (!symbols.Contains("UNITY_URP_INSTALLED"))
+                        if (!symbols.Contains(URPKey))
                         {
-                            symbols += ";" + "UNITY_URP_INSTALLED";
+                            symbols += ";" + URPKey;
                             PlayerSettings.SetScriptingDefineSymbolsForGroup(buildTargetGroup, symbols);
                         }
                         URPInstalled = true;
