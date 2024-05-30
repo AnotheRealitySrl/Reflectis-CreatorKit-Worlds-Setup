@@ -315,9 +315,9 @@ namespace Reflectis.SetupEditor
             titleStyle.alignment = TextAnchor.MiddleCenter;
             labelStyle.fontSize = 12;
             arrowStyle.fontSize = 16;
-            warningIconContent = EditorGUIUtility.IconContent("console.warnicon");
+            warningIconContent = EditorGUIUtility.IconContent("DotFill");
             errorIconContent = EditorGUIUtility.IconContent("console.erroricon");
-            confirmedIcon = EditorGUIUtility.IconContent("d_winbtn_mac_max");
+            confirmedIcon = EditorGUIUtility.IconContent("d_winbtn_mac_max"); //Assets / Editor Default Resources/ Icons
             //-----------------------------------------------------
 
 
@@ -377,7 +377,7 @@ namespace Reflectis.SetupEditor
 
                     }
                 });
-                CreateSettingFixField(element.Key, element.Value, "You have to install the " + element.Key + " build support from the Unity Hub", currentLineStyleIndex, buttonFunction, errorIconContent);
+                CreateSettingFixField(element.Key, element.Value, "You have to install the " + element.Key + " build support from the Unity Hub", currentLineStyleIndex, buttonFunction, errorIconContent, "Fix");
                 currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
             }
 
@@ -398,7 +398,7 @@ namespace Reflectis.SetupEditor
 
                 });
 
-                CreateSettingFixField("URP as Render Pipeline", renderPipelineURP, "You need to set URP as your render pipeline", currentLineStyleIndex, buttonFunction, errorIconContent);
+                CreateSettingFixField("URP as Render Pipeline", renderPipelineURP, "You need to set URP as your render pipeline", currentLineStyleIndex, buttonFunction, errorIconContent, "Fix");
                 currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
             }
 
@@ -408,7 +408,7 @@ namespace Reflectis.SetupEditor
                 SetNetFramework();
             });
 
-            CreateSettingFixField("Net Framework compability Level", netFramework, "You need to set .NET Framework in the Api Compability Level field", currentLineStyleIndex, buttonFunction, errorIconContent);
+            CreateSettingFixField("Net Framework compability Level", netFramework, "You need to set .NET Framework in the Api Compability Level field", currentLineStyleIndex, buttonFunction, errorIconContent, "Fix");
             currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
             //---------------------------------------------------------------
 
@@ -464,13 +464,13 @@ namespace Reflectis.SetupEditor
                     InstallPackages(packageList[i].packageName, packageList[i].gitURL, packageList[i].isGitPackage);
                 });
 
-                CreateSettingFixField(packageList[i].displayedName, packageList[i].installed, "You need to install the " + packageList[i].displayedName + " package using the package manager", currentLineStyleIndex, buttonFunction, iconContent);
+                CreateSettingFixField(packageList[i].displayedName, packageList[i].installed, "You need to install the " + packageList[i].displayedName + " package using the package manager", currentLineStyleIndex, buttonFunction, iconContent, isCore ? "Fix" : "Install");
                 currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
             }
 
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Fix All", fixAllStyle, GUILayout.Width(80)))
+            if (GUILayout.Button(isCore ? "Fix All" : "Install All", fixAllStyle, GUILayout.Width(80)))
             {
                 FixAllPackages(packageList);
             }
@@ -479,7 +479,7 @@ namespace Reflectis.SetupEditor
             GUILayout.EndVertical();
         }
 
-        private void CreateSettingFixField(string name, bool valueToCheck, string buttonDescription, int currentLineStyleIndex, Action buttonFunction, GUIContent errorIcon)
+        private void CreateSettingFixField(string name, bool valueToCheck, string buttonDescription, int currentLineStyleIndex, Action buttonFunction, GUIContent errorIcon, string buttonText)
         {
             GUIStyle lineStyle = lineStyles[currentLineStyleIndex];
 
@@ -494,7 +494,7 @@ namespace Reflectis.SetupEditor
                 GUI.enabled = false;
 
             //GUI.Box(new Rect(5, 35, 110, 75), new GUIContent("Box", "this box has a tooltip"));
-            if (GUILayout.Button(new GUIContent("Fix", buttonDescription), GUILayout.Width(80)))
+            if (GUILayout.Button(new GUIContent(buttonText, buttonDescription), GUILayout.Width(80)))
             {
                 try
                 {
