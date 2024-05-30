@@ -15,6 +15,7 @@ MonoBehaviour:
   packageName: com.unity.render-pipelines.universal
   displayedName: Universal Render Pipeline
   gitURL: Universal Render Pipeline
-  assemblyGUID: 
+  assemblyGUID: 7dbf32976982c98448af054f2512cb79
   isGitPackage: 0
   installed: 1
+  isCore: 1
