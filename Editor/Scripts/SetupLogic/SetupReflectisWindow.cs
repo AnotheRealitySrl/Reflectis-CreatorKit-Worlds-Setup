@@ -164,6 +164,8 @@ namespace Reflectis.SetupEditor
 
         private bool CheckPackageInstallation(string packageName, string assemblyName)
         {
+            if (packageName == "com.unity.render-pipelines.universal")
+                return true;
             string manifestFilePath = Path.Combine(Application.dataPath, "../Packages/manifest.json");
 
             if (!File.Exists(manifestFilePath))
