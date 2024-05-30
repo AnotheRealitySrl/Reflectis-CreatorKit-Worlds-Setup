@@ -8,12 +8,14 @@ using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using UnityEditorInternal;
 using UnityEngine;
-
-#if UNITY_URP_INSTALLED
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+/*
+ * #if UNITY_URP_INSTALLED
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 #endif
-
+*/
 namespace Reflectis.SetupEditor
 {
     [InitializeOnLoad]
@@ -22,7 +24,7 @@ namespace Reflectis.SetupEditor
         #region booleanValues
         private bool isGitInstalled = false;
         private string gitVersion = "";
-        private bool URPInstalled = false;
+        private bool URPInstalled = true;
         private bool renderPipelineURP = false;
         private bool netFramework = false;
         #endregion
@@ -58,7 +60,7 @@ namespace Reflectis.SetupEditor
         ListRequest listRequest; //used to keep track of the installed packages
         private List<string> assemblyFileNames = new List<string>();
 
-        private string URPKey = "UNITY_URP_INSTALLED";
+        //private string URPKey = "UNITY_URP_INSTALLED";
 
         static SetupReflectisWindow()
         {
@@ -142,7 +144,7 @@ namespace Reflectis.SetupEditor
             foreach (PackageSetupScriptable packageScriptable in allpackageList)
             {
                 packageScriptable.installed = CheckPackageInstallation(packageScriptable.packageName, packageScriptable.assemblyGUID);
-                if (packageScriptable.packageName == "com.unity.render-pipelines.universal")
+                /*if (packageScriptable.packageName == "com.unity.render-pipelines.universal")
                 {
                     var buildTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
                     var symbols = PlayerSettings.GetScriptingDefineSymbolsForGroup(buildTargetGroup);
@@ -156,7 +158,7 @@ namespace Reflectis.SetupEditor
                         }
                         URPInstalled = true;
                     }
-                }
+                }*/
             }
         }
 
@@ -236,7 +238,7 @@ namespace Reflectis.SetupEditor
             }
 
             //URP Pipeline
-#if UNITY_URP_INSTALLED
+            //#if UNITY_URP_INSTALLED
             if (GraphicsSettings.renderPipelineAsset is UniversalRenderPipelineAsset)
             {
                 renderPipelineURP = true;
@@ -245,7 +247,7 @@ namespace Reflectis.SetupEditor
             {
                 renderPipelineURP = false;
             }
-# endif
+            //# endif
 
             //NET Framework
             if (PlayerSettings.GetApiCompatibilityLevel(BuildTargetGroup.Standalone) == ApiCompatibilityLevel.NET_Unity_4_8)
@@ -542,11 +544,11 @@ namespace Reflectis.SetupEditor
             string[] guids = AssetDatabase.FindAssets("t:UniversalRenderPipelineAsset");
             string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
 
-#if UNITY_URP_INSTALLED
+            //#if UNITY_URP_INSTALLED
             var urpAsset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(assetPath);
             GraphicsSettings.renderPipelineAsset = urpAsset;
             QualitySettings.renderPipeline = urpAsset;
-#endif
+            //#endif
 
         }
 
