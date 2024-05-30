@@ -16,6 +16,7 @@ MonoBehaviour:
   displayedName: Universal Render Pipeline
   gitURL: Universal Render Pipeline
   assemblyGUID: 7dbf32976982c98448af054f2512cb79
+  version: 14.0.8
   isGitPackage: 0
   installed: 1
   isCore: 1

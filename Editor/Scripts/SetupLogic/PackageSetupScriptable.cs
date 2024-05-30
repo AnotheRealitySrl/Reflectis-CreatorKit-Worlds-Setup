@@ -10,6 +10,8 @@ namespace Reflectis.SetupEditor
         public string gitURL;
         public string assemblyGUID;
 
+        public string version;
+
         public bool isGitPackage = true;
         public bool installed = false;
         public bool isCore = true;

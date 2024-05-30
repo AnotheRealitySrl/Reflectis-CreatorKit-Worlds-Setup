@@ -149,7 +149,7 @@ namespace Reflectis.SetupEditor
                 }
                 else
                 {
-                    packageScriptable.installed = CheckPackageInstallation(packageScriptable.packageName, packageScriptable.assemblyGUID);
+                    packageScriptable.installed = CheckPackageInstallation(packageScriptable.packageName, packageScriptable.assemblyGUID, packageScriptable);
                 }
                 /*if (packageScriptable.packageName == "com.unity.render-pipelines.universal")
                 {
@@ -169,7 +169,7 @@ namespace Reflectis.SetupEditor
             }
         }
 
-        private bool CheckPackageInstallation(string packageName, string assemblyName)
+        private bool CheckPackageInstallation(string packageName, string assemblyName, PackageSetupScriptable packageScriptable)
         {
             /*if (packageName == "com.unity.render-pipelines.universal")
                 return true;*/
@@ -183,7 +183,7 @@ namespace Reflectis.SetupEditor
 
             string manifestJson = File.ReadAllText(manifestFilePath);
 
-            if (!PackageExists(packageName, assemblyName))
+            if (!PackageExists(packageName, assemblyName, packageScriptable))
             {
                 return false;
             }
@@ -270,7 +270,7 @@ namespace Reflectis.SetupEditor
 
         }
 
-        private bool PackageExists(string packageName, string assemblyGUID)
+        private bool PackageExists(string packageName, string assemblyGUID, PackageSetupScriptable packageScriptable)
         {
             //check if package is in project
             if (listRequest.Status == StatusCode.Success)
@@ -279,6 +279,7 @@ namespace Reflectis.SetupEditor
                 {
                     if (package.name == packageName)
                     {
+                        packageScriptable.version = package.version;
                         return true;
                     }
                 }
@@ -464,7 +465,7 @@ namespace Reflectis.SetupEditor
                     InstallPackages(packageList[i].packageName, packageList[i].gitURL, packageList[i].isGitPackage);
                 });
 
-                CreateSettingFixField(packageList[i].displayedName, packageList[i].installed, "You need to install the " + packageList[i].displayedName + " package using the package manager", currentLineStyleIndex, buttonFunction, iconContent, isCore ? "Fix" : "Install");
+                CreateSettingFixField(packageList[i].displayedName + " v." + packageList[i].version, packageList[i].installed, "You need to install the " + packageList[i].displayedName + " package using the package manager", currentLineStyleIndex, buttonFunction, iconContent, isCore ? "Fix" : "Install");
                 currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
             }
 
