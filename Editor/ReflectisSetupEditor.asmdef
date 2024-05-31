@@ -2,8 +2,7 @@
     "name": "Reflectis.SetupEditor",
     "rootNamespace": "Reflectis.SetupEditor",
     "references": [
-        "GUID:15fc0a57446b3144c949da3e2b9737a9",
-        "GUID:01470f9b53eba9e4cb6fb8ffb31c0ce9"
+        "GUID:15fc0a57446b3144c949da3e2b9737a9"
     ],
     "includePlatforms": [
         "Editor"
@@ -14,17 +13,6 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [
-        {
-            "name": "com.anotherealitysrl.reflectis-sdk-creatorkit",
-            "expression": "0",
-            "define": "CreatorKit_Installed"
-        },
-        {
-            "name": "com.anotherealitysrl.reflectis-sdk",
-            "expression": "0",
-            "define": "ReflectisSDK_Installed"
-        }
-    ],
+    "versionDefines": [],
     "noEngineReferences": false
 }

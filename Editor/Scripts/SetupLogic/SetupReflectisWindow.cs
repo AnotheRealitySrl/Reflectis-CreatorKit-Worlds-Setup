@@ -8,14 +8,9 @@ using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
-
-#if CreatorKit_Installed
-#if ReflectisSDK_Installed
-using Reflectis.SDK.CreatorKitEditor;
-#endif
-#endif
 
 namespace Reflectis.SetupEditor
 {
@@ -62,6 +57,9 @@ namespace Reflectis.SetupEditor
 
         ListRequest listRequest; //used to keep track of the installed packages
         private List<string> assemblyFileNames = new List<string>();
+
+        //this variable is set by the other packages.
+        public static UnityEvent configurationEvents = new UnityEvent();
 
         //private string URPKey = "UNITY_URP_INSTALLED";
         private void OnUnityQuit()
@@ -356,27 +354,7 @@ namespace Reflectis.SetupEditor
 
             //check creator kit installed, if it is show addressablesConfigurationWindow
             //Create multiple tabs or give button logic to open the other configuration windows.
-#if CreatorKit_Installed
-#if ReflectisSDK_Installed
-            if (GUILayout.Button(new GUIContent("Addressables Configuration Window", "Opens the addressables configuration window, useful to setup the addressables in order to load your scene online")))
-            {
-                AddressablesConfigurationWindow window = EditorWindow.GetWindow<AddressablesConfigurationWindow>(typeof(SetupReflectisWindow));
-                window.Show();
-            }
-
-            if (GUILayout.Button(new GUIContent("Setup Visual Scripting Nodes", "Setup the visual scripting nodes in order to load all the reflectis custom ones")))
-            {
-                VisualScriptingSetupEditor.Setup();
-            }
-
-            if (GUILayout.Button(new GUIContent("Network Placeholders Management", "Setup all the ids for all the networked gameObjects. Remember to use this window when you want to setup the networked elements in the scene")))
-            {
-                NetworkPlaceholdersManagementWindow window = EditorWindow.GetWindow<NetworkPlaceholdersManagementWindow>(typeof(SetupReflectisWindow));
-                window.Show();
-            }
-            GUILayout.Space(10);
-#endif
-#endif
+            configurationEvents.Invoke();
 
             GUILayout.FlexibleSpace();
             GUILayout.BeginHorizontal();
