@@ -27,6 +27,7 @@ namespace Reflectis.SetupEditor
         private bool URPInstalled = true;
         private bool renderPipelineURP = false;
         private bool netFramework = false;
+        private bool URPGlobalSetting = false;
         #endregion
 
         #region package and platform lists
@@ -83,6 +84,8 @@ namespace Reflectis.SetupEditor
         private void Awake()
         {
             PackagesDetails myScriptableObject = Resources.Load<PackagesDetails>("PackagesSetup");
+
+
             corePackageList = new List<PackageSetupScriptable>();
             optionalPackageList = new List<PackageSetupScriptable>();
 
@@ -248,6 +251,19 @@ namespace Reflectis.SetupEditor
 
             //URP Pipeline
             //#if UNITY_URP_INSTALLED
+
+            var urpGlobalSettings = GraphicsSettings.GetSettingsForRenderPipeline<UniversalRenderPipeline>();
+            if (urpGlobalSettings == null)
+            {
+                UnityEngine.Debug.LogError("URP Global Settings is not defined.");
+                URPGlobalSetting = false;
+            }
+            else
+            {
+                UnityEngine.Debug.LogError("URP Global Settings is defined.");
+                URPGlobalSetting = true;
+            }
+
             if (GraphicsSettings.renderPipelineAsset is UniversalRenderPipelineAsset)
             {
                 renderPipelineURP = true;
@@ -552,10 +568,31 @@ namespace Reflectis.SetupEditor
         private void SetURPRenderPipeline()
         {
             string[] guids = AssetDatabase.FindAssets("t:UniversalRenderPipelineAsset");
-            string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+            UniversalRenderPipelineAsset urpAsset;
+            string assetPath;
+
+            if (guids.Length > 0)
+            {
+                assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+                urpAsset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(assetPath);
+            }
+            else
+            {
+                urpAsset = ScriptableObject.CreateInstance<UniversalRenderPipelineAsset>();
+                assetPath = "Assets/Settings/UniversalRenderPipelineAsset.asset";
+
+                string directory = System.IO.Path.GetDirectoryName(assetPath);
+                if (!System.IO.Directory.Exists(directory))
+                {
+                    System.IO.Directory.CreateDirectory(directory);
+                }
+
+                AssetDatabase.CreateAsset(urpAsset, assetPath);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+            }
 
             //#if UNITY_URP_INSTALLED
-            var urpAsset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(assetPath);
             GraphicsSettings.renderPipelineAsset = urpAsset;
             QualitySettings.renderPipeline = urpAsset;
             //#endif
