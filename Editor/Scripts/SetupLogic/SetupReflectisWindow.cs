@@ -10,12 +10,11 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
-/*
- * #if UNITY_URP_INSTALLED
-using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
+
+#if CreatorKit_Installed
+using Reflectis.SDK.CreatorKitEditor;
 #endif
-*/
+
 namespace Reflectis.SetupEditor
 {
     [InitializeOnLoad]
@@ -90,6 +89,7 @@ namespace Reflectis.SetupEditor
             /*EditorWindow window = EditorWindow.GetWindow<AddressablesConfigurationWindow>(typeof(SetupReflectisWindow));
             window.Show();*/
             //Show existing window instance. If one doesn't exist, make one.
+
 
             GetWindow(typeof(SetupReflectisWindow));
 
@@ -186,6 +186,7 @@ namespace Reflectis.SetupEditor
             {
                 return false;
             }
+            //CreatorKit_Installed
             else
             {
                 return true;
@@ -346,10 +347,32 @@ namespace Reflectis.SetupEditor
 
             //Core Packages
             CreatePackagesSetupGUI(true, corePackageList);
+
             //Optional Packages
             CreatePackagesSetupGUI(false, optionalPackageList);
+            GUILayout.Space(20);
 
+            //check creator kit installed, if it is show addressablesConfigurationWindow
             //Create multiple tabs or give button logic to open the other configuration windows.
+#if CreatorKit_Installed
+            if (GUILayout.Button(new GUIContent("Addressables Configuration Window", "Opens the addressables configuration window, useful to setup the addressables in order to load your scene online")))
+            {
+                AddressablesConfigurationWindow window = EditorWindow.GetWindow<AddressablesConfigurationWindow>(typeof(SetupReflectisWindow));
+                window.Show();
+            }
+
+            if (GUILayout.Button(new GUIContent("Setup Visual Scripting Nodes", "Setup the visual scripting nodes in order to load all the reflectis custom ones")))
+            {
+                VisualScriptingSetupEditor.Setup();
+            }
+
+            if (GUILayout.Button(new GUIContent("Network Placeholders Management", "Setup all the ids for all the networked gameObjects. Remember to use this window when you want to setup the networked elements in the scene")))
+            {
+                NetworkPlaceholdersManagementWindow window = EditorWindow.GetWindow<NetworkPlaceholdersManagementWindow>(typeof(SetupReflectisWindow));
+                window.Show();
+            }
+            GUILayout.Space(10);
+#endif
 
             GUILayout.FlexibleSpace();
             GUILayout.BeginHorizontal();
@@ -359,7 +382,6 @@ namespace Reflectis.SetupEditor
                 Application.OpenURL("https://reflectis.io/docs/2024.4/CK/intro");
             }
             GUILayout.EndHorizontal();
-
 
         }
 
