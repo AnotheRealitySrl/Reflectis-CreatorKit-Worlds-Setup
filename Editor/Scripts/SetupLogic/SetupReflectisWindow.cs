@@ -30,6 +30,7 @@ namespace Reflectis.SetupEditor
         private static string reflectisSetupShown = "EditorWindowAlreadyShown";
         #endregion
 
+
         #region package and platform lists
         public Dictionary<string, bool> supportedPlatform = new Dictionary<string, bool>
         {
@@ -112,12 +113,6 @@ namespace Reflectis.SetupEditor
                 }
             }
 
-            /*if (myScriptableObject != null)
-            {
-                packageList = myScriptableObject.packageDetailsList;
-
-            }*/
-
             GetAllAssemblyFiles();
             CheckGitInstallation();
             CheckGeneralSetup();
@@ -125,7 +120,6 @@ namespace Reflectis.SetupEditor
 
             if (PlayerPrefs.HasKey(reflectisSetupShown))
             {
-                UnityEngine.Debug.LogError("AlreadyShows is false add event");
                 EditorApplication.quitting += OnUnityQuit;
             }
         }
@@ -171,21 +165,6 @@ namespace Reflectis.SetupEditor
                 {
                     packageScriptable.installed = CheckPackageInstallation(packageScriptable.packageName, packageScriptable.assemblyGUID, packageScriptable);
                 }
-                /*if (packageScriptable.packageName == "com.unity.render-pipelines.universal")
-                {
-                    var buildTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
-                    var symbols = PlayerSettings.GetScriptingDefineSymbolsForGroup(buildTargetGroup);
-                    if (packageScriptable.installed)
-                    {
-                        //add UNITY_URP_INSTALLED to player settings
-                        if (!symbols.Contains(URPKey))
-                        {
-                            symbols += ";" + URPKey;
-                            PlayerSettings.SetScriptingDefineSymbolsForGroup(buildTargetGroup, symbols);
-                        }
-                        URPInstalled = true;
-                    }
-                }*/
             }
         }
 
@@ -258,12 +237,9 @@ namespace Reflectis.SetupEditor
             BuildTargetGroup[] buildTargetGroups = (BuildTargetGroup[])System.Enum.GetValues(typeof(BuildTargetGroup));
             foreach (BuildTargetGroup group in buildTargetGroups)
             {
-                bool value = BuildPipeline.IsBuildTargetSupported(group, BuildTarget.Android);
-                if (value) { supportedPlatform["Android"] = true; }
-                value = BuildPipeline.IsBuildTargetSupported(group, BuildTarget.StandaloneWindows);
-                if (value) { supportedPlatform["Windows"] = true; }
-                value = BuildPipeline.IsBuildTargetSupported(group, BuildTarget.WebGL);
-                if (value) { supportedPlatform["WebGL"] = true; }
+                CheckBuildTarget(group, BuildTarget.Android, "Android");
+                CheckBuildTarget(group, BuildTarget.StandaloneWindows, "Windows");
+                CheckBuildTarget(group, BuildTarget.WebGL, "WebGL");
             }
 
             //URP Pipeline
@@ -288,6 +264,15 @@ namespace Reflectis.SetupEditor
                 netFramework = false;
             }
 
+        }
+
+        private void CheckBuildTarget(BuildTargetGroup group, BuildTarget target, string platform)
+        {
+            bool value = BuildPipeline.IsBuildTargetSupported(group, target);
+            if (value)
+            {
+                supportedPlatform[platform] = true;
+            }
         }
 
         private bool PackageExists(string packageName, string assemblyGUID, PackageSetupScriptable packageScriptable)
