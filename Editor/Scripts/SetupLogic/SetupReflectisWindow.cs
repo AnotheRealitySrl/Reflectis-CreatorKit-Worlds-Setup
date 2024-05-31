@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
@@ -251,8 +252,9 @@ namespace Reflectis.SetupEditor
 
             //URP Pipeline
             //#if UNITY_URP_INSTALLED
+            Type urpGlobalSettingsType = Type.GetType("UnityEngine.Rendering.Universal.UniversalRenderPipelineGlobalSettings, Unity.RenderPipelines.Universal.Runtime");
+            ScriptableObject urpGlobalSettings = GetURPGlobalSettings(urpGlobalSettingsType);
 
-            var urpGlobalSettings = GraphicsSettings.GetSettingsForRenderPipeline<UniversalRenderPipeline>();
             if (urpGlobalSettings == null)
             {
                 UnityEngine.Debug.LogError("URP Global Settings is not defined.");
@@ -284,6 +286,40 @@ namespace Reflectis.SetupEditor
                 netFramework = false;
             }
 
+        }
+
+        private static ScriptableObject GetURPGlobalSettings(Type urpGlobalSettingsType)
+        {
+            // Check if an asset already exists
+            string[] guids = AssetDatabase.FindAssets($"t:{urpGlobalSettingsType.Name}");
+            ScriptableObject urpGlobalSettings;
+
+            if (guids.Length > 0)
+            {
+                string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+                urpGlobalSettings = AssetDatabase.LoadAssetAtPath(assetPath, urpGlobalSettingsType) as ScriptableObject;
+                UnityEngine.Debug.Log($"Found existing URP Global Settings at {assetPath}");
+                return urpGlobalSettings;
+            }
+            else
+            {
+                /*urpGlobalSettings = ScriptableObject.CreateInstance(urpGlobalSettingsType);
+                string path = "Assets/Settings/UniversalRenderPipelineGlobalSettings.asset";
+
+                // Ensure the directory exists
+                string directory = System.IO.Path.GetDirectoryName(path);
+                if (!System.IO.Directory.Exists(directory))
+                {
+                    System.IO.Directory.CreateDirectory(directory);
+                }
+
+                AssetDatabase.CreateAsset(urpGlobalSettings, path);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+                UnityEngine.Debug.Log("Created new URP Global Settings");*/
+                UnityEngine.Debug.Log("Doesn't exist");
+                return null;
+            }
         }
 
         private bool PackageExists(string packageName, string assemblyGUID, PackageSetupScriptable packageScriptable)
@@ -409,6 +445,15 @@ namespace Reflectis.SetupEditor
             //if urp package is installed do this, otherwise don't show it
             if (URPInstalled)
             {
+                buttonFunction = new Action(() =>
+                {
+                    SetURPGlobalRenderer();
+
+                });
+
+                CreateSettingFixField("URP as Global Renderer", URPGlobalSetting, "You need to set URP as your global renderer", currentLineStyleIndex, buttonFunction, errorIconContent, "Fix");
+                currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
+
                 buttonFunction = new Action(() =>
                 {
                     SetURPRenderPipeline();
@@ -565,8 +610,40 @@ namespace Reflectis.SetupEditor
 
         }
 
+        private void SetURPGlobalRenderer()
+        {
+            Type urpGlobalSettingsType = Type.GetType("UnityEngine.Rendering.Universal.UniversalRenderPipelineGlobalSettings, Unity.RenderPipelines.Universal.Runtime");
+            ScriptableObject urpGlobalSettings;
+            urpGlobalSettings = ScriptableObject.CreateInstance(urpGlobalSettingsType);
+            string path = "Assets/Settings/UniversalRenderPipelineGlobalSettings.asset";
+
+            // Ensure the directory exists
+            string directory = System.IO.Path.GetDirectoryName(path);
+            if (!System.IO.Directory.Exists(directory))
+            {
+                System.IO.Directory.CreateDirectory(directory);
+            }
+
+            AssetDatabase.CreateAsset(urpGlobalSettings, path);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            // Use reflection to access the instance property and set it
+            PropertyInfo instanceProperty = urpGlobalSettingsType.GetProperty("instance", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            if (instanceProperty != null && instanceProperty.CanWrite)
+            {
+                instanceProperty.SetValue(null, urpGlobalSettings);
+                UnityEngine.Debug.Log("Assigned URP Global Settings.");
+            }
+            else
+            {
+                UnityEngine.Debug.LogError("Failed to set the URP Global Settings instance.");
+            }
+        }
+
         private void SetURPRenderPipeline()
         {
+
             string[] guids = AssetDatabase.FindAssets("t:UniversalRenderPipelineAsset");
             UniversalRenderPipelineAsset urpAsset;
             string assetPath;
