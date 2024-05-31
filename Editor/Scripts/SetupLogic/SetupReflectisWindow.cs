@@ -27,6 +27,7 @@ namespace Reflectis.SetupEditor
         private bool URPInstalled = true;
         private bool renderPipelineURP = false;
         private bool netFramework = false;
+        private static string reflectisSetupShown = "EditorWindowAlreadyShown";
         #endregion
 
         #region package and platform lists
@@ -61,12 +62,23 @@ namespace Reflectis.SetupEditor
         private List<string> assemblyFileNames = new List<string>();
 
         //private string URPKey = "UNITY_URP_INSTALLED";
+        private void OnUnityQuit()
+        {
+            // Reset the PlayerPrefs flag when Unity is quitting
+            PlayerPrefs.DeleteKey(reflectisSetupShown);
+            PlayerPrefs.Save(); // Save PlayerPrefs
+        }
 
         static SetupReflectisWindow()
         {
             EditorApplication.delayCall += () =>
             {
-                ShowWindow();
+                if (!PlayerPrefs.HasKey(reflectisSetupShown))
+                {
+                    PlayerPrefs.SetFloat(reflectisSetupShown, 1f);
+                    PlayerPrefs.Save();
+                    ShowWindow();
+                }
             };
 
         }
@@ -77,7 +89,9 @@ namespace Reflectis.SetupEditor
             /*EditorWindow window = EditorWindow.GetWindow<AddressablesConfigurationWindow>(typeof(SetupReflectisWindow));
             window.Show();*/
             //Show existing window instance. If one doesn't exist, make one.
+
             GetWindow(typeof(SetupReflectisWindow));
+
         }
 
         private void Awake()
@@ -108,6 +122,12 @@ namespace Reflectis.SetupEditor
             CheckGitInstallation();
             CheckGeneralSetup();
             InitializePackages();
+
+            if (PlayerPrefs.HasKey(reflectisSetupShown))
+            {
+                UnityEngine.Debug.LogError("AlreadyShows is false add event");
+                EditorApplication.quitting += OnUnityQuit;
+            }
         }
 
         #region General Checks Functions
