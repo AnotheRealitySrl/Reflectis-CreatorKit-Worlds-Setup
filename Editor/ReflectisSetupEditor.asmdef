@@ -19,6 +19,11 @@
             "name": "com.anotherealitysrl.reflectis-sdk-creatorkit",
             "expression": "0",
             "define": "CreatorKit_Installed"
+        },
+        {
+            "name": "com.anotherealitysrl.reflectis-sdk",
+            "expression": "0",
+            "define": "ReflectisSDK_Installed"
         }
     ],
     "noEngineReferences": false

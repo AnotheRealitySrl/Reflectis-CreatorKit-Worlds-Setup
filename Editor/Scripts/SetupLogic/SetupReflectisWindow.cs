@@ -11,7 +11,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
-#if CreatorKit_Installed
+#if CreatorKit_Installed && ReflectisSDK_Installed
 using Reflectis.SDK.CreatorKitEditor;
 #endif
 
@@ -354,7 +354,7 @@ namespace Reflectis.SetupEditor
 
             //check creator kit installed, if it is show addressablesConfigurationWindow
             //Create multiple tabs or give button logic to open the other configuration windows.
-#if CreatorKit_Installed
+#if CreatorKit_Installed && ReflectisSDK_Installed
             if (GUILayout.Button(new GUIContent("Addressables Configuration Window", "Opens the addressables configuration window, useful to setup the addressables in order to load your scene online")))
             {
                 AddressablesConfigurationWindow window = EditorWindow.GetWindow<AddressablesConfigurationWindow>(typeof(SetupReflectisWindow));
