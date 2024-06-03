@@ -25,9 +25,6 @@ namespace Reflectis.SetupEditor
         private bool netFramework = false;
         private static string reflectisSetupShown = "EditorWindowAlreadyShown";
 
-        private bool showOptional = false;
-        private bool showCore = false;
-
         private bool allCoreInstalled = true;
         #endregion
 
@@ -41,6 +38,7 @@ namespace Reflectis.SetupEditor
         };
         [SerializeField] private List<PackageSetupScriptable> corePackageList = new List<PackageSetupScriptable>();
         [SerializeField] private List<PackageSetupScriptable> optionalPackageList = new List<PackageSetupScriptable>();
+        private List<string> assemblyFileNames = new List<string>();
         #endregion
 
         #region GuiElements
@@ -69,9 +67,8 @@ namespace Reflectis.SetupEditor
         private Action buttonFunction;
 
         ListRequest listRequest; //used to keep track of the installed packages
-        private List<string> assemblyFileNames = new List<string>();
 
-        //this variable is set by the other packages.
+        //this variable is set by the other packages (like CK, used to show buttons and other GUI elements).
         public static UnityEvent configurationEvents = new UnityEvent();
 
         //private string URPKey = "UNITY_URP_INSTALLED";
@@ -137,202 +134,14 @@ namespace Reflectis.SetupEditor
             }
         }
 
-        #region General Checks Functions
-        private void GetAllAssemblyFiles()
+        private void RefreshWindow()
         {
-            string[] asmdefs = AssetDatabase.FindAssets("t:AssemblyDefinitionAsset");
-            foreach (string guid in asmdefs)
-            {
-                string path = AssetDatabase.GUIDToAssetPath(guid);
-                var asmdefAsset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(path);
-                if (asmdefAsset != null)
-                {
-                    //assemblyFileNames.Add(asmdefAsset.name);
-                    assemblyFileNames.Add(guid);
-                    //UnityEngine.Debug.LogError(asmdefAsset.name + "----" + guid);
-                }
-            }
+            allCoreInstalled = true;
+            InitializePackages(); // Re-initialize packages to reflect current status
+            CheckGitInstallation();
+            CheckGeneralSetup();
+            Repaint(); // Request Unity to redraw the window
         }
-
-        private void InitializePackages()
-        {
-            //init the list of packages in the project
-            listRequest = Client.List(true);
-            while (!listRequest.IsCompleted)
-            {
-                // Wait for the list request to complete
-            }
-
-            List<PackageSetupScriptable> allpackageList = new List<PackageSetupScriptable>();
-            allpackageList.AddRange(corePackageList);
-            allpackageList.AddRange(optionalPackageList);
-
-            // Initialize the package list with some sample data
-            foreach (PackageSetupScriptable packageScriptable in allpackageList)
-            {
-                if (packageScriptable.packageName == "com.unity.render-pipelines.universal")
-                {
-                    packageScriptable.installed = true;
-                }
-                else
-                {
-                    packageScriptable.installed = CheckPackageInstallation(packageScriptable.packageName, packageScriptable.assemblyGUID, packageScriptable);
-                }
-            }
-        }
-
-        private bool CheckPackageInstallation(string packageName, string assemblyName, PackageSetupScriptable packageScriptable)
-        {
-            /*if (packageName == "com.unity.render-pipelines.universal")
-                return true;*/
-            string manifestFilePath = Path.Combine(Application.dataPath, "../Packages/manifest.json");
-
-            if (!File.Exists(manifestFilePath))
-            {
-                UnityEngine.Debug.LogError("manifest.json file not found!");
-                return false;
-            }
-
-            string manifestJson = File.ReadAllText(manifestFilePath);
-
-            if (!PackageExists(packageName, assemblyName, packageScriptable))
-            {
-                if (packageScriptable.isCore)
-                {
-                    allCoreInstalled = false;
-                }
-                return false;
-            }
-            //CreatorKit_Installed
-            else
-            {
-                return true;
-            }
-        }
-
-        private void CheckGitInstallation()
-        {
-            try
-            {
-                ProcessStartInfo startInfo = new ProcessStartInfo
-                {
-                    FileName = "git",
-                    Arguments = "--version",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                using (Process process = new Process { StartInfo = startInfo })
-                {
-                    process.Start();
-                    string output = process.StandardOutput.ReadToEnd();
-                    process.WaitForExit();
-
-                    if (process.ExitCode == 0)
-                    {
-                        //UnityEngine.Debug.LogError("Git is installed with version " + output);
-                        gitVersion = output;
-                        isGitInstalled = true;
-                    }
-                    else
-                    {
-                        isGitInstalled = false;
-                        allCoreInstalled = false;
-                        //UnityEngine.Debug.LogError("Git not installed");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                EditorUtility.DisplayDialog("Git Check", "An error occurred while checking for Git:\n" + ex.Message, "OK");
-            }
-        }
-
-        private void CheckGeneralSetup()
-        {
-            //Check supported platform
-            BuildTargetGroup[] buildTargetGroups = (BuildTargetGroup[])System.Enum.GetValues(typeof(BuildTargetGroup));
-            foreach (BuildTargetGroup group in buildTargetGroups)
-            {
-                CheckBuildTarget(group, BuildTarget.Android, "Android");
-                CheckBuildTarget(group, BuildTarget.StandaloneWindows, "Windows");
-                CheckBuildTarget(group, BuildTarget.WebGL, "WebGL");
-            }
-
-            //update the coreInstalled value
-            foreach (var element in supportedPlatform)
-            {
-                if (element.Value == false)
-                {
-                    allCoreInstalled = false;
-                }
-            }
-
-            //URP Pipeline
-            //#if UNITY_URP_INSTALLED
-            if (GraphicsSettings.renderPipelineAsset is UniversalRenderPipelineAsset)
-            {
-                renderPipelineURP = true;
-            }
-            else
-            {
-                renderPipelineURP = false;
-                allCoreInstalled = false;
-            }
-            //# endif
-
-            //NET Framework
-            if (PlayerSettings.GetApiCompatibilityLevel(BuildTargetGroup.Standalone) == ApiCompatibilityLevel.NET_Unity_4_8)
-            {
-                netFramework = true;
-            }
-            else
-            {
-                netFramework = false;
-                allCoreInstalled = false;
-            }
-
-        }
-
-        private void CheckBuildTarget(BuildTargetGroup group, BuildTarget target, string platform)
-        {
-            bool value = BuildPipeline.IsBuildTargetSupported(group, target);
-            if (value)
-            {
-                supportedPlatform[platform] = true;
-            }
-        }
-
-        private bool PackageExists(string packageName, string assemblyGUID, PackageSetupScriptable packageScriptable)
-        {
-            //check if package is in project
-            if (listRequest.Status == StatusCode.Success)
-            {
-                foreach (var package in listRequest.Result)
-                {
-                    if (package.name == packageName)
-                    {
-                        packageScriptable.version = package.version;
-                        return true;
-                    }
-                }
-            }
-            else if (listRequest.Status >= StatusCode.Failure)
-            {
-                UnityEngine.Debug.LogError("Failed to list packages: " + listRequest.Error.message);
-            }
-
-            //check if assembly is there
-            if (assemblyFileNames.Contains(assemblyGUID))
-            {
-                return true;
-            }
-
-            return false;
-        }
-        #endregion
 
         #region GUI Functions
         private void OnGUI()
@@ -599,6 +408,204 @@ namespace Reflectis.SetupEditor
         }
         #endregion
 
+        #region General Checks Functions
+        private void GetAllAssemblyFiles()
+        {
+            string[] asmdefs = AssetDatabase.FindAssets("t:AssemblyDefinitionAsset");
+            foreach (string guid in asmdefs)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var asmdefAsset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(path);
+                if (asmdefAsset != null)
+                {
+                    //assemblyFileNames.Add(asmdefAsset.name);
+                    assemblyFileNames.Add(guid);
+                    //UnityEngine.Debug.LogError(asmdefAsset.name + "----" + guid);
+                }
+            }
+        }
+
+        private void InitializePackages()
+        {
+            //init the list of packages in the project
+            listRequest = Client.List(true);
+            while (!listRequest.IsCompleted)
+            {
+                // Wait for the list request to complete
+            }
+
+            List<PackageSetupScriptable> allpackageList = new List<PackageSetupScriptable>();
+            allpackageList.AddRange(corePackageList);
+            allpackageList.AddRange(optionalPackageList);
+
+            // Initialize the package list with some sample data
+            foreach (PackageSetupScriptable packageScriptable in allpackageList)
+            {
+                if (packageScriptable.packageName == "com.unity.render-pipelines.universal")
+                {
+                    packageScriptable.installed = true;
+                }
+                else
+                {
+                    packageScriptable.installed = CheckPackageInstallation(packageScriptable.packageName, packageScriptable.assemblyGUID, packageScriptable);
+                }
+            }
+        }
+
+        private bool CheckPackageInstallation(string packageName, string assemblyName, PackageSetupScriptable packageScriptable)
+        {
+            /*if (packageName == "com.unity.render-pipelines.universal")
+                return true;*/
+            string manifestFilePath = Path.Combine(Application.dataPath, "../Packages/manifest.json");
+
+            if (!File.Exists(manifestFilePath))
+            {
+                UnityEngine.Debug.LogError("manifest.json file not found!");
+                return false;
+            }
+
+            string manifestJson = File.ReadAllText(manifestFilePath);
+
+            if (!PackageExists(packageName, assemblyName, packageScriptable))
+            {
+                if (packageScriptable.isCore)
+                {
+                    allCoreInstalled = false;
+                }
+                return false;
+            }
+            //CreatorKit_Installed
+            else
+            {
+                return true;
+            }
+        }
+
+        private void CheckGitInstallation()
+        {
+            try
+            {
+                ProcessStartInfo startInfo = new ProcessStartInfo
+                {
+                    FileName = "git",
+                    Arguments = "--version",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using (Process process = new Process { StartInfo = startInfo })
+                {
+                    process.Start();
+                    string output = process.StandardOutput.ReadToEnd();
+                    process.WaitForExit();
+
+                    if (process.ExitCode == 0)
+                    {
+                        //UnityEngine.Debug.LogError("Git is installed with version " + output);
+                        gitVersion = output;
+                        isGitInstalled = true;
+                    }
+                    else
+                    {
+                        isGitInstalled = false;
+                        allCoreInstalled = false;
+                        //UnityEngine.Debug.LogError("Git not installed");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                EditorUtility.DisplayDialog("Git Check", "An error occurred while checking for Git:\n" + ex.Message, "OK");
+            }
+        }
+
+        private void CheckGeneralSetup()
+        {
+            //Check supported platform
+            BuildTargetGroup[] buildTargetGroups = (BuildTargetGroup[])System.Enum.GetValues(typeof(BuildTargetGroup));
+            foreach (BuildTargetGroup group in buildTargetGroups)
+            {
+                CheckBuildTarget(group, BuildTarget.Android, "Android");
+                CheckBuildTarget(group, BuildTarget.StandaloneWindows, "Windows");
+                CheckBuildTarget(group, BuildTarget.WebGL, "WebGL");
+            }
+
+            //update the coreInstalled value
+            foreach (var element in supportedPlatform)
+            {
+                if (element.Value == false)
+                {
+                    allCoreInstalled = false;
+                }
+            }
+
+            //URP Pipeline
+            //#if UNITY_URP_INSTALLED
+            if (GraphicsSettings.renderPipelineAsset is UniversalRenderPipelineAsset)
+            {
+                renderPipelineURP = true;
+            }
+            else
+            {
+                renderPipelineURP = false;
+                allCoreInstalled = false;
+            }
+            //# endif
+
+            //NET Framework
+            if (PlayerSettings.GetApiCompatibilityLevel(BuildTargetGroup.Standalone) == ApiCompatibilityLevel.NET_Unity_4_8)
+            {
+                netFramework = true;
+            }
+            else
+            {
+                netFramework = false;
+                allCoreInstalled = false;
+            }
+
+        }
+
+        private void CheckBuildTarget(BuildTargetGroup group, BuildTarget target, string platform)
+        {
+            bool value = BuildPipeline.IsBuildTargetSupported(group, target);
+            if (value)
+            {
+                supportedPlatform[platform] = true;
+            }
+        }
+
+        private bool PackageExists(string packageName, string assemblyGUID, PackageSetupScriptable packageScriptable)
+        {
+            //check if package is in project
+            if (listRequest.Status == StatusCode.Success)
+            {
+                foreach (var package in listRequest.Result)
+                {
+                    if (package.name == packageName)
+                    {
+                        packageScriptable.version = package.version;
+                        return true;
+                    }
+                }
+            }
+            else if (listRequest.Status >= StatusCode.Failure)
+            {
+                UnityEngine.Debug.LogError("Failed to list packages: " + listRequest.Error.message);
+            }
+
+            //check if assembly is there
+            if (assemblyFileNames.Contains(assemblyGUID))
+            {
+                return true;
+            }
+
+            return false;
+        }
+        #endregion
+
+        #region ButtonsLogic Functions
         private void InstallPackages(string packageName, string gitUrl, bool isGitPackage)
         {
             if (isGitPackage)
@@ -697,15 +704,9 @@ namespace Reflectis.SetupEditor
                 EditorApplication.update -= Progress;
             }
         }
+        #endregion
 
-        private void RefreshWindow()
-        {
-            allCoreInstalled = true;
-            InitializePackages(); // Re-initialize packages to reflect current status
-            CheckGitInstallation();
-            CheckGeneralSetup();
-            Repaint(); // Request Unity to redraw the window
-        }
+
     }
 }
 
