@@ -54,6 +54,14 @@ namespace Reflectis.SetupEditor
         GUIContent warningIconContent;
         GUIContent errorIconContent;
         GUIContent confirmedIcon;
+        GUIStyle boldTabStyle;
+
+        public GUIContent[] tabContents = new GUIContent[]
+        {
+            new GUIContent(" Core"),
+            new GUIContent(" Optional")
+        };
+        int selectedTab = 0;
         #endregion
 
         private AddRequest addRequest;
@@ -346,6 +354,16 @@ namespace Reflectis.SetupEditor
             warningIconContent = EditorGUIUtility.IconContent("DotFill");
             errorIconContent = EditorGUIUtility.IconContent("console.erroricon");
             confirmedIcon = EditorGUIUtility.IconContent("d_winbtn_mac_max"); //Assets / Editor Default Resources/ Icons
+            tabContents = new GUIContent[]
+            {
+                new GUIContent(" Core", allCoreInstalled ? confirmedIcon.image : errorIconContent.image),
+                new GUIContent(" Optional")
+            };
+            // Create a custom GUIStyle for the toolbar buttons with bold font
+            boldTabStyle = new GUIStyle(EditorStyles.toolbarButton)
+            {
+                fontStyle = FontStyle.Bold
+            };
             //-----------------------------------------------------
 
 
@@ -359,55 +377,65 @@ namespace Reflectis.SetupEditor
             EditorGUI.DrawRect(lineRect, Color.black);
             GUILayout.Space(10);
 
-            //
-            //
-            //CORE
-            EditorGUILayout.BeginVertical();
-            showCore = GUILayout.Toggle(showCore, new GUIContent(" Core", allCoreInstalled ? confirmedIcon.image : errorIconContent.image), "Foldout", GUILayout.ExpandWidth(false));
 
-            if (showCore)
+            //
+            //
+            //
+
+            EditorGUILayout.BeginHorizontal();
+            for (int i = 0; i < tabContents.Length; i++)
             {
-                CreateGeneralSetupGUI();
+                if (GUILayout.Toggle(selectedTab == i, tabContents[i], boldTabStyle))
+                {
+                    selectedTab = i;
+                }
+            }
+            EditorGUILayout.EndHorizontal();
 
-                GUILayout.Space(10);
-                lineRect = EditorGUILayout.GetControlRect(false, 1);
-                EditorGUILayout.Space();
-                EditorGUI.DrawRect(lineRect, Color.black);
+            EditorGUILayout.BeginVertical();
+            switch (selectedTab)
+            {
+                case 0:
+                    GUILayout.Space(20);
+                    CreateGeneralSetupGUI();
 
-                //Core Packages
-                CreatePackagesSetupGUI(true, corePackageList);
+                    GUILayout.Space(10);
+                    lineRect = EditorGUILayout.GetControlRect(false, 1);
+                    EditorGUILayout.Space();
+                    EditorGUI.DrawRect(lineRect, Color.black);
+
+                    //Core Packages
+                    CreatePackagesSetupGUI(true, corePackageList);
+
+                    GUILayout.Space(20);
+
+                    //Creator Kit Buttons
+                    configurationEvents.Invoke(); //add element to tab too(?)
+                    break;
+                case 1:
+                    GUILayout.Space(20);
+                    CreatePackagesSetupGUI(false, optionalPackageList);
+                    break;
+                default:
+                    break;
 
             }
             EditorGUILayout.EndVertical();
 
-            /*showCore = EditorGUILayout.BeginFoldoutHeaderGroup(showCore, "Core");         
-            EditorGUILayout.EndFoldoutHeaderGroup();*/
-
-            //
-            //
-            //OPTIONAL
-            //Optional Packages
-            showOptional = EditorGUILayout.BeginFoldoutHeaderGroup(showOptional, "Optional");
-            if (showOptional)
-            {
-                CreatePackagesSetupGUI(false, optionalPackageList);
-                GUILayout.Space(20);
-            }
-            EditorGUILayout.EndFoldoutHeaderGroup();
-
-            //check creator kit installed, if it is show addressablesConfigurationWindow
-            //Create multiple tabs or give button logic to open the other configuration windows.
-            configurationEvents.Invoke();
-
+            //Documentation Link
+            EditorGUILayout.BeginVertical();
+            GUILayout.Space(20);
             GUILayout.FlexibleSpace();
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
+
             if (GUILayout.Button("Open Creator Kit Documentation", EditorStyles.linkLabel))
             {
                 Application.OpenURL("https://reflectis.io/docs/2024.4/CK/intro");
             }
-            GUILayout.EndHorizontal();
 
+            GUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
         }
 
         private void CreateGeneralSetupGUI()
@@ -680,3 +708,4 @@ namespace Reflectis.SetupEditor
         }
     }
 }
+
