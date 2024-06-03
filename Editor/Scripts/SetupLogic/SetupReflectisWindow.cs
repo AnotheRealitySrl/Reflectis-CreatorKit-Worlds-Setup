@@ -24,6 +24,11 @@ namespace Reflectis.SetupEditor
         private bool renderPipelineURP = false;
         private bool netFramework = false;
         private static string reflectisSetupShown = "EditorWindowAlreadyShown";
+
+        private bool showOptional = false;
+        private bool showCore = false;
+
+        private bool allCoreInstalled = true;
         #endregion
 
 
@@ -184,6 +189,10 @@ namespace Reflectis.SetupEditor
 
             if (!PackageExists(packageName, assemblyName, packageScriptable))
             {
+                if (packageScriptable.isCore)
+                {
+                    allCoreInstalled = false;
+                }
                 return false;
             }
             //CreatorKit_Installed
@@ -222,6 +231,7 @@ namespace Reflectis.SetupEditor
                     else
                     {
                         isGitInstalled = false;
+                        allCoreInstalled = false;
                         //UnityEngine.Debug.LogError("Git not installed");
                     }
                 }
@@ -243,6 +253,15 @@ namespace Reflectis.SetupEditor
                 CheckBuildTarget(group, BuildTarget.WebGL, "WebGL");
             }
 
+            //update the coreInstalled value
+            foreach (var element in supportedPlatform)
+            {
+                if (element.Value == false)
+                {
+                    allCoreInstalled = false;
+                }
+            }
+
             //URP Pipeline
             //#if UNITY_URP_INSTALLED
             if (GraphicsSettings.renderPipelineAsset is UniversalRenderPipelineAsset)
@@ -252,6 +271,7 @@ namespace Reflectis.SetupEditor
             else
             {
                 renderPipelineURP = false;
+                allCoreInstalled = false;
             }
             //# endif
 
@@ -263,6 +283,7 @@ namespace Reflectis.SetupEditor
             else
             {
                 netFramework = false;
+                allCoreInstalled = false;
             }
 
         }
@@ -338,19 +359,41 @@ namespace Reflectis.SetupEditor
             EditorGUI.DrawRect(lineRect, Color.black);
             GUILayout.Space(10);
 
-            CreateGeneralSetupGUI();
+            //
+            //
+            //CORE
+            EditorGUILayout.BeginVertical();
+            showCore = GUILayout.Toggle(showCore, new GUIContent(" Core", allCoreInstalled ? confirmedIcon.image : errorIconContent.image), "Foldout", GUILayout.ExpandWidth(false));
 
-            GUILayout.Space(10);
-            lineRect = EditorGUILayout.GetControlRect(false, 1);
-            EditorGUILayout.Space();
-            EditorGUI.DrawRect(lineRect, Color.black);
+            if (showCore)
+            {
+                CreateGeneralSetupGUI();
 
-            //Core Packages
-            CreatePackagesSetupGUI(true, corePackageList);
+                GUILayout.Space(10);
+                lineRect = EditorGUILayout.GetControlRect(false, 1);
+                EditorGUILayout.Space();
+                EditorGUI.DrawRect(lineRect, Color.black);
 
+                //Core Packages
+                CreatePackagesSetupGUI(true, corePackageList);
+
+            }
+            EditorGUILayout.EndVertical();
+
+            /*showCore = EditorGUILayout.BeginFoldoutHeaderGroup(showCore, "Core");         
+            EditorGUILayout.EndFoldoutHeaderGroup();*/
+
+            //
+            //
+            //OPTIONAL
             //Optional Packages
-            CreatePackagesSetupGUI(false, optionalPackageList);
-            GUILayout.Space(20);
+            showOptional = EditorGUILayout.BeginFoldoutHeaderGroup(showOptional, "Optional");
+            if (showOptional)
+            {
+                CreatePackagesSetupGUI(false, optionalPackageList);
+                GUILayout.Space(20);
+            }
+            EditorGUILayout.EndFoldoutHeaderGroup();
 
             //check creator kit installed, if it is show addressablesConfigurationWindow
             //Create multiple tabs or give button logic to open the other configuration windows.
@@ -629,6 +672,7 @@ namespace Reflectis.SetupEditor
 
         private void RefreshWindow()
         {
+            allCoreInstalled = true;
             InitializePackages(); // Re-initialize packages to reflect current status
             CheckGitInstallation();
             CheckGeneralSetup();
