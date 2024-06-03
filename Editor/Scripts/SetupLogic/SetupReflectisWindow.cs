@@ -60,6 +60,8 @@ namespace Reflectis.SetupEditor
             new GUIContent(" Optional")
         };
         int selectedTab = 0;
+
+        private Vector2 scrollPosition = Vector2.zero;
         #endregion
 
         private AddRequest addRequest;
@@ -186,11 +188,7 @@ namespace Reflectis.SetupEditor
             EditorGUI.DrawRect(lineRect, Color.black);
             GUILayout.Space(10);
 
-
-            //
-            //
-            //
-
+            //tabs
             EditorGUILayout.BeginHorizontal();
             for (int i = 0; i < tabContents.Length; i++)
             {
@@ -201,10 +199,12 @@ namespace Reflectis.SetupEditor
             }
             EditorGUILayout.EndHorizontal();
 
+            scrollPosition = GUILayout.BeginScrollView(scrollPosition, false, false);
             EditorGUILayout.BeginVertical();
             switch (selectedTab)
             {
                 case 0:
+                    //Core tab
                     GUILayout.Space(20);
                     CreateGeneralSetupGUI();
 
@@ -222,6 +222,7 @@ namespace Reflectis.SetupEditor
                     configurationEvents.Invoke(); //add element to tab too(?)
                     break;
                 case 1:
+                    //Optional tab
                     GUILayout.Space(20);
                     CreatePackagesSetupGUI(false, optionalPackageList);
                     break;
@@ -245,6 +246,8 @@ namespace Reflectis.SetupEditor
 
             GUILayout.EndHorizontal();
             EditorGUILayout.EndVertical();
+
+            GUILayout.EndScrollView();
         }
 
         private void CreateGeneralSetupGUI()
