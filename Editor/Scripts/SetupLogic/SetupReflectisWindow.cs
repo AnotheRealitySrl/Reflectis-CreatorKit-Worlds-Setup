@@ -25,7 +25,16 @@ namespace Reflectis.SetupEditor
         private bool netFramework = false;
         private static string reflectisSetupShown = "EditorWindowAlreadyShown";
 
+        private bool allCorePackagesInstalled = true;
+        private bool allSettingsFixed = true;
+        private bool allPlatformFixed = true;
         private bool allCoreInstalled = true;
+
+
+        private bool showReflectisVersion = false;
+        private bool showPlatformSupport = false;
+        private bool showProjectSettingss = false;
+        private bool showCorePackages = false;
         #endregion
 
 
@@ -53,6 +62,7 @@ namespace Reflectis.SetupEditor
         GUIContent errorIconContent;
         GUIContent confirmedIcon;
         GUIStyle boldTabStyle;
+        GUIStyle toggleStyle;
 
         public GUIContent[] tabContents = new GUIContent[]
         {
@@ -139,6 +149,9 @@ namespace Reflectis.SetupEditor
         private void RefreshWindow()
         {
             allCoreInstalled = true;
+            allCorePackagesInstalled = true;
+            allPlatformFixed = true;
+            allSettingsFixed = true;
             InitializePackages(); // Re-initialize packages to reflect current status
             CheckGitInstallation();
             CheckGeneralSetup();
@@ -162,9 +175,15 @@ namespace Reflectis.SetupEditor
             titleStyle.alignment = TextAnchor.MiddleCenter;
             labelStyle.fontSize = 12;
             arrowStyle.fontSize = 16;
+
             warningIconContent = EditorGUIUtility.IconContent("DotFill");
             errorIconContent = EditorGUIUtility.IconContent("console.erroricon");
             confirmedIcon = EditorGUIUtility.IconContent("d_winbtn_mac_max"); //Assets / Editor Default Resources/ Icons
+
+            toggleStyle = new GUIStyle("Foldout");
+            toggleStyle.fixedHeight = 18f;
+            toggleStyle.fontStyle = FontStyle.Bold;
+
             tabContents = new GUIContent[]
             {
                 new GUIContent(" Core", allCoreInstalled ? confirmedIcon.image : errorIconContent.image),
@@ -181,6 +200,23 @@ namespace Reflectis.SetupEditor
             // Draw the title text with the specified GUIStyle
             EditorGUILayout.Space(10);
             EditorGUILayout.LabelField("WELCOME TO REFLECTIS", titleStyle);
+
+            /*GUILayout.Space(10);
+            showReflectisVersion = GUILayout.Toggle(showReflectisVersion, new GUIContent("Reflects Versions", allCoreInstalled ? confirmedIcon.image : errorIconContent.image), "Foldout");
+            if (showReflectisVersion)
+            {
+                //TODO Show all possible reflectis version, the button will automatically install all the packages associated with that specific version
+                GUIStyle lineStyle = lineStyles[0];
+
+                GUILayout.BeginHorizontal(lineStyle);
+
+                //TODO Check if all packages are right for this version, if they are display the green v otherwise display a red X
+                EditorGUILayout.LabelField("<b>[<color=lime>√</color>]</b>", iconStyle, GUILayout.Width(20));
+                GUILayout.Label("Reflectis v. 2024.5.0", labelStyle);
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+            }*/
+
 
             // Draw a horizontal line beneath the title
             EditorGUILayout.Space();
@@ -209,9 +245,9 @@ namespace Reflectis.SetupEditor
                     CreateGeneralSetupGUI();
 
                     GUILayout.Space(10);
-                    lineRect = EditorGUILayout.GetControlRect(false, 1);
+                    /*lineRect = EditorGUILayout.GetControlRect(false, 1);
                     EditorGUILayout.Space();
-                    EditorGUI.DrawRect(lineRect, Color.black);
+                    EditorGUI.DrawRect(lineRect, Color.black);*/
 
                     //Core Packages
                     CreatePackagesSetupGUI(true, corePackageList);
@@ -254,64 +290,74 @@ namespace Reflectis.SetupEditor
         {
             //---------------------------------------------------------------
             //---------------------------------------------------------------Platform Build Support
-            GUILayout.Label("Platform build support", EditorStyles.boldLabel);
-            GUILayout.Space(5);
 
             //General project setup
             int currentLineStyleIndex = 0;
             GUIStyle lineStyle = lineStyles[currentLineStyleIndex];
 
-            foreach (KeyValuePair<string, bool> element in supportedPlatform)
-            {
-                buttonFunction = new Action(() =>
-                {
-                    if (EditorUtility.DisplayDialog("Build Support", "You need to install the " + element.Key + " build support from the Unity Hub. If already installed try to close the setup window and reopen it or reopen the project", "Ok"))
-                    {
+            showPlatformSupport = GUILayout.Toggle(showPlatformSupport, new GUIContent("Platform build support", allPlatformFixed ? confirmedIcon.image : errorIconContent.image), new GUIStyle(toggleStyle));
 
-                    }
-                });
-                CreateSettingFixField(element.Key, element.Value, "You have to install the " + element.Key + " build support from the Unity Hub", currentLineStyleIndex, buttonFunction, errorIconContent, "Fix");
-                currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
+            if (showPlatformSupport)
+            {
+
+                GUILayout.Space(5);
+
+                foreach (KeyValuePair<string, bool> element in supportedPlatform)
+                {
+                    buttonFunction = new Action(() =>
+                    {
+                        if (EditorUtility.DisplayDialog("Build Support", "You need to install the " + element.Key + " build support from the Unity Hub. If already installed try to close the setup window and reopen it or reopen the project", "Ok"))
+                        {
+
+                        }
+                    });
+                    CreateSettingFixField(element.Key, element.Value, "You have to install the " + element.Key + " build support from the Unity Hub", currentLineStyleIndex, buttonFunction, errorIconContent, "Fix");
+                    currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
+                }
             }
 
             //---------------------------------------------------------------
             //---------------------------------------------------------------Project Settings
             GUILayout.Space(10);
-            GUILayout.Label("Project settings", EditorStyles.boldLabel);
-            GUILayout.Space(6);
+            showProjectSettingss = GUILayout.Toggle(showProjectSettingss, new GUIContent("Project Settings", allSettingsFixed ? confirmedIcon.image : errorIconContent.image), new GUIStyle(toggleStyle));
 
-            //Graphic Setting
-
-            //if urp package is installed do this, otherwise don't show it
-            if (URPInstalled)
+            if (showProjectSettingss)
             {
+                GUILayout.Space(6);
+
+                //Graphic Setting
+
+                //if urp package is installed do this, otherwise don't show it
+                if (URPInstalled)
+                {
+                    buttonFunction = new Action(() =>
+                    {
+                        SetURPRenderPipeline();
+
+                    });
+
+                    CreateSettingFixField("URP as Render Pipeline", renderPipelineURP, "You need to set URP as your render pipeline", currentLineStyleIndex, buttonFunction, errorIconContent, "Fix");
+                    currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
+                }
+
+                //Net Framework
                 buttonFunction = new Action(() =>
                 {
-                    SetURPRenderPipeline();
-
+                    SetNetFramework();
                 });
 
-                CreateSettingFixField("URP as Render Pipeline", renderPipelineURP, "You need to set URP as your render pipeline", currentLineStyleIndex, buttonFunction, errorIconContent, "Fix");
+                CreateSettingFixField("Net Framework compability Level", netFramework, "You need to set .NET Framework in the Api Compability Level field", currentLineStyleIndex, buttonFunction, errorIconContent, "Fix");
                 currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
+                //---------------------------------------------------------------
+
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("Fix All", fixAllStyle, GUILayout.Width(80)))
+                {
+                    FixAllProjectSettings();
+                }
+                GUILayout.EndHorizontal();
             }
-
-            //Net Framework
-            buttonFunction = new Action(() =>
-            {
-                SetNetFramework();
-            });
-
-            CreateSettingFixField("Net Framework compability Level", netFramework, "You need to set .NET Framework in the Api Compability Level field", currentLineStyleIndex, buttonFunction, errorIconContent, "Fix");
-            currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
-            //---------------------------------------------------------------
-
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Fix All", fixAllStyle, GUILayout.Width(80)))
-            {
-                FixAllProjectSettings();
-            }
-            GUILayout.EndHorizontal();
         }
 
         private void CreatePackagesSetupGUI(bool isCore, List<PackageSetupScriptable> packageList)
@@ -320,24 +366,31 @@ namespace Reflectis.SetupEditor
             GUILayout.BeginVertical();
             if (isCore)
             {
+                //TODO Add foldout group object 
+
                 iconContent = errorIconContent;
-                GUILayout.Label("Core Packages", EditorStyles.boldLabel);
-                GUILayout.Space(5);
-                //Github part
-                GUILayout.BeginHorizontal(lineStyles[1]);
-                //EditorGUILayout.LabelField($"{(isGitInstalled ? "<b>[<color=lime>√</color>]</b>" : "<b>[<color=red>X</color>]</b>")}", iconStyle, GUILayout.Width(20));
-                EditorGUILayout.LabelField(new GUIContent(isGitInstalled ? confirmedIcon.image : iconContent.image), GUILayout.Width(20));
-                GUILayout.Label("Github v. " + gitVersion, labelStyle);
-                GUILayout.FlexibleSpace();
-                if (isGitInstalled)
-                    GUI.enabled = false;
-                if (GUILayout.Button(new GUIContent("Fix", "You have to install github in order to install packages"), GUILayout.Width(80)))
+
+                showCorePackages = GUILayout.Toggle(showCorePackages, new GUIContent("Core Packages", allCorePackagesInstalled ? confirmedIcon.image : errorIconContent.image), new GUIStyle(toggleStyle));
+
+                if (showCorePackages)
                 {
-                    string gitDownloadUrl = "https://git-scm.com/downloads";
-                    Application.OpenURL(gitDownloadUrl);
+                    GUILayout.Space(5);
+                    //Github part
+                    GUILayout.BeginHorizontal(lineStyles[1]);
+                    //EditorGUILayout.LabelField($"{(isGitInstalled ? "<b>[<color=lime>√</color>]</b>" : "<b>[<color=red>X</color>]</b>")}", iconStyle, GUILayout.Width(20));
+                    EditorGUILayout.LabelField(new GUIContent(isGitInstalled ? confirmedIcon.image : iconContent.image), GUILayout.Width(20));
+                    GUILayout.Label("Git executable " + gitVersion, labelStyle);
+                    GUILayout.FlexibleSpace();
+                    if (isGitInstalled)
+                        GUI.enabled = false;
+                    if (GUILayout.Button(new GUIContent("Fix", "You have to install github in order to install packages"), GUILayout.Width(80)))
+                    {
+                        string gitDownloadUrl = "https://git-scm.com/downloads";
+                        Application.OpenURL(gitDownloadUrl);
+                    }
+                    GUI.enabled = true;
+                    GUILayout.EndHorizontal();
                 }
-                GUI.enabled = true;
-                GUILayout.EndHorizontal();
             }
             else
             {
@@ -349,26 +402,28 @@ namespace Reflectis.SetupEditor
             GUIStyle lineStyle = lineStyles[currentLineStyleIndex];
 
             //Core Packages
-            for (int i = 0; i < packageList.Count; i++)
+            if (showCorePackages || !isCore)
             {
-
-                buttonFunction = new Action(() =>
+                for (int i = 0; i < packageList.Count; i++)
                 {
-                    InstallPackages(packageList[i].packageName, packageList[i].gitURL, packageList[i].isGitPackage);
-                });
 
-                CreateSettingFixField(packageList[i].displayedName + " v." + packageList[i].version, packageList[i].installed, "You need to install the " + packageList[i].displayedName + " package using the package manager", currentLineStyleIndex, buttonFunction, iconContent, isCore ? "Fix" : "Install");
-                currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
+                    buttonFunction = new Action(() =>
+                    {
+                        InstallPackages(packageList[i].packageName, packageList[i].gitURL, packageList[i].isGitPackage);
+                    });
+
+                    CreateSettingFixField(packageList[i].displayedName + " v." + packageList[i].version, packageList[i].installed, "You need to install the " + packageList[i].displayedName + " package using the package manager", currentLineStyleIndex, buttonFunction, iconContent, isCore ? "Fix" : "Install");
+                    currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
+                }
+
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button(isCore ? "Fix All" : "Install All", fixAllStyle, GUILayout.Width(80)))
+                {
+                    FixAllPackages(packageList);
+                }
+                GUILayout.EndHorizontal();
             }
-
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button(isCore ? "Fix All" : "Install All", fixAllStyle, GUILayout.Width(80)))
-            {
-                FixAllPackages(packageList);
-            }
-            GUILayout.EndHorizontal();
-
             GUILayout.EndVertical();
         }
 
@@ -473,6 +528,7 @@ namespace Reflectis.SetupEditor
             {
                 if (packageScriptable.isCore)
                 {
+                    allCorePackagesInstalled = false;
                     allCoreInstalled = false;
                 }
                 return false;
@@ -541,6 +597,7 @@ namespace Reflectis.SetupEditor
                 if (element.Value == false)
                 {
                     allCoreInstalled = false;
+                    allPlatformFixed = false;
                 }
             }
 
@@ -554,6 +611,7 @@ namespace Reflectis.SetupEditor
             {
                 renderPipelineURP = false;
                 allCoreInstalled = false;
+                allSettingsFixed = false;
             }
             //# endif
 
@@ -566,6 +624,7 @@ namespace Reflectis.SetupEditor
             {
                 netFramework = false;
                 allCoreInstalled = false;
+                allSettingsFixed = false;
             }
 
         }
