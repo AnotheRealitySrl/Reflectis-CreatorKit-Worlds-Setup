@@ -23,6 +23,8 @@ namespace Reflectis.SetupEditor
         private static string reflectisJSONstring;
         #endregion
 
+        int reflectisSelectedVersion;
+
         #region booleanValues
         private bool isGitInstalled = false;
         private string gitVersion = "";
@@ -51,8 +53,9 @@ namespace Reflectis.SetupEditor
             { "WebGL", false },
             { "Windows", false }
         };
-        [SerializeField] private List<PackageSetupScriptable> corePackageList = new List<PackageSetupScriptable>();
-        [SerializeField] private List<PackageSetupScriptable> optionalPackageList = new List<PackageSetupScriptable>();
+        [SerializeField] private List<ReflectisPackage> corePackageList = new List<ReflectisPackage>();
+        [SerializeField] private List<ReflectisPackage> optionalPackageList = new List<ReflectisPackage>();
+
         private List<string> assemblyFileNames = new List<string>();
         #endregion
 
@@ -129,7 +132,6 @@ namespace Reflectis.SetupEditor
             //Load json data
             if (reflectisJSONstring == null)
             {
-                UnityEngine.Debug.LogError("was null");
                 reflectisJSONstring = GetReflectisJSON();
             }
 
@@ -138,10 +140,10 @@ namespace Reflectis.SetupEditor
 
 
             PackagesDetails myScriptableObject = Resources.Load<PackagesDetails>("PackagesSetup");
-            corePackageList = new List<PackageSetupScriptable>();
-            optionalPackageList = new List<PackageSetupScriptable>();
+            corePackageList = new List<ReflectisPackage>();
+            optionalPackageList = new List<ReflectisPackage>();
 
-            foreach (PackageSetupScriptable packageScriptable in myScriptableObject.packageDetailsList)
+            /*foreach (PackageSetupScriptable packageScriptable in myScriptableObject.packageDetailsList)
             {
                 if (packageScriptable.isCore)
                 {
@@ -151,7 +153,7 @@ namespace Reflectis.SetupEditor
                 {
                     optionalPackageList.Add(packageScriptable);
                 }
-            }
+            }*/
 
             GetAllAssemblyFiles();
             CheckGitInstallation();
@@ -212,32 +214,76 @@ namespace Reflectis.SetupEditor
             {
                 fontStyle = FontStyle.Bold
             };
+
+            GUIStyle lineStyle = lineStyles[0];
             //-----------------------------------------------------
 
 
             // Draw the title text with the specified GUIStyle
             EditorGUILayout.Space(10);
             EditorGUILayout.LabelField("WELCOME TO REFLECTIS", titleStyle);
+            EditorGUILayout.Space();
+            Rect lineRect = EditorGUILayout.GetControlRect(false, 1);
+            EditorGUI.DrawRect(lineRect, Color.black);
+            GUILayout.Space(20);
 
-            /*GUILayout.Space(10);
-            showReflectisVersion = GUILayout.Toggle(showReflectisVersion, new GUIContent("Reflects Versions", allCoreInstalled ? confirmedIcon.image : errorIconContent.image), "Foldout");
+            /*showReflectisVersion = GUILayout.Toggle(showReflectisVersion, new GUIContent("Reflects Versions", allCoreInstalled ? confirmedIcon.image : errorIconContent.image), "Foldout");
             if (showReflectisVersion)
             {
-                //TODO Show all possible reflectis version, the button will automatically install all the packages associated with that specific version
-                GUIStyle lineStyle = lineStyles[0];
+                int currentLineStyleIndex = 0;
+                foreach (ReflectisVersion reflectisVersion in reflectisJSON.reflectisVersions)
+                {
+                    lineStyle = lineStyles[currentLineStyleIndex];
+                    GUILayout.BeginHorizontal(lineStyle);
 
-                GUILayout.BeginHorizontal(lineStyle);
-
-                //TODO Check if all packages are right for this version, if they are display the green v otherwise display a red X
-                EditorGUILayout.LabelField("<b>[<color=lime>√</color>]</b>", iconStyle, GUILayout.Width(20));
-                GUILayout.Label("Reflectis v. 2024.5.0", labelStyle);
-                GUILayout.FlexibleSpace();
-                GUILayout.EndHorizontal();
+                    //TODO Check if all packages are right for this version, if they are display the green v otherwise display a red X
+                    EditorGUILayout.LabelField("<b>[<color=lime>√</color>]</b>", iconStyle, GUILayout.Width(20));
+                    GUILayout.Label("Reflectis v. 2024.5.0", labelStyle);
+                    GUILayout.FlexibleSpace();
+                    GUILayout.EndHorizontal();
+                    currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
+                }
             }*/
+
+            string[] reflectisVersions = new string[reflectisJSON.reflectisVersions.Count];
+            for (int i = 0; i < reflectisJSON.reflectisVersions.Count; i++)
+            {
+                reflectisVersions[i] = reflectisJSON.reflectisVersions[i].version;
+                //reflectisSDKVersion = 
+                //CreatorKit version = 
+            }
+
+            GUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Choose your preferred Reflectis version", GUILayout.Width(250));
+
+            EditorGUI.BeginChangeCheck();
+            reflectisSelectedVersion = EditorGUILayout.Popup(reflectisSelectedVersion, reflectisVersions, GUILayout.MaxWidth(100));
+            if (EditorGUI.EndChangeCheck())
+            {
+                UnityEngine.Debug.Log(reflectisVersions[reflectisSelectedVersion]);
+                //update the sdk and creator kit showed
+            }
+            GUILayout.EndHorizontal();
+
+            //TODO show if installed package
+            foreach (ReflectisPackage rpkg in reflectisJSON.reflectisVersions[reflectisSelectedVersion].reflectisPackages)
+            {
+                if (rpkg.isCore)
+                {
+                    EditorGUI.BeginDisabledGroup(true);
+                    EditorGUILayout.LabelField(rpkg.displayedName + " " + rpkg.version);
+                    EditorGUI.EndDisabledGroup();
+                }
+            }
+
+            //TODO show problem in graphic settings with fix all button
+
+            //TODO add setup reflectis button
+
 
 
             // Draw a horizontal line beneath the title
-            EditorGUILayout.Space();
+            /*EditorGUILayout.Space();
             Rect lineRect = EditorGUILayout.GetControlRect(false, 1);
             EditorGUI.DrawRect(lineRect, Color.black);
             GUILayout.Space(10);
@@ -263,9 +309,6 @@ namespace Reflectis.SetupEditor
                     CreateGeneralSetupGUI();
 
                     GUILayout.Space(10);
-                    /*lineRect = EditorGUILayout.GetControlRect(false, 1);
-                    EditorGUILayout.Space();
-                    EditorGUI.DrawRect(lineRect, Color.black);*/
 
                     //Core Packages
                     CreatePackagesSetupGUI(true, corePackageList);
@@ -301,7 +344,7 @@ namespace Reflectis.SetupEditor
             GUILayout.EndHorizontal();
             EditorGUILayout.EndVertical();
 
-            GUILayout.EndScrollView();
+            GUILayout.EndScrollView();*/
         }
 
         private void CreateGeneralSetupGUI()
@@ -511,8 +554,8 @@ namespace Reflectis.SetupEditor
             }
 
             List<PackageSetupScriptable> allpackageList = new List<PackageSetupScriptable>();
-            allpackageList.AddRange(corePackageList);
-            allpackageList.AddRange(optionalPackageList);
+            //allpackageList.AddRange(corePackageList);
+            //allpackageList.AddRange(optionalPackageList);
 
             // Initialize the package list with some sample data
             foreach (PackageSetupScriptable packageScriptable in allpackageList)
