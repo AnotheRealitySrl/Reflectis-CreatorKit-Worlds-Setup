@@ -17,6 +17,12 @@ namespace Reflectis.SetupEditor
     [InitializeOnLoad]
     public class SetupReflectisWindow : EditorWindow
     {
+        #region Reflectis JSON data variables
+        //private string reflectisPrefs = "ReflectisJSON"; //string used to save in editor prefs the reflectis json with version control
+        private ReflectisJSON reflectisJSON;
+        private static string reflectisJSONstring;
+        #endregion
+
         #region booleanValues
         private bool isGitInstalled = false;
         private string gitVersion = "";
@@ -97,6 +103,7 @@ namespace Reflectis.SetupEditor
             {
                 if (!PlayerPrefs.HasKey(reflectisSetupShown))
                 {
+
                     PlayerPrefs.SetFloat(reflectisSetupShown, 1f);
                     PlayerPrefs.Save();
                     ShowWindow();
@@ -119,6 +126,17 @@ namespace Reflectis.SetupEditor
 
         private void Awake()
         {
+            //Load json data
+            if (reflectisJSONstring == null)
+            {
+                UnityEngine.Debug.LogError("was null");
+                reflectisJSONstring = GetReflectisJSON();
+            }
+
+            reflectisJSON = JsonUtility.FromJson<ReflectisJSON>(reflectisJSONstring);
+
+
+
             PackagesDetails myScriptableObject = Resources.Load<PackagesDetails>("PackagesSetup");
             corePackageList = new List<PackageSetupScriptable>();
             optionalPackageList = new List<PackageSetupScriptable>();
@@ -767,6 +785,14 @@ namespace Reflectis.SetupEditor
             }
         }
         #endregion
+
+        //Get json data from API
+        private string GetReflectisJSON()
+        {
+            //for now load the json via the resource folder. In the future calla an api to retrieve the json
+            TextAsset jsonData = Resources.Load<TextAsset>("jsonExample");
+            return jsonData.text;
+        }
 
 
     }
