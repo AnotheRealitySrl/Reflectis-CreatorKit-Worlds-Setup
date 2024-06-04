@@ -18,7 +18,7 @@ namespace Reflectis.SetupEditor
     public class SetupReflectisWindow : EditorWindow
     {
         #region Reflectis JSON data variables
-        //private string reflectisPrefs = "ReflectisJSON"; //string used to save in editor prefs the reflectis json with version control
+        private string reflectisPrefs = "ReflectisVersion"; //string used to know which reflectis version is installed. Set The first time you press the setup button. 
         private ReflectisJSON reflectisJSON;
         private static string reflectisJSONstring;
         #endregion
@@ -38,8 +38,6 @@ namespace Reflectis.SetupEditor
         private bool allPlatformFixed = true;
         private bool allCoreInstalled = true;
 
-
-        private bool showReflectisVersion = false;
         private bool showPlatformSupport = false;
         private bool showProjectSettingss = false;
         private bool showCorePackages = false;
@@ -64,6 +62,7 @@ namespace Reflectis.SetupEditor
         GUIStyle iconStyle;
         GUIStyle titleStyle;
         GUIStyle labelStyle;
+        GUIStyle headerStyle;
         GUIStyle arrowStyle;
         GUIStyle fixAllStyle;
         GUIStyle[] lineStyles; // Different line styles for alternating colors
@@ -106,7 +105,6 @@ namespace Reflectis.SetupEditor
             {
                 if (!PlayerPrefs.HasKey(reflectisSetupShown))
                 {
-
                     PlayerPrefs.SetFloat(reflectisSetupShown, 1f);
                     PlayerPrefs.Save();
                     ShowWindow();
@@ -137,13 +135,11 @@ namespace Reflectis.SetupEditor
 
             reflectisJSON = JsonUtility.FromJson<ReflectisJSON>(reflectisJSONstring);
 
-
-
-            PackagesDetails myScriptableObject = Resources.Load<PackagesDetails>("PackagesSetup");
+            /*PackagesDetails myScriptableObject = Resources.Load<PackagesDetails>("PackagesSetup");
             corePackageList = new List<ReflectisPackage>();
             optionalPackageList = new List<ReflectisPackage>();
 
-            /*foreach (PackageSetupScriptable packageScriptable in myScriptableObject.packageDetailsList)
+            foreach (PackageSetupScriptable packageScriptable in myScriptableObject.packageDetailsList)
             {
                 if (packageScriptable.isCore)
                 {
@@ -156,13 +152,24 @@ namespace Reflectis.SetupEditor
             }*/
 
             GetAllAssemblyFiles();
+            ClientListCall();
             CheckGitInstallation();
             CheckGeneralSetup();
-            InitializePackages();
+            //InitializePackages();
 
             if (PlayerPrefs.HasKey(reflectisSetupShown))
             {
                 EditorApplication.quitting += OnUnityQuit;
+            }
+        }
+
+        private void ClientListCall()
+        {
+
+            listRequest = Client.List(true);
+            while (!listRequest.IsCompleted)
+            {
+                // Wait for the list request to complete
             }
         }
 
@@ -172,8 +179,9 @@ namespace Reflectis.SetupEditor
             allCorePackagesInstalled = true;
             allPlatformFixed = true;
             allSettingsFixed = true;
-            InitializePackages(); // Re-initialize packages to reflect current status
+            //InitializePackages(); // Re-initialize packages to reflect current status
             CheckGitInstallation();
+            ClientListCall(); //call the manifest and retrieve the isntalled packages again. That way the page will be updated.
             CheckGeneralSetup();
             Repaint(); // Request Unity to redraw the window
         }
@@ -186,6 +194,7 @@ namespace Reflectis.SetupEditor
             iconStyle = new(EditorStyles.label);
             titleStyle = new GUIStyle(GUI.skin.label);
             labelStyle = new GUIStyle(GUI.skin.label);
+            headerStyle = new GUIStyle(GUI.skin.label);
             arrowStyle = new GUIStyle(GUI.skin.label);
             lineStyles = new GUIStyle[] { GUI.skin.box, GUI.skin.textField }; // Different line styles for alternating colors
             fixAllStyle = new GUIStyle(GUI.skin.button) { margin = new RectOffset(0, 7, 0, 0) };
@@ -194,6 +203,7 @@ namespace Reflectis.SetupEditor
             titleStyle.fontStyle = FontStyle.Bold;
             titleStyle.alignment = TextAnchor.MiddleCenter;
             labelStyle.fontSize = 12;
+            headerStyle.fontStyle = FontStyle.Bold;
             arrowStyle.fontSize = 16;
 
             warningIconContent = EditorGUIUtility.IconContent("DotFill");
@@ -218,6 +228,7 @@ namespace Reflectis.SetupEditor
             GUIStyle lineStyle = lineStyles[0];
             //-----------------------------------------------------
 
+            scrollPosition = GUILayout.BeginScrollView(scrollPosition, false, false);
 
             // Draw the title text with the specified GUIStyle
             EditorGUILayout.Space(10);
@@ -226,67 +237,6 @@ namespace Reflectis.SetupEditor
             Rect lineRect = EditorGUILayout.GetControlRect(false, 1);
             EditorGUI.DrawRect(lineRect, Color.black);
             GUILayout.Space(20);
-
-            /*showReflectisVersion = GUILayout.Toggle(showReflectisVersion, new GUIContent("Reflects Versions", allCoreInstalled ? confirmedIcon.image : errorIconContent.image), "Foldout");
-            if (showReflectisVersion)
-            {
-                int currentLineStyleIndex = 0;
-                foreach (ReflectisVersion reflectisVersion in reflectisJSON.reflectisVersions)
-                {
-                    lineStyle = lineStyles[currentLineStyleIndex];
-                    GUILayout.BeginHorizontal(lineStyle);
-
-                    //TODO Check if all packages are right for this version, if they are display the green v otherwise display a red X
-                    EditorGUILayout.LabelField("<b>[<color=lime>√</color>]</b>", iconStyle, GUILayout.Width(20));
-                    GUILayout.Label("Reflectis v. 2024.5.0", labelStyle);
-                    GUILayout.FlexibleSpace();
-                    GUILayout.EndHorizontal();
-                    currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
-                }
-            }*/
-
-            string[] reflectisVersions = new string[reflectisJSON.reflectisVersions.Count];
-            for (int i = 0; i < reflectisJSON.reflectisVersions.Count; i++)
-            {
-                reflectisVersions[i] = reflectisJSON.reflectisVersions[i].version;
-                //reflectisSDKVersion = 
-                //CreatorKit version = 
-            }
-
-            GUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Choose your preferred Reflectis version", GUILayout.Width(250));
-
-            EditorGUI.BeginChangeCheck();
-            reflectisSelectedVersion = EditorGUILayout.Popup(reflectisSelectedVersion, reflectisVersions, GUILayout.MaxWidth(100));
-            if (EditorGUI.EndChangeCheck())
-            {
-                UnityEngine.Debug.Log(reflectisVersions[reflectisSelectedVersion]);
-                //update the sdk and creator kit showed
-            }
-            GUILayout.EndHorizontal();
-
-            //TODO show if installed package
-            foreach (ReflectisPackage rpkg in reflectisJSON.reflectisVersions[reflectisSelectedVersion].reflectisPackages)
-            {
-                if (rpkg.isCore)
-                {
-                    EditorGUI.BeginDisabledGroup(true);
-                    EditorGUILayout.LabelField(rpkg.displayedName + " " + rpkg.version);
-                    EditorGUI.EndDisabledGroup();
-                }
-            }
-
-            //TODO show problem in graphic settings with fix all button
-
-            //TODO add setup reflectis button
-
-
-
-            // Draw a horizontal line beneath the title
-            /*EditorGUILayout.Space();
-            Rect lineRect = EditorGUILayout.GetControlRect(false, 1);
-            EditorGUI.DrawRect(lineRect, Color.black);
-            GUILayout.Space(10);
 
             //tabs
             EditorGUILayout.BeginHorizontal();
@@ -299,21 +249,46 @@ namespace Reflectis.SetupEditor
             }
             EditorGUILayout.EndHorizontal();
 
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition, false, false);
             EditorGUILayout.BeginVertical();
+            GUILayout.Space(20);
             switch (selectedTab)
             {
                 case 0:
+
+                    //Github part
+                    GUILayout.BeginHorizontal();
+                    //EditorGUILayout.LabelField($"{(isGitInstalled ? "<b>[<color=lime>√</color>]</b>" : "<b>[<color=red>X</color>]</b>")}", iconStyle, GUILayout.Width(20));
+                    EditorGUILayout.LabelField(new GUIContent(isGitInstalled ? confirmedIcon.image : errorIconContent.image), GUILayout.Width(20));
+                    GUILayout.Label("Git executable " + gitVersion, labelStyle);
+                    GUILayout.FlexibleSpace();
+                    if (isGitInstalled)
+                        GUI.enabled = false;
+                    if (GUILayout.Button(new GUIContent("Install", "You have to install github in order to install packages"), GUILayout.Width(80)))
+                    {
+                        string gitDownloadUrl = "https://git-scm.com/downloads";
+                        Application.OpenURL(gitDownloadUrl);
+                    }
+                    GUI.enabled = true;
+                    GUILayout.EndHorizontal();
+
                     //Core tab
-                    GUILayout.Space(20);
                     CreateGeneralSetupGUI();
 
                     GUILayout.Space(10);
 
                     //Core Packages
-                    CreatePackagesSetupGUI(true, corePackageList);
+                    //CreatePackagesSetupGUI(true, corePackageList);
 
-                    GUILayout.Space(20);
+                    GUILayout.Space(10);
+
+                    lineRect = EditorGUILayout.GetControlRect(false, 1);
+                    EditorGUI.DrawRect(lineRect, Color.black);
+                    GUILayout.Space(15);
+                    SetupReflectisVersionGUI();
+                    GUILayout.Space(15);
+                    lineRect = EditorGUILayout.GetControlRect(false, 1);
+                    EditorGUI.DrawRect(lineRect, Color.black);
+                    GUILayout.Space(25);
 
                     //Creator Kit Buttons
                     configurationEvents.Invoke(); //add element to tab too(?)
@@ -321,7 +296,7 @@ namespace Reflectis.SetupEditor
                 case 1:
                     //Optional tab
                     GUILayout.Space(20);
-                    CreatePackagesSetupGUI(false, optionalPackageList);
+                    //CreatePackagesSetupGUI(false, optionalPackageList);
                     break;
                 default:
                     break;
@@ -344,7 +319,61 @@ namespace Reflectis.SetupEditor
             GUILayout.EndHorizontal();
             EditorGUILayout.EndVertical();
 
-            GUILayout.EndScrollView();*/
+            GUILayout.EndScrollView();
+        }
+
+        private void SetupReflectisVersionGUI()
+        {
+            string[] reflectisVersions = new string[reflectisJSON.reflectisVersions.Count];
+            for (int i = 0; i < reflectisJSON.reflectisVersions.Count; i++)
+            {
+                reflectisVersions[i] = reflectisJSON.reflectisVersions[i].version;
+            }
+
+            GUILayout.BeginVertical(new GUIStyle(lineStyles[1]));
+            GUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Choose your preferred Reflectis version", headerStyle, GUILayout.Width(250));
+
+            EditorGUI.BeginChangeCheck();
+            reflectisSelectedVersion = EditorGUILayout.Popup(reflectisSelectedVersion, reflectisVersions);
+            if (EditorGUI.EndChangeCheck())
+            {
+                //update the sdk and creator kit showed
+            }
+            GUILayout.EndHorizontal();
+
+            //TODO show if installed package
+
+            foreach (ReflectisPackage rpkg in reflectisJSON.reflectisVersions[reflectisSelectedVersion].reflectisPackages)
+            {
+                if (rpkg.isCore)
+                {
+                    EditorGUI.BeginDisabledGroup(true);
+                    GUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField(new GUIContent(CheckReflectisDependencies(rpkg) ? confirmedIcon.image : errorIconContent.image), GUILayout.Width(20));
+                    EditorGUILayout.LabelField(rpkg.displayedName + " " + rpkg.version);
+                    GUILayout.EndHorizontal();
+                    EditorGUI.EndDisabledGroup();
+                }
+            }
+            GUILayout.Space(10);
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Setup Reflectis", GUILayout.MinWidth(350)))
+            {
+                SetupReflectis(reflectisJSON.reflectisVersions[reflectisSelectedVersion]);
+            }
+            GUILayout.EndHorizontal();
+            GUILayout.EndVertical();
+        }
+
+        private bool CheckReflectisDependencies(ReflectisPackage rpkg)
+        {
+            //check package version
+            //CheckPackageInstallation(string packageName, string assemblyName, PackageSetupScriptable packageScriptable)
+            return PackageExists(rpkg.name, "", rpkg.version);
+            //check subpackages version in the manifest if it is the same as the one listed
+            //update boolean values
         }
 
         private void CreateGeneralSetupGUI()
@@ -544,7 +573,7 @@ namespace Reflectis.SetupEditor
             }
         }
 
-        private void InitializePackages()
+        /*private void InitializePackages()
         {
             //init the list of packages in the project
             listRequest = Client.List(true);
@@ -569,12 +598,10 @@ namespace Reflectis.SetupEditor
                     packageScriptable.installed = CheckPackageInstallation(packageScriptable.packageName, packageScriptable.assemblyGUID, packageScriptable);
                 }
             }
-        }
+        }*/
 
-        private bool CheckPackageInstallation(string packageName, string assemblyName, PackageSetupScriptable packageScriptable)
+        /*private bool CheckPackageInstallation(string packageName, string assemblyName, PackageSetupScriptable packageScriptable)
         {
-            /*if (packageName == "com.unity.render-pipelines.universal")
-                return true;*/
             string manifestFilePath = Path.Combine(Application.dataPath, "../Packages/manifest.json");
 
             if (!File.Exists(manifestFilePath))
@@ -585,7 +612,7 @@ namespace Reflectis.SetupEditor
 
             string manifestJson = File.ReadAllText(manifestFilePath);
 
-            if (!PackageExists(packageName, assemblyName, packageScriptable))
+            if (!PackageExists(packageName, assemblyName, packageScriptable.version))
             {
                 if (packageScriptable.isCore)
                 {
@@ -599,7 +626,7 @@ namespace Reflectis.SetupEditor
             {
                 return true;
             }
-        }
+        }*/
 
         private void CheckGitInstallation()
         {
@@ -699,7 +726,7 @@ namespace Reflectis.SetupEditor
             }
         }
 
-        private bool PackageExists(string packageName, string assemblyGUID, PackageSetupScriptable packageScriptable)
+        private bool PackageExists(string packageName, string assemblyGUID, string version)
         {
             //check if package is in project
             if (listRequest.Status == StatusCode.Success)
@@ -708,8 +735,10 @@ namespace Reflectis.SetupEditor
                 {
                     if (package.name == packageName)
                     {
-                        packageScriptable.version = package.version;
-                        return true;
+                        if (package.version == version)
+                        {
+                            return true;
+                        }
                     }
                 }
             }
@@ -739,7 +768,7 @@ namespace Reflectis.SetupEditor
 
                 JObject dependencies = (JObject)manifestObj["dependencies"];
                 dependencies[packageName] = gitUrl;
-                UnityEngine.Debug.Log($"Git package {packageName} added to manifest.json");
+                UnityEngine.Debug.Log($"Git package {packageName} added to manifest.json " + gitUrl);
 
                 File.WriteAllText(manifestFilePath, manifestObj.ToString());
                 AssetDatabase.SaveAssets();
@@ -837,6 +866,26 @@ namespace Reflectis.SetupEditor
             return jsonData.text;
         }
 
+        //set the reflectis version in the editor prefs so that I know not to show this window next time, instead show the setup/optional packages one.
+        private void SetupReflectis(ReflectisVersion reflectisDependencies)
+        {
+            EditorPrefs.SetString(reflectisPrefs, reflectisDependencies.version);
+
+            //install the core packages for the selected version
+            foreach (ReflectisPackage pkg in reflectisDependencies.reflectisPackages)
+            {
+                if (pkg.isCore)
+                {
+                    //Install the package
+                    UnityEngine.Debug.LogError(pkg.gitUrl + "#v" + pkg.version);
+                    InstallPackages(pkg.name, pkg.gitUrl + "#v" + pkg.version, true);
+                }
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            RefreshWindow();
+        }
 
     }
 }
