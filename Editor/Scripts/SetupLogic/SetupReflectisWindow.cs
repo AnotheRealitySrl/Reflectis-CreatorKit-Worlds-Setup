@@ -344,18 +344,7 @@ namespace Reflectis.SetupEditor
 
             //TODO show if installed package
 
-            foreach (ReflectisPackage rpkg in reflectisJSON.reflectisVersions[reflectisSelectedVersion].reflectisPackages)
-            {
-                if (rpkg.isCore)
-                {
-                    EditorGUI.BeginDisabledGroup(true);
-                    GUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField(new GUIContent(CheckReflectisDependencies(rpkg) ? confirmedIcon.image : errorIconContent.image), GUILayout.Width(20));
-                    EditorGUILayout.LabelField(rpkg.displayedName + " " + rpkg.version);
-                    GUILayout.EndHorizontal();
-                    EditorGUI.EndDisabledGroup();
-                }
-            }
+            DisplayPackageList(reflectisJSON.reflectisVersions[reflectisSelectedVersion].reflectisPackages, true);
             GUILayout.Space(10);
 
             GUILayout.BeginHorizontal();
@@ -365,6 +354,46 @@ namespace Reflectis.SetupEditor
             }
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
+        }
+
+        private void DisplayPackageList(List<ReflectisPackage> reflectisPackages, bool showCore)
+        {
+            if (showCore)
+            {
+                foreach (ReflectisPackage rpkg in reflectisPackages)
+                {
+                    if (rpkg.isCore)
+                    {
+                        EditorGUI.BeginDisabledGroup(true);
+                        GUILayout.BeginHorizontal();
+                        EditorGUILayout.LabelField(new GUIContent(CheckReflectisDependencies(rpkg) ? confirmedIcon.image : errorIconContent.image), GUILayout.Width(20));
+                        EditorGUILayout.LabelField(rpkg.displayedName + " " + rpkg.version);
+                        GUILayout.EndHorizontal();
+                        EditorGUI.EndDisabledGroup();
+                    }
+
+                }
+            }
+            else
+            {
+                List<ReflectisPackage> optionalPackages = new List<ReflectisPackage>();
+                foreach (ReflectisPackage rpkg in reflectisPackages)
+                {
+                    if (!rpkg.isCore)
+                    {
+                        //optionalPackages.Add(rpkg);
+                        buttonFunction = new Action(() =>
+                        {
+                            //Install Package
+                        });
+                        /*CreateSettingFixField(rpkg.displayedName + " v." + rpkg.version, CheckReflectisDependencies(rpkg), "You need to install the " + rpkg.displayedName + " package using the package manager", currentLineStyleIndex, buttonFunction, iconContent, "Install");
+                        currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;*/
+                    }
+
+                }
+                //CreatePackagesSetupGUI(false, optionalPackages);
+            }
+
         }
 
         private bool CheckReflectisDependencies(ReflectisPackage rpkg)
