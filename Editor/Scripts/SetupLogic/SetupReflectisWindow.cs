@@ -47,9 +47,9 @@ namespace Reflectis.SetupEditor
         #region package and platform lists
         public Dictionary<string, bool> supportedPlatform = new Dictionary<string, bool>
         {
-            { "Android", false },
-            { "WebGL", false },
-            { "Windows", false }
+            { "Android", true },
+            { "WebGL", true },
+            { "Windows", true }
         };
         [SerializeField] private List<ReflectisPackage> corePackageList = new List<ReflectisPackage>();
         [SerializeField] private List<ReflectisPackage> optionalPackageList = new List<ReflectisPackage>();
