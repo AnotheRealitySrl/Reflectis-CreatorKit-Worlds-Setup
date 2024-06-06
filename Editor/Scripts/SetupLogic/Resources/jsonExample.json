@@ -36,7 +36,7 @@
       ],
       "optionalPackages": [
         {
-          "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-TasksImporter.git#v1.0.0",
+          "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-TasksImporter.git",
           "name": "com.anotherealitysrl.reflectis-tasksimporter",
           "version": "1.0.0",
           "displayedName": "Tasks"
