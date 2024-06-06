@@ -39,6 +39,8 @@ namespace Reflectis.SetupEditor
 
         private bool showPlatformSupport = false;
         private bool showProjectSettingss = false;
+
+        private bool canUpdateReflectis = false;
         #endregion
 
 
@@ -311,6 +313,7 @@ namespace Reflectis.SetupEditor
 
         private void SetupReflectisVersionGUI()
         {
+            ShowReflectisUpdate();
             string[] reflectisVersions = new string[reflectisJSON.reflectisVersions.Count];
             for (int i = 0; i < reflectisJSON.reflectisVersions.Count; i++)
             {
@@ -343,6 +346,26 @@ namespace Reflectis.SetupEditor
             }
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
+        }
+
+        private void ShowReflectisUpdate()
+        {
+            if (!canUpdateReflectis)
+            {
+                return;
+            }
+            else
+            {
+                GUIContent updateIcon = EditorGUIUtility.IconContent("d_DataMode.Runtime@2x");
+                GUIStyle textStyle = new GUIStyle(GUI.skin.label);
+                textStyle.fontStyle = FontStyle.Italic;
+
+                //Display message that user can Update reflectis
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField(new GUIContent(updateIcon.image), GUILayout.Width(20));
+                EditorGUILayout.LabelField("There is a new Reflectis update", textStyle);
+                EditorGUILayout.EndHorizontal();
+            }
         }
 
         private void DisplayCorePackageList(List<ReflectisPackage> reflectisPackages)
@@ -826,6 +849,11 @@ namespace Reflectis.SetupEditor
                     reflectisSelectedVersion = i;
                     corePackageList = rv.reflectisPackages;
                     optionalPackageList = rv.optionalPackages;
+                }
+                else if (i == reflectisJSON.reflectisVersions.Count - 1)
+                {
+                    //display the fact that there's a new version!
+                    canUpdateReflectis = true;
                 }
                 i++;
             }
