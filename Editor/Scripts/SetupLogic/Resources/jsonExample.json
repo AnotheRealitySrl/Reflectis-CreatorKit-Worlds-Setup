@@ -4,13 +4,13 @@
       "version": "2024.2.0",
       "reflectisPackages": [
         {
-          "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-SDK.git",
+          "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-SDK.git#v4.0.0",
           "name": "com.anotherealitysrl.reflectis-sdk",
           "version": "4.0.0",
           "displayedName": "ReflectisSDK"
         },
         {
-          "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-SDK-CreatorKit.git",
+          "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-SDK-CreatorKit.git#v2.0.0",
           "name": "com.anotherealitysrl.reflectis-sdk-creatorkit",
           "version": "2.0.0",
           "displayedName": "CreatorKit"
@@ -21,13 +21,13 @@
       "version":"2024.5.0",
       "reflectisPackages": [
         {
-          "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-SDK.git",
+          "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-SDK.git#release/v7.0.0",
           "name": "com.anotherealitysrl.reflectis-sdk",
           "version": "7.0.0",
           "displayedName": "ReflectisSDK"
         },
         {
-          "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-SDK-CreatorKit.git",
+          "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-SDK-CreatorKit.git#feature/window-setup",
           "name": "com.anotherealitysrl.reflectis-sdk-creatorkit",
           "version": "3.1.3",
           "displayedName": "CreatorKit"
@@ -36,7 +36,7 @@
       ],
       "optionalPackages": [
         {
-          "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-TasksImporter.git",
+          "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-TasksImporter.git#v1.0.0",
           "name": "com.anotherealitysrl.reflectis-tasksimporter",
           "version": "1.0.0",
           "displayedName": "Tasks"

@@ -33,14 +33,12 @@ namespace Reflectis.SetupEditor
         private bool netFramework = false;
         private static string reflectisSetupShown = "EditorWindowAlreadyShown";
 
-        private bool allCorePackagesInstalled = true;
         private bool allSettingsFixed = true;
         private bool allPlatformFixed = true;
         private bool allCoreInstalled = true;
 
         private bool showPlatformSupport = false;
         private bool showProjectSettingss = false;
-        private bool showCorePackages = false;
         #endregion
 
 
@@ -66,24 +64,24 @@ namespace Reflectis.SetupEditor
         GUIStyle arrowStyle;
         GUIStyle fixAllStyle;
         GUIStyle[] lineStyles; // Different line styles for alternating colors
+        GUIStyle boldTabStyle;
+        GUIStyle toggleStyle;
         GUIContent warningIconContent;
         GUIContent errorIconContent;
         GUIContent confirmedIcon;
-        GUIStyle boldTabStyle;
-        GUIStyle toggleStyle;
 
         public GUIContent[] tabContents = new GUIContent[]
         {
             new GUIContent(" Core"),
             new GUIContent(" Optional")
         };
+
         int selectedTab = 0;
 
         private Vector2 scrollPosition = Vector2.zero;
         #endregion
 
         private AddRequest addRequest;
-
         private Action buttonFunction;
 
         ListRequest listRequest; //used to keep track of the installed packages
@@ -91,7 +89,8 @@ namespace Reflectis.SetupEditor
         //this variable is set by the other packages (like CK, used to show buttons and other GUI elements).
         public static UnityEvent configurationEvents = new UnityEvent();
 
-        //private string URPKey = "UNITY_URP_INSTALLED";
+
+        //delete the player pref so to reshow the window when opening the priject again
         private void OnUnityQuit()
         {
             // Reset the PlayerPrefs flag when Unity is quitting
@@ -116,11 +115,6 @@ namespace Reflectis.SetupEditor
         [MenuItem("Reflectis/Setup Window")]
         public static void ShowWindow()
         {
-            /*EditorWindow window = EditorWindow.GetWindow<AddressablesConfigurationWindow>(typeof(SetupReflectisWindow));
-            window.Show();*/
-            //Show existing window instance. If one doesn't exist, make one.
-
-
             GetWindow(typeof(SetupReflectisWindow));
 
         }
@@ -152,7 +146,6 @@ namespace Reflectis.SetupEditor
             ClientListCall();
             CheckGitInstallation();
             CheckGeneralSetup();
-            //InitializePackages();
 
             if (PlayerPrefs.HasKey(reflectisSetupShown))
             {
@@ -173,13 +166,12 @@ namespace Reflectis.SetupEditor
         private void RefreshWindow()
         {
             allCoreInstalled = true;
-            allCorePackagesInstalled = true;
             allPlatformFixed = true;
             allSettingsFixed = true;
-            //InitializePackages(); // Re-initialize packages to reflect current status
             CheckGitInstallation();
             ClientListCall(); //call the manifest and retrieve the isntalled packages again. That way the page will be updated.
             CheckGeneralSetup();
+
             Repaint(); // Request Unity to redraw the window
         }
 
@@ -273,13 +265,7 @@ namespace Reflectis.SetupEditor
 
                     //Core tab
                     CreateGeneralSetupGUI();
-
-                    GUILayout.Space(10);
-
-                    //Core Packages
-                    //CreatePackagesSetupGUI(true, corePackageList);
-
-                    GUILayout.Space(10);
+                    GUILayout.Space(20);
 
                     lineRect = EditorGUILayout.GetControlRect(false, 1);
                     EditorGUI.DrawRect(lineRect, Color.black);
@@ -318,7 +304,6 @@ namespace Reflectis.SetupEditor
 
             GUILayout.EndHorizontal();
             EditorGUILayout.EndVertical();
-
             GUILayout.EndScrollView();
         }
 
@@ -338,13 +323,13 @@ namespace Reflectis.SetupEditor
             reflectisSelectedVersion = EditorGUILayout.Popup(reflectisSelectedVersion, reflectisVersions);
             if (EditorGUI.EndChangeCheck())
             {
+                //set allCoreInstalled to true so to make it update the boolean to show correct icons, the boolean is then updated in the different functions.
+                allCoreInstalled = true;
                 //update the core and optional packages list
                 corePackageList = reflectisJSON.reflectisVersions[reflectisSelectedVersion].reflectisPackages;
                 optionalPackageList = reflectisJSON.reflectisVersions[reflectisSelectedVersion].optionalPackages;
             }
             GUILayout.EndHorizontal();
-
-            //TODO show if installed package
 
             DisplayCorePackageList(corePackageList);
             GUILayout.Space(10);
@@ -368,9 +353,7 @@ namespace Reflectis.SetupEditor
                 EditorGUILayout.LabelField(rpkg.displayedName + " " + rpkg.version);
                 GUILayout.EndHorizontal();
                 EditorGUI.EndDisabledGroup();
-
             }
-
         }
 
         private bool CheckReflectisDependencies(ReflectisPackage rpkg, bool isCore)
@@ -384,8 +367,6 @@ namespace Reflectis.SetupEditor
                 }
             }
             return installed;
-            //check subpackages version in the manifest if it is the same as the one listed
-            //update boolean values
         }
 
         private void CreateGeneralSetupGUI()
@@ -428,7 +409,6 @@ namespace Reflectis.SetupEditor
                 GUILayout.Space(6);
 
                 //Graphic Setting
-
                 //if urp package is installed do this, otherwise don't show it
                 if (URPInstalled)
                 {
@@ -535,7 +515,16 @@ namespace Reflectis.SetupEditor
         }
         #endregion
 
-        #region General Checks Functions
+        #region General Checks And Get Functions
+
+        //Get json data from API
+        private string GetReflectisJSON()
+        {
+            //for now load the json via the resource folder. In the future calla an api to retrieve the json
+            TextAsset jsonData = Resources.Load<TextAsset>("jsonExample");
+            return jsonData.text;
+        }
+
         private void GetAllAssemblyFiles()
         {
             string[] asmdefs = AssetDatabase.FindAssets("t:AssemblyDefinitionAsset");
@@ -574,7 +563,6 @@ namespace Reflectis.SetupEditor
 
                     if (process.ExitCode == 0)
                     {
-                        //UnityEngine.Debug.LogError("Git is installed with version " + output);
                         gitVersion = output;
                         isGitInstalled = true;
                     }
@@ -582,7 +570,6 @@ namespace Reflectis.SetupEditor
                     {
                         isGitInstalled = false;
                         allCoreInstalled = false;
-                        //UnityEngine.Debug.LogError("Git not installed");
                     }
                 }
             }
@@ -692,7 +679,7 @@ namespace Reflectis.SetupEditor
 
                 JObject dependencies = (JObject)manifestObj["dependencies"];
                 dependencies[packageName] = gitUrl;
-                UnityEngine.Debug.Log($"Git package {packageName} added to manifest.json " + gitUrl);
+                //UnityEngine.Debug.Log($"Git package {packageName} added to manifest.json " + gitUrl);
 
                 File.WriteAllText(manifestFilePath, manifestObj.ToString());
                 AssetDatabase.SaveAssets();
@@ -780,15 +767,27 @@ namespace Reflectis.SetupEditor
                 EditorApplication.update -= Progress;
             }
         }
-        #endregion
 
-        //Get json data from API
-        private string GetReflectisJSON()
+        //install the reflectis core packages
+        private void SetupReflectis(List<ReflectisPackage> reflectisDependencies, string version)
         {
-            //for now load the json via the resource folder. In the future calla an api to retrieve the json
-            TextAsset jsonData = Resources.Load<TextAsset>("jsonExample");
-            return jsonData.text;
+
+            //set the reflectis version in the editor prefs
+            EditorPrefs.SetString(reflectisPrefs, version);
+
+            //install the core packages for the selected version
+            foreach (ReflectisPackage pkg in reflectisDependencies)
+            {
+                //Install the package
+                UnityEngine.Debug.LogError(pkg.gitUrl);
+                InstallPackages(pkg.name, pkg.gitUrl, true);
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            RefreshWindow();
         }
+        #endregion
 
         private void SetPackagesBasedOnVersion(string reflectisVersion)
         {
@@ -806,23 +805,6 @@ namespace Reflectis.SetupEditor
 
         }
 
-        //set the reflectis version in the editor prefs so that I know not to show this window next time, instead show the setup/optional packages one.
-        private void SetupReflectis(List<ReflectisPackage> reflectisDependencies, string version)
-        {
-            EditorPrefs.SetString(reflectisPrefs, version);
-
-            //install the core packages for the selected version
-            foreach (ReflectisPackage pkg in reflectisDependencies)
-            {
-                //Install the package
-                UnityEngine.Debug.LogError(pkg.gitUrl + "#v" + pkg.version);
-                InstallPackages(pkg.name, pkg.gitUrl + "#v" + pkg.version, true);
-            }
-
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-            RefreshWindow();
-        }
 
     }
 }
