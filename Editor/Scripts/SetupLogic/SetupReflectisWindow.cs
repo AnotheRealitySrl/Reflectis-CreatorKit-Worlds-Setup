@@ -127,6 +127,8 @@ namespace Reflectis.SetupEditor
                 reflectisJSONstring = GetReflectisJSON();
             }
 
+            //EditorCoroutineUtility.StartCoroutine(GetReflectisJSONweb(), this);
+
             reflectisJSON = JsonUtility.FromJson<ReflectisJSON>(reflectisJSONstring);
 
             //Get reflectis version and update list of packages
@@ -524,6 +526,31 @@ namespace Reflectis.SetupEditor
             TextAsset jsonData = Resources.Load<TextAsset>("jsonExample");
             return jsonData.text;
         }
+
+        /*
+         * TODO Replace the link with the reflectis json url
+         * private IEnumerator GetReflectisJSONweb()
+        {
+            UnityEngine.Debug.LogError("Entered enumerator");
+            UnityWebRequest www = new UnityWebRequest("https://reqbin.com/echo/get/json", UnityWebRequest.kHttpVerbGET);
+
+            www.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
+            www.SetRequestHeader("User-Agent", "DefaultBrowser");
+            www.SetRequestHeader("Cookie", string.Format("DummyCookie"));
+
+            yield return www.Send();
+            if (www.isNetworkError || www.isHttpError)
+            {
+                UnityEngine.Debug.LogError(www.error);
+            }
+            else
+            {
+                // Show results as text
+                reflectisJSONstring = www.downloadHandler.text;
+                UnityEngine.Debug.LogError(reflectisJSONstring);
+            }
+        }*/
 
         private void GetAllAssemblyFiles()
         {
