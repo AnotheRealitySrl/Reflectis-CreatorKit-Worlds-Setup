@@ -8,11 +8,18 @@ namespace Reflectis.SetupEditor
     {
         public string version;
         public List<ReflectisPackage> reflectisPackages;
+        public List<ReflectisPackage> optionalPackages;
 
         public void Print()
         {
             Debug.LogError("Reflectis Version: " + version);
             foreach (ReflectisPackage pkg in reflectisPackages)
+            {
+                pkg.Print();
+            }
+
+            Debug.LogError("OPTIONAL PACKAGES " + version);
+            foreach (ReflectisPackage pkg in optionalPackages)
             {
                 pkg.Print();
             }

@@ -11,7 +11,6 @@ namespace Reflectis.SetupEditor
         public string name; //name of the package, contained in the package.json
         public string version; //version of the package
         public string displayedName; //name shown in the setup window
-        public bool isCore;
 
         public void Print()
         {
