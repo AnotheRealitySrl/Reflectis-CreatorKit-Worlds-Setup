@@ -40,6 +40,7 @@ namespace Reflectis.SetupEditor
 
         private bool showPlatformSupport = false;
         private bool showProjectSettingss = false;
+        private bool showOptionalPackages = false;
 
         private bool canUpdateReflectis = false;
         #endregion
@@ -73,6 +74,7 @@ namespace Reflectis.SetupEditor
         GUIStyle[] lineStyles; // Different line styles for alternating colors
         GUIStyle boldTabStyle;
         GUIStyle toggleStyle;
+        GUIStyle optionalToggleStyle;
         GUIContent warningIconContent;
         GUIContent errorIconContent;
         GUIContent confirmedIcon;
@@ -213,6 +215,11 @@ namespace Reflectis.SetupEditor
             toggleStyle.fixedHeight = 18f;
             toggleStyle.fontStyle = FontStyle.Bold;
 
+            optionalToggleStyle = new GUIStyle("Foldout");
+            optionalToggleStyle.fixedHeight = 16f;
+            optionalToggleStyle.fontStyle = FontStyle.Italic;
+            optionalToggleStyle.margin = new RectOffset(15, 0, 0, 0);
+
             tabContents = new GUIContent[]
             {
                 new GUIContent(" Core", allCoreInstalled ? confirmedIcon.image : errorIconContent.image),
@@ -241,7 +248,7 @@ namespace Reflectis.SetupEditor
             EditorGUILayout.BeginHorizontal();
             for (int i = 0; i < tabContents.Length; i++)
             {
-                if (currentOptionalPackageList.Count != 0)
+                if (optionalPackageList.Count != 0) //change this to currentOptionalPackageList to display always the current ones and not the selected ones
                 {
                     if (GUILayout.Toggle(selectedTab == i, tabContents[i], boldTabStyle))
                     {
@@ -292,8 +299,8 @@ namespace Reflectis.SetupEditor
                 case 1:
                     //Optional tab
                     GUILayout.Space(20);
-                    CreatePackagesSetupGUI(currentOptionalPackageList);
-                    reflectisSelectedVersion = reflectisVersionIndex; //reset the selected version in the other tab
+                    CreatePackagesSetupGUI(optionalPackageList); //change this to currentOptionalPackageList to display always the current ones and not the selected ones
+                    //reflectisSelectedVersion = reflectisVersionIndex; //reset the selected version in the other tab
                     break;
                 default:
                     break;
@@ -320,11 +327,12 @@ namespace Reflectis.SetupEditor
 
         private void SetupReflectisVersionGUI()
         {
+            //Remove this comment to always reset the welcome page to the current installed version and not the selected one
             //set allCoreInstalled to true so to make it update the boolean to show correct icons, the boolean is then updated in the different functions.
-            allCoreInstalled = true;
+            /*allCoreInstalled = true;
             //update the core and optional packages list
             corePackageList = reflectisJSON.reflectisVersions[reflectisSelectedVersion].reflectisPackages;
-            optionalPackageList = reflectisJSON.reflectisVersions[reflectisSelectedVersion].optionalPackages;
+            optionalPackageList = reflectisJSON.reflectisVersions[reflectisSelectedVersion].optionalPackages;*/
 
             ShowReflectisUpdate();
             string[] reflectisVersions = new string[reflectisJSON.reflectisVersions.Count];
@@ -350,8 +358,17 @@ namespace Reflectis.SetupEditor
             GUILayout.EndHorizontal();
 
             DisplayCorePackageList(corePackageList);
-            GUILayout.Space(10);
 
+            if (optionalPackageList.Count != 0)
+            {
+                showOptionalPackages = GUILayout.Toggle(showOptionalPackages, "Optional Packages", new GUIStyle(optionalToggleStyle));
+                if (showOptionalPackages)
+                {
+                    CreatePackagesSetupGUI(optionalPackageList); //change this to currentOptionalPackageList to display always the current ones and not the selected ones
+                }
+            }
+
+            GUILayout.Space(10);
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("Setup Reflectis", GUILayout.MinWidth(350)))
             {
@@ -497,8 +514,8 @@ namespace Reflectis.SetupEditor
             GUIContent iconContent = warningIconContent;
             GUILayout.BeginVertical();
 
-            GUILayout.Label("Optional Packages", EditorStyles.boldLabel);
-            GUILayout.Space(5);
+            //GUILayout.Label("Optional Packages", EditorStyles.boldLabel);
+            //GUILayout.Space(5);
 
             int currentLineStyleIndex = 0;
             GUIStyle lineStyle = lineStyles[currentLineStyleIndex];
@@ -507,22 +524,37 @@ namespace Reflectis.SetupEditor
             for (int i = 0; i < packageList.Count; i++)
             {
 
+                if (reflectisSelectedVersion != reflectisVersionIndex)
+                {
+                    GUI.enabled = false;
+                }
+                string description = "Install the " + packageList[i].displayedName + " package ";
                 buttonFunction = new Action(() =>
                 {
                     InstallAllOptionalSubPackages(packageList[i]);
                     Client.Resolve();
                 });
 
-                CreateSettingFixField(packageList[i].displayedName, CheckAllSubReflectisDependencies(packageList[i]), "You need to install the " + packageList[i].displayedName + " package using the package manager", currentLineStyleIndex, buttonFunction, iconContent, "Install");
+                if (reflectisSelectedVersion != reflectisVersionIndex)
+                {
+                    description = "You need to install the selected reflectis version to have access to this package";
+                }
+                CreateSettingFixField(packageList[i].displayedName, CheckAllSubReflectisDependencies(packageList[i]), description, currentLineStyleIndex, buttonFunction, iconContent, "Install");
                 currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
             }
-
+            string fixAllDescription = "Install all the listed packages";
+            if (reflectisSelectedVersion != reflectisVersionIndex)
+            {
+                GUI.enabled = false;
+                fixAllDescription = "You need to install the selected reflectis version to install its packages";
+            }
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Install All", fixAllStyle, GUILayout.Width(80)))
+            if (GUILayout.Button(new GUIContent("Install All", fixAllDescription), fixAllStyle, GUILayout.Width(80)))
             {
                 FixAllPackages(packageList);
             }
+            GUI.enabled = true;
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
         }
@@ -543,7 +575,7 @@ namespace Reflectis.SetupEditor
             GUILayout.BeginHorizontal();
 
             //EditorGUILayout.LabelField($"{(valueToCheck ? "<b>[<color=lime>√</color>]</b>" : "<b>[<color=red>X</color>]</b>")}", iconStyle, GUILayout.Width(20));
-            EditorGUILayout.LabelField(new GUIContent(valueToCheck ? confirmedIcon.image : errorIcon.image), GUILayout.Width(20));
+            EditorGUILayout.LabelField(new GUIContent(valueToCheck ? confirmedIcon.image : errorIcon.image), GUILayout.Width(15));
             GUILayout.Label(name, labelStyle);
             GUILayout.FlexibleSpace();
 

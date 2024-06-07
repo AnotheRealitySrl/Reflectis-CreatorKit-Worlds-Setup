@@ -58,6 +58,10 @@
               "displayedName": "Graphs"
             }
           ]
+        },
+        {
+          "displayedName": "Test",
+          "subpackages": []
         }
       ]
     },
