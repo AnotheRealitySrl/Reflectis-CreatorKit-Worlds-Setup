@@ -8,7 +8,7 @@ namespace Reflectis.SetupEditor
     {
         public string version;
         public List<ReflectisPackage> reflectisPackages;
-        public List<ReflectisPackage> optionalPackages;
+        public List<ReflectisOptionalPackage> optionalPackages;
 
         public void Print()
         {
@@ -19,7 +19,7 @@ namespace Reflectis.SetupEditor
             }
 
             Debug.LogError("OPTIONAL PACKAGES " + version);
-            foreach (ReflectisPackage pkg in optionalPackages)
+            foreach (ReflectisOptionalPackage pkg in optionalPackages)
             {
                 pkg.Print();
             }

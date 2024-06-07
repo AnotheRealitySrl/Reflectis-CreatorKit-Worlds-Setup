@@ -7,17 +7,13 @@
           "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-SDK.git#v4.0.0",
           "name": "com.anotherealitysrl.reflectis-sdk",
           "version": "4.0.0",
-          "displayedName": "ReflectisSDK",
-          "subpackages": [
-          ]
+          "displayedName": "ReflectisSDK"
         },
         {
           "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-SDK-CreatorKit.git#v2.0.0",
           "name": "com.anotherealitysrl.reflectis-sdk-creatorkit",
           "version": "2.0.0",
-          "displayedName": "CreatorKit",
-          "subpackages": [
-          ]
+          "displayedName": "CreatorKit"
         }
       ],
       "optionalPackages": [
@@ -30,29 +26,21 @@
           "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-SDK.git#release/v7.0.0",
           "name": "com.anotherealitysrl.reflectis-sdk",
           "version": "7.0.0",
-          "displayedName": "ReflectisSDK",
-          "subpackages": [
-          ]
+          "displayedName": "ReflectisSDK"
         },
         {
           "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-SDK-CreatorKit.git#release/v3.1.3",
           "name": "com.anotherealitysrl.reflectis-sdk-creatorkit",
           "version": "3.1.3",
-          "displayedName": "CreatorKit",
-          "subpackages": [
-          ]
+          "displayedName": "CreatorKit"
         }
-
       ],
       "optionalPackages": [
         {
-          "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-TasksImporter.git",
-          "name": "com.anotherealitysrl.reflectis-tasksimporter",
-          "version": "1.0.0",
           "displayedName": "Tasks",
           "subpackages": [
             {
-              "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-PLG-Tasks",
+              "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-PLG-Tasks.git",
               "name": "com.anotherealitysrl.reflectis-plg-tasks",
               "version": "1.0.0",
               "displayedName": "Tasks"
@@ -80,17 +68,13 @@
           "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-SDK.git#release/v7.0.0",
           "name": "com.anotherealitysrl.reflectis-sdk",
           "version": "7.0.0",
-          "displayedName": "ReflectisSDK",
-          "subpackages": [
-          ]
+          "displayedName": "ReflectisSDK"
         },
         {
           "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-SDK-CreatorKit.git#feature/window-setup",
           "name": "com.anotherealitysrl.reflectis-sdk-creatorkit",
           "version": "3.1.2",
-          "displayedName": "CreatorKit",
-          "subpackages": [
-          ]
+          "displayedName": "CreatorKit"
         }
       ],
       "optionalPackages": [

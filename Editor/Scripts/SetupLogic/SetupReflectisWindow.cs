@@ -21,6 +21,7 @@ namespace Reflectis.SetupEditor
         private string reflectisPrefs = "ReflectisVersion"; //string used to know which reflectis version is installed. Set The first time you press the setup button. 
         private ReflectisJSON reflectisJSON;
         private static string reflectisJSONstring;
+        private string currentReflectisVersion;
         #endregion
 
         int reflectisSelectedVersion;
@@ -53,10 +54,10 @@ namespace Reflectis.SetupEditor
         };
 
         [SerializeField] private List<ReflectisPackage> corePackageList = new List<ReflectisPackage>(); //the selected version core packages
-        [SerializeField] private List<ReflectisPackage> optionalPackageList = new List<ReflectisPackage>(); //the selected version optional packages
+        [SerializeField] private List<ReflectisOptionalPackage> optionalPackageList = new List<ReflectisOptionalPackage>(); //the selected version optional packages
 
         [SerializeField] private List<ReflectisPackage> currentCorePackageList = new List<ReflectisPackage>(); //the currently installed core packages
-        [SerializeField] private List<ReflectisPackage> currentOptionalPackageList = new List<ReflectisPackage>(); //the currently installed optional packages
+        [SerializeField] private List<ReflectisOptionalPackage> currentOptionalPackageList = new List<ReflectisOptionalPackage>(); //the currently installed optional packages
 
         private List<string> assemblyFileNames = new List<string>();
         #endregion
@@ -139,10 +140,10 @@ namespace Reflectis.SetupEditor
             reflectisJSON = JsonUtility.FromJson<ReflectisJSON>(reflectisJSONstring);
 
             //Get reflectis version and update list of packages
-            string reflectisVersion = EditorPrefs.GetString(reflectisPrefs);
-            if (reflectisPrefs != "" && reflectisPrefs != null && !System.String.IsNullOrEmpty(reflectisVersion))
+            currentReflectisVersion = EditorPrefs.GetString(reflectisPrefs);
+            if (reflectisPrefs != "" && reflectisPrefs != null && !System.String.IsNullOrEmpty(currentReflectisVersion))
             {
-                SetPackagesBasedOnVersion(reflectisVersion);
+                SetPackagesBasedOnVersion(currentReflectisVersion);
             }
             else
             {
@@ -355,15 +356,12 @@ namespace Reflectis.SetupEditor
 
         private void ShowReflectisUpdate()
         {
-            if (!canUpdateReflectis)
+            GUIContent updateIcon = EditorGUIUtility.IconContent("d_DataMode.Runtime@2x");
+            GUIStyle textStyle = new GUIStyle(GUI.skin.label);
+            textStyle.fontStyle = FontStyle.Italic;
+
+            if (canUpdateReflectis)
             {
-                return;
-            }
-            else
-            {
-                GUIContent updateIcon = EditorGUIUtility.IconContent("d_DataMode.Runtime@2x");
-                GUIStyle textStyle = new GUIStyle(GUI.skin.label);
-                textStyle.fontStyle = FontStyle.Italic;
 
                 //Display message that user can Update reflectis
                 EditorGUILayout.BeginHorizontal();
@@ -371,6 +369,9 @@ namespace Reflectis.SetupEditor
                 EditorGUILayout.LabelField("There is a new Reflectis update", textStyle);
                 EditorGUILayout.EndHorizontal();
             }
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Current Reflectis version " + currentReflectisVersion, textStyle);
+            EditorGUILayout.EndHorizontal();
         }
 
         private void DisplayCorePackageList(List<ReflectisPackage> reflectisPackages)
@@ -384,6 +385,18 @@ namespace Reflectis.SetupEditor
                 GUILayout.EndHorizontal();
                 EditorGUI.EndDisabledGroup();
             }
+        }
+
+        private bool CheckAllSubReflectisDependencies(ReflectisOptionalPackage ropkg)
+        {
+            foreach (ReflectisPackage rpkg in ropkg.subpackages)
+            {
+                if (!CheckReflectisDependencies(rpkg, false))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         private bool CheckReflectisDependencies(ReflectisPackage rpkg, bool isCore)
@@ -472,7 +485,7 @@ namespace Reflectis.SetupEditor
             }
         }
 
-        private void CreatePackagesSetupGUI(List<ReflectisPackage> packageList)
+        private void CreatePackagesSetupGUI(List<ReflectisOptionalPackage> packageList)
         {
             GUIContent iconContent = warningIconContent;
             GUILayout.BeginVertical();
@@ -489,11 +502,11 @@ namespace Reflectis.SetupEditor
 
                 buttonFunction = new Action(() =>
                 {
-                    InstallPackages(packageList[i].name, packageList[i].gitUrl, true);
+                    InstallAllOptionalSubPackages(packageList[i]);
                     Client.Resolve();
                 });
 
-                CreateSettingFixField(packageList[i].displayedName + " v." + packageList[i].version, CheckReflectisDependencies(packageList[i], false), "You need to install the " + packageList[i].displayedName + " package using the package manager", currentLineStyleIndex, buttonFunction, iconContent, "Install");
+                CreateSettingFixField(packageList[i].displayedName, CheckAllSubReflectisDependencies(packageList[i]), "You need to install the " + packageList[i].displayedName + " package using the package manager", currentLineStyleIndex, buttonFunction, iconContent, "Install");
                 currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
             }
 
@@ -507,11 +520,21 @@ namespace Reflectis.SetupEditor
             GUILayout.EndVertical();
         }
 
+        private void InstallAllOptionalSubPackages(ReflectisOptionalPackage ropkg)
+        {
+            foreach (ReflectisPackage rpkg in ropkg.subpackages)
+            {
+                UnityEngine.Debug.LogError("Installing package " + rpkg.name);
+                InstallPackages(rpkg.name, rpkg.gitUrl, true);
+            }
+        }
+
         private void CreateSettingFixField(string name, bool valueToCheck, string buttonDescription, int currentLineStyleIndex, Action buttonFunction, GUIContent errorIcon, string buttonText)
         {
             GUIStyle lineStyle = lineStyles[currentLineStyleIndex];
 
-            GUILayout.BeginHorizontal(lineStyle);
+            GUILayout.BeginVertical(lineStyle);
+            GUILayout.BeginHorizontal();
 
             //EditorGUILayout.LabelField($"{(valueToCheck ? "<b>[<color=lime>√</color>]</b>" : "<b>[<color=red>X</color>]</b>")}", iconStyle, GUILayout.Width(20));
             EditorGUILayout.LabelField(new GUIContent(valueToCheck ? confirmedIcon.image : errorIcon.image), GUILayout.Width(20));
@@ -543,6 +566,7 @@ namespace Reflectis.SetupEditor
             }
             GUI.enabled = true;
             GUILayout.EndHorizontal();
+            GUILayout.EndVertical();
         }
         #endregion
 
@@ -755,7 +779,7 @@ namespace Reflectis.SetupEditor
 
         }
 
-        private void UninstallPackage(ReflectisPackage reflectisPackage)
+        private void UninstallPackage(ReflectisOptionalPackage reflectisPackage)
         {
             UnityEngine.Debug.LogError("Uninstalling Package");
             //TODO go into manifest and remove the package... the client.add and client.remove doesn'0t work well with custom git packages
@@ -771,7 +795,7 @@ namespace Reflectis.SetupEditor
                 dependencies.Remove(subpkg.name);
             }
 
-            dependencies.Remove(reflectisPackage.name);
+            //dependencies.Remove(reflectisPackage.name);
             //UnityEngine.Debug.Log($"Git package {packageName} added to manifest.json " + gitUrl);
 
             File.WriteAllText(manifestFilePath, manifestObj.ToString());
@@ -796,12 +820,9 @@ namespace Reflectis.SetupEditor
             {
 
                 string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
-
-                //#if UNITY_URP_INSTALLED
                 var urpAsset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(assetPath);
                 GraphicsSettings.renderPipelineAsset = urpAsset;
                 QualitySettings.renderPipeline = urpAsset;
-                //#endif
             }
 
         }
@@ -821,11 +842,12 @@ namespace Reflectis.SetupEditor
             RefreshWindow();
         }
 
-        private void FixAllPackages(List<ReflectisPackage> packageList)
+        private void FixAllPackages(List<ReflectisOptionalPackage> packageList)
         {
             for (int i = 0; i < packageList.Count; i++)
             {
-                InstallPackages(packageList[i].name, packageList[i].gitUrl, true);
+                InstallAllOptionalSubPackages(packageList[i]);
+
             }
             Client.Resolve();
         }
@@ -851,19 +873,18 @@ namespace Reflectis.SetupEditor
         }
 
         //install the reflectis core packages
-        private void SetupReflectis(List<ReflectisPackage> reflectisDependencies, List<ReflectisPackage> reflectisOptionalList, string version)
+        private void SetupReflectis(List<ReflectisPackage> reflectisDependencies, List<ReflectisOptionalPackage> reflectisOptionalList, string version)
         {
-
+            canUpdateReflectis = false;
             //set the reflectis version in the editor prefs
             EditorPrefs.SetString(reflectisPrefs, version);
 
             //If the selected version doesn't contain optional packages that the installed one contains then you have to uninstall them to avoid errors.
-            foreach (ReflectisPackage rpkg in currentOptionalPackageList)
+            foreach (ReflectisOptionalPackage rpkg in currentOptionalPackageList)
             {
                 rpkg.Print();
                 if (!reflectisOptionalList.Contains(rpkg))
                 {
-                    UnityEngine.Debug.Log("NOT CONTAINED IN THE REFLECTIS OPTIONAL LIST! Remove that specific package");
                     UninstallPackage(rpkg);
                 }
             }
@@ -877,11 +898,11 @@ namespace Reflectis.SetupEditor
             }
 
             //Check if optional is installed, if it is update it to the current version, otherwise do not install it but let the user choose to
-            foreach (ReflectisPackage pkg in reflectisOptionalList)
+            foreach (ReflectisOptionalPackage pkg in reflectisOptionalList)
             {
-                if (CheckReflectisDependencies(pkg, false))
+                if (CheckAllSubReflectisDependencies(pkg))
                 {
-                    InstallPackages(pkg.name, pkg.gitUrl, true);
+                    InstallAllOptionalSubPackages(pkg);
                 }
             }
 
