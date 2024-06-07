@@ -356,7 +356,7 @@ namespace Reflectis.SetupEditor
 
         private void ShowReflectisUpdate()
         {
-            GUIContent updateIcon = EditorGUIUtility.IconContent("d_DataMode.Runtime@2x");
+            GUIContent updateIcon = EditorGUIUtility.IconContent("d_console.infoicon.sml");
             GUIStyle textStyle = new GUIStyle(GUI.skin.label);
             textStyle.fontStyle = FontStyle.Italic;
 
@@ -524,7 +524,6 @@ namespace Reflectis.SetupEditor
         {
             foreach (ReflectisPackage rpkg in ropkg.subpackages)
             {
-                UnityEngine.Debug.LogError("Installing package " + rpkg.name);
                 InstallPackages(rpkg.name, rpkg.gitUrl, true);
             }
         }
@@ -782,7 +781,6 @@ namespace Reflectis.SetupEditor
         private void UninstallPackage(ReflectisOptionalPackage reflectisPackage)
         {
             UnityEngine.Debug.LogError("Uninstalling Package");
-            //TODO go into manifest and remove the package... the client.add and client.remove doesn'0t work well with custom git packages
             string manifestFilePath = Path.Combine(Application.dataPath, "../Packages/manifest.json");
             string manifestJson = File.ReadAllText(manifestFilePath);
             JObject manifestObj = JObject.Parse(manifestJson);
@@ -876,24 +874,45 @@ namespace Reflectis.SetupEditor
         private void SetupReflectis(List<ReflectisPackage> reflectisDependencies, List<ReflectisOptionalPackage> reflectisOptionalList, string version)
         {
             canUpdateReflectis = false;
-            //set the reflectis version in the editor prefs
-            EditorPrefs.SetString(reflectisPrefs, version);
+
+            List<ReflectisOptionalPackage> packagesToUninstall = new List<ReflectisOptionalPackage>();
 
             //If the selected version doesn't contain optional packages that the installed one contains then you have to uninstall them to avoid errors.
             foreach (ReflectisOptionalPackage rpkg in currentOptionalPackageList)
             {
-                rpkg.Print();
                 if (!reflectisOptionalList.Contains(rpkg))
                 {
-                    UninstallPackage(rpkg);
+                    packagesToUninstall.Add(rpkg);
                 }
             }
+
+            if (packagesToUninstall.Count > 0)
+            {
+                string packagesUnsupported = "\n";
+                foreach (ReflectisOptionalPackage unsupportedPkg in packagesToUninstall)
+                {
+                    packagesUnsupported = packagesUnsupported + "- " + unsupportedPkg.displayedName + "\n";
+                }
+                if (EditorUtility.DisplayDialog("Packages Unsupported", "The selected Reflectis version doesn't support the packages:\n " + packagesUnsupported + "\n The listed packages will be uninstalled. Do you wish to continue anyway?", "Ok", "Cancel"))
+                {
+                    foreach (ReflectisOptionalPackage rpkg in packagesToUninstall)
+                    {
+                        UninstallPackage(rpkg);
+                    }
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            //set the reflectis version in the editor prefs
+            EditorPrefs.SetString(reflectisPrefs, version);
 
             //install the core packages for the selected version
             foreach (ReflectisPackage pkg in reflectisDependencies)
             {
                 //Install the package
-                //UnityEngine.Debug.LogError(pkg.gitUrl);
                 InstallPackages(pkg.name, pkg.gitUrl, true);
             }
 
