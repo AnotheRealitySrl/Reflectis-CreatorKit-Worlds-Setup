@@ -27,7 +27,7 @@
           "displayedName": "ReflectisSDK"
         },
         {
-          "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-SDK-CreatorKit.git#feature/window-setup",
+          "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-SDK-CreatorKit.git#release/v3.1.3",
           "name": "com.anotherealitysrl.reflectis-sdk-creatorkit",
           "version": "3.1.3",
           "displayedName": "CreatorKit"

@@ -829,7 +829,7 @@ namespace Reflectis.SetupEditor
             foreach (ReflectisPackage pkg in reflectisDependencies)
             {
                 //Install the package
-                UnityEngine.Debug.LogError(pkg.gitUrl);
+                //UnityEngine.Debug.LogError(pkg.gitUrl);
                 InstallPackages(pkg.name, pkg.gitUrl, true);
             }
 
