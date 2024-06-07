@@ -49,13 +49,13 @@
         {
           "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-SDK.git#release/v7.0.0",
           "name": "com.anotherealitysrl.reflectis-sdk",
-          "version": "X.Y.Z",
+          "version": "7.0.0",
           "displayedName": "ReflectisSDK"
         },
         {
           "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-SDK-CreatorKit.git#feature/window-setup",
           "name": "com.anotherealitysrl.reflectis-sdk-creatorkit",
-          "version": "X.Y.Z",
+          "version": "3.1.2",
           "displayedName": "CreatorKit"
         }
 
@@ -64,7 +64,7 @@
         {
           "gitUrl": "https://github.com/AnotheRealitySrl/Reflectis-TasksImporter.git",
           "name": "com.anotherealitysrl.reflectis-tasksimporter",
-          "version": "X.Y.Z",
+          "version": "1.0.0",
           "displayedName": "Tasks"
         }
       ]
