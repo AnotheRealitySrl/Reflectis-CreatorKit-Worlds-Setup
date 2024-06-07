@@ -223,7 +223,7 @@ namespace Reflectis.SetupEditor
             tabContents = new GUIContent[]
             {
                 new GUIContent(" Core", allCoreInstalled ? confirmedIcon.image : errorIconContent.image),
-                new GUIContent(" Optional")
+                //new GUIContent(" Optional")
             };
             // Create a custom GUIStyle for the toolbar buttons with bold font
             boldTabStyle = new GUIStyle(EditorStyles.toolbarButton)
@@ -245,7 +245,7 @@ namespace Reflectis.SetupEditor
             GUILayout.Space(20);
 
             //tabs
-            EditorGUILayout.BeginHorizontal();
+            /*EditorGUILayout.BeginHorizontal();
             for (int i = 0; i < tabContents.Length; i++)
             {
                 if (optionalPackageList.Count != 0) //change this to currentOptionalPackageList to display always the current ones and not the selected ones
@@ -256,7 +256,7 @@ namespace Reflectis.SetupEditor
                     }
                 }
             }
-            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndHorizontal();*/
 
             EditorGUILayout.BeginVertical();
             GUILayout.Space(20);
