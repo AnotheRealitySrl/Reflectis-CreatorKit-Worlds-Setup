@@ -23,8 +23,8 @@ namespace Reflectis.SetupEditor
         private static string reflectisJSONstring;
         private string currentReflectisVersion;
         #endregion
-
-        int reflectisSelectedVersion;
+        private int reflectisVersionIndex;
+        private int reflectisSelectedVersion;
 
         #region booleanValues
         private bool isGitInstalled = false;
@@ -241,7 +241,7 @@ namespace Reflectis.SetupEditor
             EditorGUILayout.BeginHorizontal();
             for (int i = 0; i < tabContents.Length; i++)
             {
-                if (optionalPackageList.Count != 0)
+                if (currentOptionalPackageList.Count != 0)
                 {
                     if (GUILayout.Toggle(selectedTab == i, tabContents[i], boldTabStyle))
                     {
@@ -292,7 +292,8 @@ namespace Reflectis.SetupEditor
                 case 1:
                     //Optional tab
                     GUILayout.Space(20);
-                    CreatePackagesSetupGUI(optionalPackageList);
+                    CreatePackagesSetupGUI(currentOptionalPackageList);
+                    reflectisSelectedVersion = reflectisVersionIndex; //reset the selected version in the other tab
                     break;
                 default:
                     break;
@@ -319,6 +320,12 @@ namespace Reflectis.SetupEditor
 
         private void SetupReflectisVersionGUI()
         {
+            //set allCoreInstalled to true so to make it update the boolean to show correct icons, the boolean is then updated in the different functions.
+            allCoreInstalled = true;
+            //update the core and optional packages list
+            corePackageList = reflectisJSON.reflectisVersions[reflectisSelectedVersion].reflectisPackages;
+            optionalPackageList = reflectisJSON.reflectisVersions[reflectisSelectedVersion].optionalPackages;
+
             ShowReflectisUpdate();
             string[] reflectisVersions = new string[reflectisJSON.reflectisVersions.Count];
             for (int i = 0; i < reflectisJSON.reflectisVersions.Count; i++)
@@ -780,7 +787,6 @@ namespace Reflectis.SetupEditor
 
         private void UninstallPackage(ReflectisOptionalPackage reflectisPackage)
         {
-            UnityEngine.Debug.LogError("Uninstalling Package");
             string manifestFilePath = Path.Combine(Application.dataPath, "../Packages/manifest.json");
             string manifestJson = File.ReadAllText(manifestFilePath);
             JObject manifestObj = JObject.Parse(manifestJson);
@@ -789,7 +795,6 @@ namespace Reflectis.SetupEditor
 
             foreach (ReflectisPackage subpkg in reflectisPackage.subpackages)
             {
-                UnityEngine.Debug.LogError("Uninstalling the subpackage " + subpkg.name);
                 dependencies.Remove(subpkg.name);
             }
 
@@ -880,7 +885,7 @@ namespace Reflectis.SetupEditor
             //If the selected version doesn't contain optional packages that the installed one contains then you have to uninstall them to avoid errors.
             foreach (ReflectisOptionalPackage rpkg in currentOptionalPackageList)
             {
-                if (!reflectisOptionalList.Contains(rpkg))
+                if (!reflectisOptionalList.Contains(rpkg) && CheckAllSubReflectisDependencies(rpkg))
                 {
                     packagesToUninstall.Add(rpkg);
                 }
@@ -942,6 +947,7 @@ namespace Reflectis.SetupEditor
             {
                 if (rv.version == reflectisVersion)
                 {
+                    reflectisVersionIndex = i;
                     reflectisSelectedVersion = i;
                     currentCorePackageList = rv.reflectisPackages;
                     currentOptionalPackageList = rv.optionalPackages;
