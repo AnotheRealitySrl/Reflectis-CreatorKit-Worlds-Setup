@@ -132,10 +132,10 @@ namespace Reflectis.SetupEditor
         private void Awake()
         {
             //Load json data
-            //if (reflectisJSONstring == null)
-            //{
-            reflectisJSONstring = GetReflectisJSON();
-            //}
+            if (reflectisJSONstring == null)
+            {
+                reflectisJSONstring = GetReflectisJSON();
+            }
 
             //EditorCoroutineUtility.StartCoroutine(GetReflectisJSONweb(), this);
 
