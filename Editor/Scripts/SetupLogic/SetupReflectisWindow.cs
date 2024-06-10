@@ -411,31 +411,6 @@ namespace Reflectis.SetupEditor
             }
         }
 
-        private bool CheckAllSubReflectisDependencies(ReflectisOptionalPackage ropkg)
-        {
-            foreach (ReflectisPackage rpkg in ropkg.subpackages)
-            {
-                if (!CheckReflectisDependencies(rpkg, false))
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        private bool CheckReflectisDependencies(ReflectisPackage rpkg, bool isCore)
-        {
-            bool installed = PackageExists(rpkg.name, "", rpkg.version);
-            if (isCore)
-            {
-                if (!installed)
-                {
-                    allCoreInstalled = false;
-                }
-            }
-            return installed;
-        }
-
         private void CreateGeneralSetupGUI()
         {
             //---------------------------------------------------------------
@@ -610,6 +585,31 @@ namespace Reflectis.SetupEditor
 
         #region General Checks And Get Functions
 
+        private bool CheckAllSubReflectisDependencies(ReflectisOptionalPackage ropkg)
+        {
+            foreach (ReflectisPackage rpkg in ropkg.subpackages)
+            {
+                if (!CheckReflectisDependencies(rpkg, false))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private bool CheckReflectisDependencies(ReflectisPackage rpkg, bool isCore)
+        {
+            bool installed = PackageExists(rpkg.name, "", rpkg.version);
+            if (isCore)
+            {
+                if (!installed)
+                {
+                    allCoreInstalled = false;
+                }
+            }
+            return installed;
+        }
+
         //Get json data from API
         private string GetReflectisJSON()
         {
@@ -719,7 +719,6 @@ namespace Reflectis.SetupEditor
             }
 
             //URP Pipeline
-            //#if UNITY_URP_INSTALLED
             if (GraphicsSettings.renderPipelineAsset is UniversalRenderPipelineAsset)
             {
                 renderPipelineURP = true;
@@ -730,7 +729,6 @@ namespace Reflectis.SetupEditor
                 allCoreInstalled = false;
                 allSettingsFixed = false;
             }
-            //# endif
 
             //NET Framework
             if (PlayerSettings.GetApiCompatibilityLevel(BuildTargetGroup.Standalone) == ApiCompatibilityLevel.NET_Unity_4_8)
@@ -829,9 +827,6 @@ namespace Reflectis.SetupEditor
             {
                 dependencies.Remove(subpkg.name);
             }
-
-            //dependencies.Remove(reflectisPackage.name);
-            //UnityEngine.Debug.Log($"Git package {packageName} added to manifest.json " + gitUrl);
 
             File.WriteAllText(manifestFilePath, manifestObj.ToString());
             AssetDatabase.SaveAssets();
@@ -945,6 +940,7 @@ namespace Reflectis.SetupEditor
 
             //set the reflectis version in the editor prefs
             EditorPrefs.SetString(reflectisPrefs, version);
+            currentReflectisVersion = version;
 
             //install the core packages for the selected version
             foreach (ReflectisPackage pkg in reflectisDependencies)
