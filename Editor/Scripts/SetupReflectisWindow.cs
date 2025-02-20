@@ -1,38 +1,43 @@
 ﻿using Newtonsoft.Json.Linq;
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
-using UnityEditorInternal;
+
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
-namespace Reflectis.SetupEditor
+namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 {
     [InitializeOnLoad]
     public class SetupReflectisWindow : EditorWindow
     {
         #region Reflectis JSON data variables
         private string reflectisPrefs = "ReflectisVersion"; //string used to know which reflectis version is installed. Set The first time you press the setup button. 
-        private ReflectisJSON reflectisJSON;
+        private PackageRegistry[] allVersionsPackageRegistries;
         private static string reflectisJSONstring;
         private string currentReflectisVersion;
         #endregion
+
         private int reflectisVersionIndex;
         private int reflectisSelectedVersion;
 
         #region booleanValues
         private bool isGitInstalled = false;
         private string gitVersion = "";
-        private bool URPInstalled = true;
+        private bool urpInstalled = true;
         private bool renderPipelineURP = false;
         private bool netFramework = false;
-        private static string reflectisSetupShown = "EditorWindowAlreadyShown";
+        private static readonly string reflectisSetupShown = "EditorWindowAlreadyShown";
 
         private bool allSettingsFixed = true;
         private bool allPlatformFixed = true;
@@ -46,21 +51,20 @@ namespace Reflectis.SetupEditor
         #endregion
 
 
-        #region package and platform lists
-        public Dictionary<string, bool> supportedPlatform = new Dictionary<string, bool>
+        #region Package and platform lists
+        public Dictionary<string, bool> supportedPlatform = new()
         {
             { "Android", true },
             { "WebGL", true },
             { "Windows", true }
         };
 
-        [SerializeField] private List<ReflectisPackage> corePackageList = new List<ReflectisPackage>(); //the selected version core packages
-        [SerializeField] private List<ReflectisOptionalPackage> optionalPackageList = new List<ReflectisOptionalPackage>(); //the selected version optional packages
+        [SerializeField] private List<PackageDefinition> packageList = new(); //the selected version packages
+        [SerializeField] private List<PackageDefinition> installedPackages = new(); //the currently installed packages
 
-        [SerializeField] private List<ReflectisPackage> currentCorePackageList = new List<ReflectisPackage>(); //the currently installed core packages
-        [SerializeField] private List<ReflectisOptionalPackage> currentOptionalPackageList = new List<ReflectisOptionalPackage>(); //the currently installed optional packages
+        [SerializeField] private Dictionary<string, List<string>> dependencyList = new(); //the currently installed packages
 
-        private List<string> assemblyFileNames = new List<string>();
+        private List<string> assemblyFileNames = new();
         #endregion
 
         #region GuiElements
@@ -131,30 +135,26 @@ namespace Reflectis.SetupEditor
 
         private void Awake()
         {
-            //Load json data
-            if (reflectisJSONstring == null)
-            {
-                reflectisJSONstring = GetReflectisJSON();
-            }
+            //For now load the json via the resource folder. In the future calla an api to retrieve the json
+            reflectisJSONstring ??= Resources.Load<TextAsset>("PackageRegistry").text;
 
             //EditorCoroutineUtility.StartCoroutine(GetReflectisJSONweb(), this);
 
-            reflectisJSON = JsonUtility.FromJson<ReflectisJSON>(reflectisJSONstring);
+            allVersionsPackageRegistries = JsonUtility.FromJson<PackageRegistry[]>(reflectisJSONstring);
 
             //Get reflectis version and update list of packages
             currentReflectisVersion = EditorPrefs.GetString(reflectisPrefs);
-            if (reflectisPrefs != "" && reflectisPrefs != null && !System.String.IsNullOrEmpty(currentReflectisVersion))
+            if (reflectisPrefs != "" && reflectisPrefs != null && !string.IsNullOrEmpty(currentReflectisVersion))
             {
                 SetPackagesBasedOnVersion(currentReflectisVersion);
             }
             else
             {
                 reflectisSelectedVersion = 0;
-                corePackageList = reflectisJSON.reflectisVersions[0].reflectisPackages;
-                optionalPackageList = reflectisJSON.reflectisVersions[0].optionalPackages;
+                packageList = allVersionsPackageRegistries[0].Packages;
+                dependencyList = allVersionsPackageRegistries[0].Dependencies;
             }
 
-            GetAllAssemblyFiles();
             ClientListCall();
             CheckGitInstallation();
             CheckGeneralSetup();
@@ -211,18 +211,22 @@ namespace Reflectis.SetupEditor
             errorIconContent = EditorGUIUtility.IconContent("console.erroricon");
             confirmedIcon = EditorGUIUtility.IconContent("d_winbtn_mac_max"); //Assets / Editor Default Resources/ Icons
 
-            toggleStyle = new GUIStyle("Foldout");
-            toggleStyle.fixedHeight = 18f;
-            toggleStyle.fontStyle = FontStyle.Bold;
+            toggleStyle = new GUIStyle("Foldout")
+            {
+                fixedHeight = 18f,
+                fontStyle = FontStyle.Bold
+            };
 
-            optionalToggleStyle = new GUIStyle("Foldout");
-            optionalToggleStyle.fixedHeight = 16f;
-            optionalToggleStyle.fontStyle = FontStyle.Italic;
-            optionalToggleStyle.margin = new RectOffset(15, 0, 0, 0);
+            optionalToggleStyle = new GUIStyle("Foldout")
+            {
+                fixedHeight = 16f,
+                fontStyle = FontStyle.Italic,
+                margin = new RectOffset(15, 0, 0, 0)
+            };
 
             tabContents = new GUIContent[]
             {
-                new GUIContent(" Core", allCoreInstalled ? confirmedIcon.image : errorIconContent.image),
+                new(" Core", allCoreInstalled ? confirmedIcon.image : errorIconContent.image),
                 //new GUIContent(" Optional")
             };
             // Create a custom GUIStyle for the toolbar buttons with bold font
@@ -299,7 +303,7 @@ namespace Reflectis.SetupEditor
                 case 1:
                     //Optional tab
                     GUILayout.Space(20);
-                    CreatePackagesSetupGUI(optionalPackageList); //change this to currentOptionalPackageList to display always the current ones and not the selected ones
+                    CreatePackagesSetupGUI(packageList); //change this to currentOptionalPackageList to display always the current ones and not the selected ones
                     //reflectisSelectedVersion = reflectisVersionIndex; //reset the selected version in the other tab
                     break;
                 default:
@@ -335,11 +339,7 @@ namespace Reflectis.SetupEditor
             optionalPackageList = reflectisJSON.reflectisVersions[reflectisSelectedVersion].optionalPackages;*/
 
             ShowReflectisUpdate();
-            string[] reflectisVersions = new string[reflectisJSON.reflectisVersions.Count];
-            for (int i = 0; i < reflectisJSON.reflectisVersions.Count; i++)
-            {
-                reflectisVersions[i] = reflectisJSON.reflectisVersions[i].version;
-            }
+            string[] reflectisVersions = allVersionsPackageRegistries.Select(x => x.ReflectisVersion).ToArray();
 
             GUILayout.BeginVertical(new GUIStyle(lineStyles[1]));
             GUILayout.BeginHorizontal();
@@ -352,27 +352,17 @@ namespace Reflectis.SetupEditor
                 //set allCoreInstalled to true so to make it update the boolean to show correct icons, the boolean is then updated in the different functions.
                 allCoreInstalled = true;
                 //update the core and optional packages list
-                corePackageList = reflectisJSON.reflectisVersions[reflectisSelectedVersion].reflectisPackages;
-                optionalPackageList = reflectisJSON.reflectisVersions[reflectisSelectedVersion].optionalPackages;
+                packageList = allVersionsPackageRegistries[reflectisSelectedVersion].Packages;
             }
             GUILayout.EndHorizontal();
 
-            DisplayCorePackageList(corePackageList);
-
-            if (optionalPackageList.Count != 0)
-            {
-                showOptionalPackages = GUILayout.Toggle(showOptionalPackages, "Optional Packages", new GUIStyle(optionalToggleStyle));
-                if (showOptionalPackages)
-                {
-                    CreatePackagesSetupGUI(optionalPackageList); //change this to currentOptionalPackageList to display always the current ones and not the selected ones
-                }
-            }
+            DisplayCorePackageList(packageList);
 
             GUILayout.Space(10);
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("Setup Reflectis", GUILayout.MinWidth(350)))
             {
-                SetupReflectis(corePackageList, optionalPackageList, reflectisJSON.reflectisVersions[reflectisSelectedVersion].version);
+                SetupReflectis(packageList, allVersionsPackageRegistries[reflectisSelectedVersion].ReflectisVersion);
             }
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
@@ -381,12 +371,13 @@ namespace Reflectis.SetupEditor
         private void ShowReflectisUpdate()
         {
             GUIContent updateIcon = EditorGUIUtility.IconContent("d_console.infoicon.sml");
-            GUIStyle textStyle = new GUIStyle(GUI.skin.label);
-            textStyle.fontStyle = FontStyle.Italic;
+            GUIStyle textStyle = new(GUI.skin.label)
+            {
+                fontStyle = FontStyle.Italic
+            };
 
             if (canUpdateReflectis)
             {
-
                 //Display message that user can Update reflectis
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField(new GUIContent(updateIcon.image), GUILayout.Width(20));
@@ -398,14 +389,13 @@ namespace Reflectis.SetupEditor
             EditorGUILayout.EndHorizontal();
         }
 
-        private void DisplayCorePackageList(List<ReflectisPackage> reflectisPackages)
+        private void DisplayCorePackageList(List<PackageDefinition> reflectisPackages)
         {
-            foreach (ReflectisPackage rpkg in reflectisPackages)
+            foreach (PackageDefinition rpkg in reflectisPackages)
             {
                 EditorGUI.BeginDisabledGroup(true);
                 GUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(new GUIContent(CheckReflectisDependencies(rpkg, true) ? confirmedIcon.image : errorIconContent.image), GUILayout.Width(20));
-                EditorGUILayout.LabelField(rpkg.displayedName + " " + rpkg.version);
+                EditorGUILayout.LabelField(rpkg.DisplayName + " " + rpkg.Version);
                 GUILayout.EndHorizontal();
                 EditorGUI.EndDisabledGroup();
             }
@@ -452,7 +442,7 @@ namespace Reflectis.SetupEditor
 
                 //Graphic Setting
                 //if urp package is installed do this, otherwise don't show it
-                if (URPInstalled)
+                if (urpInstalled)
                 {
                     buttonFunction = new Action(() =>
                     {
@@ -465,10 +455,7 @@ namespace Reflectis.SetupEditor
                 }
 
                 //Net Framework
-                buttonFunction = new Action(() =>
-                {
-                    SetNetFramework();
-                });
+                buttonFunction = new Action(SetNetFramework);
 
                 CreateSettingFixField("Net Framework compability Level", netFramework, "You need to set .NET Framework in the Api Compability Level field", currentLineStyleIndex, buttonFunction, errorIconContent, "Fix");
                 currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
@@ -484,7 +471,7 @@ namespace Reflectis.SetupEditor
             }
         }
 
-        private void CreatePackagesSetupGUI(List<ReflectisOptionalPackage> packageList)
+        private void CreatePackagesSetupGUI(List<PackageDefinition> packageList)
         {
             GUIContent iconContent = warningIconContent;
             GUILayout.BeginVertical();
@@ -503,7 +490,7 @@ namespace Reflectis.SetupEditor
                 {
                     GUI.enabled = false;
                 }
-                string description = "Install the " + packageList[i].displayedName + " package ";
+                string description = "Install the " + packageList[i].DisplayName + " package ";
                 buttonFunction = new Action(() =>
                 {
                     InstallAllOptionalSubPackages(packageList[i]);
@@ -514,7 +501,7 @@ namespace Reflectis.SetupEditor
                 {
                     description = "You need to install the selected reflectis version to have access to this package";
                 }
-                CreateSettingFixField(packageList[i].displayedName, CheckAllSubReflectisDependencies(packageList[i]), description, currentLineStyleIndex, buttonFunction, iconContent, "Install");
+                CreateSettingFixField(packageList[i].DisplayName, CheckAllSubReflectisDependencies(packageList[i]), description, currentLineStyleIndex, buttonFunction, iconContent, "Install");
                 currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
             }
             string fixAllDescription = "Install all the listed packages";
@@ -534,11 +521,11 @@ namespace Reflectis.SetupEditor
             GUILayout.EndVertical();
         }
 
-        private void InstallAllOptionalSubPackages(ReflectisOptionalPackage ropkg)
+        private void InstallAllOptionalSubPackages(PackageDefinition ropkg)
         {
-            foreach (ReflectisPackage rpkg in ropkg.subpackages)
+            foreach (PackageDefinition rpkg in ropkg.subpackages)
             {
-                InstallPackages(rpkg.name, rpkg.gitUrl, true);
+                InstallPackages(rpkg.Name, rpkg.Url, true);
             }
         }
 
@@ -585,21 +572,9 @@ namespace Reflectis.SetupEditor
 
         #region General Checks And Get Functions
 
-        private bool CheckAllSubReflectisDependencies(ReflectisOptionalPackage ropkg)
+        private bool CheckReflectisDependencies(PackageDefinition rpkg, bool isCore)
         {
-            foreach (ReflectisPackage rpkg in ropkg.subpackages)
-            {
-                if (!CheckReflectisDependencies(rpkg, false))
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        private bool CheckReflectisDependencies(ReflectisPackage rpkg, bool isCore)
-        {
-            bool installed = PackageExists(rpkg.name, "", rpkg.version);
+            bool installed = PackageExists(rpkg.Name, "", rpkg.Version);
             if (isCore)
             {
                 if (!installed)
@@ -614,7 +589,7 @@ namespace Reflectis.SetupEditor
         private string GetReflectisJSON()
         {
             //for now load the json via the resource folder. In the future calla an api to retrieve the json
-            TextAsset jsonData = Resources.Load<TextAsset>("jsonExample");
+            TextAsset jsonData = Resources.Load<TextAsset>("PackageRegistry");
             return jsonData.text;
         }
 
@@ -643,22 +618,6 @@ namespace Reflectis.SetupEditor
             }
         }*/
 
-        private void GetAllAssemblyFiles()
-        {
-            string[] asmdefs = AssetDatabase.FindAssets("t:AssemblyDefinitionAsset");
-            foreach (string guid in asmdefs)
-            {
-                string path = AssetDatabase.GUIDToAssetPath(guid);
-                var asmdefAsset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(path);
-                if (asmdefAsset != null)
-                {
-                    //assemblyFileNames.Add(asmdefAsset.name);
-                    assemblyFileNames.Add(guid);
-                    //UnityEngine.Debug.LogError(asmdefAsset.name + "----" + guid);
-                }
-            }
-        }
-
         private void CheckGitInstallation()
         {
             try
@@ -673,22 +632,20 @@ namespace Reflectis.SetupEditor
                     CreateNoWindow = true
                 };
 
-                using (Process process = new Process { StartInfo = startInfo })
-                {
-                    process.Start();
-                    string output = process.StandardOutput.ReadToEnd();
-                    process.WaitForExit();
+                using Process process = new Process { StartInfo = startInfo };
+                process.Start();
+                string output = process.StandardOutput.ReadToEnd();
+                process.WaitForExit();
 
-                    if (process.ExitCode == 0)
-                    {
-                        gitVersion = output;
-                        isGitInstalled = true;
-                    }
-                    else
-                    {
-                        isGitInstalled = false;
-                        allCoreInstalled = false;
-                    }
+                if (process.ExitCode == 0)
+                {
+                    gitVersion = output;
+                    isGitInstalled = true;
+                }
+                else
+                {
+                    isGitInstalled = false;
+                    allCoreInstalled = false;
                 }
             }
             catch (Exception ex)
@@ -719,7 +676,7 @@ namespace Reflectis.SetupEditor
             }
 
             //URP Pipeline
-            if (GraphicsSettings.renderPipelineAsset is UniversalRenderPipelineAsset)
+            if (GraphicsSettings.defaultRenderPipeline is UniversalRenderPipelineAsset)
             {
                 renderPipelineURP = true;
             }
@@ -731,7 +688,7 @@ namespace Reflectis.SetupEditor
             }
 
             //NET Framework
-            if (PlayerSettings.GetApiCompatibilityLevel(BuildTargetGroup.Standalone) == ApiCompatibilityLevel.NET_Unity_4_8)
+            if (PlayerSettings.GetApiCompatibilityLevel(NamedBuildTarget.Standalone) == ApiCompatibilityLevel.NET_Unity_4_8)
             {
                 netFramework = true;
             }
@@ -785,28 +742,21 @@ namespace Reflectis.SetupEditor
         #endregion
 
         #region ButtonsLogic Functions
-        private void InstallPackages(string packageName, string gitUrl, bool isGitPackage)
+        private void InstallPackages(PackageDefinition package)
         {
-            if (isGitPackage)
-            {
-                string manifestFilePath = Path.Combine(Application.dataPath, "../Packages/manifest.json");
-                string manifestJson = File.ReadAllText(manifestFilePath);
-                JObject manifestObj = JObject.Parse(manifestJson);
+            string manifestFilePath = Path.Combine(Application.dataPath, "../Packages/manifest.json");
+            string manifestJson = File.ReadAllText(manifestFilePath);
+            JObject manifestObj = JObject.Parse(manifestJson);
 
-                JObject dependencies = (JObject)manifestObj["dependencies"];
-                dependencies[packageName] = gitUrl;
-                //UnityEngine.Debug.Log($"Git package {packageName} added to manifest.json " + gitUrl);
+            reflectis.
 
-                File.WriteAllText(manifestFilePath, manifestObj.ToString());
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
-                RefreshWindow();
-            }
-            else
-            {
-                addRequest = Client.Add(packageName);
-                EditorApplication.update += Progress;
-            }
+            JObject dependencies = (JObject)manifestObj["dependencies"];
+            dependencies[packageName] = package.Url;
+
+            File.WriteAllText(manifestFilePath, manifestObj.ToString());
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            RefreshWindow();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -815,7 +765,7 @@ namespace Reflectis.SetupEditor
 
         }
 
-        private void UninstallPackage(ReflectisOptionalPackage reflectisPackage)
+        private void UninstallPackage(PackageDefinition reflectisPackage)
         {
             string manifestFilePath = Path.Combine(Application.dataPath, "../Packages/manifest.json");
             string manifestJson = File.ReadAllText(manifestFilePath);
@@ -823,9 +773,9 @@ namespace Reflectis.SetupEditor
 
             JObject dependencies = (JObject)manifestObj["dependencies"];
 
-            foreach (ReflectisPackage subpkg in reflectisPackage.subpackages)
+            foreach (PackageDefinition subpkg in reflectisPackage.subpackages)
             {
-                dependencies.Remove(subpkg.name);
+                dependencies.Remove(subpkg.Name);
             }
 
             File.WriteAllText(manifestFilePath, manifestObj.ToString());
@@ -851,7 +801,7 @@ namespace Reflectis.SetupEditor
 
                 string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
                 var urpAsset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(assetPath);
-                GraphicsSettings.renderPipelineAsset = urpAsset;
+                GraphicsSettings.defaultRenderPipeline = urpAsset;
                 QualitySettings.renderPipeline = urpAsset;
             }
 
@@ -859,7 +809,7 @@ namespace Reflectis.SetupEditor
 
         private void SetNetFramework()
         {
-            PlayerSettings.SetApiCompatibilityLevel(BuildTargetGroup.Standalone, ApiCompatibilityLevel.NET_Unity_4_8);
+            PlayerSettings.SetApiCompatibilityLevel(NamedBuildTarget.Standalone, ApiCompatibilityLevel.NET_Unity_4_8);
         }
 
         private void FixAllProjectSettings()
@@ -872,7 +822,7 @@ namespace Reflectis.SetupEditor
             RefreshWindow();
         }
 
-        private void FixAllPackages(List<ReflectisOptionalPackage> packageList)
+        private void FixAllPackages(List<PackageDefinition> packageList)
         {
             for (int i = 0; i < packageList.Count; i++)
             {
@@ -903,11 +853,11 @@ namespace Reflectis.SetupEditor
         }
 
         //install the reflectis core packages
-        private void SetupReflectis(List<ReflectisPackage> reflectisDependencies, List<ReflectisOptionalPackage> reflectisOptionalList, string version)
+        private void SetupReflectis(List<PackageDefinition> reflectisDependencies, string version)
         {
             canUpdateReflectis = false;
 
-            List<ReflectisOptionalPackage> packagesToUninstall = new List<ReflectisOptionalPackage>();
+            List<PackageDefinition> packagesToUninstall = new();
 
             //If the selected version doesn't contain optional packages that the installed one contains then you have to uninstall them to avoid errors.
             foreach (ReflectisOptionalPackage rpkg in currentOptionalPackageList)
@@ -921,13 +871,13 @@ namespace Reflectis.SetupEditor
             if (packagesToUninstall.Count > 0)
             {
                 string packagesUnsupported = "\n";
-                foreach (ReflectisOptionalPackage unsupportedPkg in packagesToUninstall)
+                foreach (PackageDefinition unsupportedPkg in packagesToUninstall)
                 {
-                    packagesUnsupported = packagesUnsupported + "- " + unsupportedPkg.displayedName + "\n";
+                    packagesUnsupported = packagesUnsupported + "- " + unsupportedPkg.DisplayName + "\n";
                 }
                 if (EditorUtility.DisplayDialog("Packages Unsupported", "The selected Reflectis version doesn't support the packages:\n " + packagesUnsupported + "\n The listed packages will be uninstalled. Do you wish to continue anyway?", "Ok", "Cancel"))
                 {
-                    foreach (ReflectisOptionalPackage rpkg in packagesToUninstall)
+                    foreach (PackageDefinition rpkg in packagesToUninstall)
                     {
                         UninstallPackage(rpkg);
                     }
@@ -943,19 +893,10 @@ namespace Reflectis.SetupEditor
             currentReflectisVersion = version;
 
             //install the core packages for the selected version
-            foreach (ReflectisPackage pkg in reflectisDependencies)
+            foreach (PackageDefinition pkg in reflectisDependencies)
             {
                 //Install the package
-                InstallPackages(pkg.name, pkg.gitUrl, true);
-            }
-
-            //Check if optional is installed, if it is update it to the current version, otherwise do not install it but let the user choose to
-            foreach (ReflectisOptionalPackage pkg in reflectisOptionalList)
-            {
-                if (CheckAllSubReflectisDependencies(pkg))
-                {
-                    InstallAllOptionalSubPackages(pkg);
-                }
+                InstallPackages(pkg.Name, pkg.Url, true);
             }
 
             //update the lists of currently installed packages
@@ -971,18 +912,16 @@ namespace Reflectis.SetupEditor
         private void SetPackagesBasedOnVersion(string reflectisVersion)
         {
             int i = 0;
-            foreach (ReflectisVersion rv in reflectisJSON.reflectisVersions)
+            foreach (PackageRegistry rv in allVersionsPackageRegistries)
             {
-                if (rv.version == reflectisVersion)
+                if (rv.ReflectisVersion == reflectisVersion)
                 {
                     reflectisVersionIndex = i;
                     reflectisSelectedVersion = i;
-                    currentCorePackageList = rv.reflectisPackages;
-                    currentOptionalPackageList = rv.optionalPackages;
-                    corePackageList = rv.reflectisPackages;
-                    optionalPackageList = rv.optionalPackages;
+                    installedPackages = rv.Packages;
+                    packageList = rv.Packages;
                 }
-                else if (i == reflectisJSON.reflectisVersions.Count - 1)
+                else if (i == allVersionsPackageRegistries.Length - 1)
                 {
                     //display the fact that there's a new version!
                     canUpdateReflectis = true;
