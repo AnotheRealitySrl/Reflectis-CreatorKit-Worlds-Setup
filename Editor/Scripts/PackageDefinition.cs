@@ -11,6 +11,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
     }
 
     [Serializable]
+    [Newtonsoft.Json.JsonObject(Newtonsoft.Json.MemberSerialization.Fields)]
     public class PackageDefinition
     {
         [SerializeField] private string name;

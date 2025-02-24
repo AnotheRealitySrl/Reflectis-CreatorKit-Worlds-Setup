@@ -182,7 +182,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             warningIconContent = EditorGUIUtility.IconContent("DotFill");
             errorIconContent = EditorGUIUtility.IconContent("console.erroricon");
-            confirmedIcon = EditorGUIUtility.IconContent("d_winbtn_mac_max"); //Assets / Editor Default Resources/ Icons
+            confirmedIcon = EditorGUIUtility.IconContent("Installed@2x"); //Assets / Editor Default Resources/ Icons
 
             toggleStyle = new GUIStyle("Foldout")
             {
@@ -542,7 +542,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             }
             GUILayout.EndHorizontal();
 
-            DisplayPackageList(packageList);
+            DisplayPackageList();
 
             GUILayout.Space(10);
 
@@ -669,16 +669,39 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         #endregion
 
-        private void DisplayPackageList(List<PackageDefinition> reflectisPackages)
+        private void DisplayPackageList()
         {
-            foreach (PackageDefinition rpkg in reflectisPackages)
+            foreach (PackageDefinition package in packageList.Where(x => x.Visibility == EPackageVisibility.Visible))
             {
-                EditorGUI.BeginDisabledGroup(true);
                 GUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(rpkg.DisplayName + " " + rpkg.Version);
+                EditorGUILayout.LabelField(package.DisplayName + " " + package.Version);
+
+                foreach (PackageDefinition dependency in FindPackageDependencies(package))
+                {
+                    GUILayout.BeginVertical();
+                    EditorGUI.BeginDisabledGroup(true);
+
+                    EditorGUI.s
+
+                    EditorGUI.EndDisabledGroup();
+                    GUILayout.EndVertical();
+                }
+
                 GUILayout.EndHorizontal();
-                EditorGUI.EndDisabledGroup();
             }
+        }
+
+        private List<PackageDefinition> FindPackageDependencies(PackageDefinition package)
+        {
+            var item = dependencyList.FirstOrDefault(x => x.Key == package.Name);
+
+            if (!string.IsNullOrEmpty(item.Key))
+            {
+                string[] packageDependencies = item.Value;
+                return packageList.Where(x => packageDependencies.Contains(x.Name)).ToList();
+            }
+            else return new();
+
         }
 
         private void CreateSettingFixField(string name, bool valueToCheck, string buttonDescription, int currentLineStyleIndex, Action buttonFunction, GUIContent errorIcon, string buttonText)
