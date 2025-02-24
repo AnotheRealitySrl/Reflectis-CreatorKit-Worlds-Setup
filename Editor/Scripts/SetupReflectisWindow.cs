@@ -528,7 +528,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             GUILayout.BeginVertical(new GUIStyle(lineStyles[1]));
             GUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Choose your preferred Reflectis version", headerStyle, GUILayout.Width(250));
+            EditorGUILayout.LabelField("Choose Reflectis version", headerStyle, GUILayout.Width(250));
 
             EditorGUI.BeginChangeCheck();
             reflectisVersionIndex = EditorGUILayout.Popup(reflectisVersionIndex, availableVersions.ToArray());
@@ -669,23 +669,36 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         #endregion
 
+        private Dictionary<int, bool> dependenciesFoldouts = new();
         private void DisplayPackageList()
         {
-            foreach (PackageDefinition package in packageList.Where(x => x.Visibility == EPackageVisibility.Visible))
+            List<PackageDefinition> installablePackages = packageList.Where(x => x.Visibility == EPackageVisibility.Visible).ToList();
+            foreach (PackageDefinition package in installablePackages)
             {
                 GUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField(package.DisplayName + " " + package.Version);
 
-                foreach (PackageDefinition dependency in FindPackageDependencies(package))
+                List<PackageDefinition> dependencies = FindPackageDependencies(package);
+                if (dependencies.Count > 0)
                 {
-                    GUILayout.BeginVertical();
-                    EditorGUI.BeginDisabledGroup(true);
+                    dependenciesFoldouts.Add(installablePackages.IndexOf(package), false);
+                    dependenciesFoldouts[installablePackages.IndexOf(package)] = EditorGUILayout.BeginFoldoutHeaderGroup(dependenciesFoldouts[installablePackages.IndexOf(package)], "Dependencies");
 
-                    EditorGUI.s
+                    foreach (PackageDefinition dependency in FindPackageDependencies(package))
+                    {
 
-                    EditorGUI.EndDisabledGroup();
-                    GUILayout.EndVertical();
+                        GUILayout.BeginVertical();
+                        EditorGUI.BeginDisabledGroup(true);
+
+                        EditorGUILayout.LabelField(package.DisplayName + " " + package.Version);
+
+                        EditorGUI.EndDisabledGroup();
+                        GUILayout.EndVertical();
+                    }
+
+                    EditorGUILayout.EndFoldoutHeaderGroup();
                 }
+
 
                 GUILayout.EndHorizontal();
             }
