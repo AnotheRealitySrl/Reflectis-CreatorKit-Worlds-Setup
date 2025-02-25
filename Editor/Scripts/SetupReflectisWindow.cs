@@ -23,9 +23,9 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
     public class SetupReflectisWindow : EditorWindow
     {
         #region Reflectis JSON data variables
-        private string reflectisPrefs = "ReflectisVersion"; //string used to know which reflectis version is installed. Set The first time you press the setup button. 
+        private readonly string playerPrefsVersionKey = "SelectedReflectisVersion"; //string used to know which reflectis version is installed. Set The first time you press the setup button. 
         private PackageRegistry[] allVersionsPackageRegistries;
-        private static string reflectisJSONstring;
+        private string reflectisJSONstring;
         #endregion
 
         private int reflectisVersionIndex;
@@ -58,12 +58,15 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             { "Windows", true }
         };
 
-        [SerializeField] private List<string> availableVersions = new();
 
-        [SerializeField] private List<PackageDefinition> packageList = new(); //the selected version packages
-        [SerializeField] private List<PackageDefinition> installedPackages = new(); //the currently installed packages
+        private List<string> availableVersions = new();
 
-        [SerializeField] private Dictionary<string, string[]> dependencyList = new(); //the currently installed packages
+        private List<PackageDefinition> packageList = new(); //the selected version packages
+        private Dictionary<string, PackageDefinition> packagesDictionary = new();
+        private List<PackageDefinition> installedPackages = new(); //the currently installed packages
+
+        private Dictionary<string, string[]> dependencyList = new(); //the currently installed packages
+        private Dictionary<PackageDefinition, PackageDefinition[]> dependenciesWithData = new();
 
         #endregion
 
@@ -86,7 +89,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         public GUIContent[] tabContents = new GUIContent[]
         {
             new(" Core"),
-            new GUIContent(" Optional")
+            new(" Optional")
         };
 
         int selectedTab = 0;
@@ -143,11 +146,12 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             availableVersions = allVersionsPackageRegistries.Select(x => x.ReflectisVersion).ToList();
 
             //Get reflectis version and update list of packages
-            selectedReflectisVersion = EditorPrefs.GetString(reflectisPrefs);
+            selectedReflectisVersion = EditorPrefs.GetString(playerPrefsVersionKey);
             if (string.IsNullOrEmpty(selectedReflectisVersion))
             {
                 selectedReflectisVersion = allVersionsPackageRegistries[^1].ReflectisVersion;
             }
+            reflectisVersionIndex = availableVersions.IndexOf(selectedReflectisVersion);
 
             UpdatePackageAndDependencies();
 
@@ -223,53 +227,57 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             EditorGUILayout.BeginVertical();
             GUILayout.Space(20);
-            switch (selectedTab)
+
+            //switch (selectedTab)
+            //{
+            //    case 0:
+
+            //Github part
+
+            GUILayout.BeginHorizontal();
+
+            EditorGUILayout.LabelField(new GUIContent(isGitInstalled ? confirmedIcon.image : errorIconContent.image), GUILayout.Width(20));
+            GUILayout.Label("Git executable " + gitVersion, labelStyle);
+            GUILayout.FlexibleSpace();
+            if (isGitInstalled)
+                GUI.enabled = false;
+            if (GUILayout.Button(new GUIContent("Install", "You have to install github in order to install packages"), GUILayout.Width(80)))
             {
-                case 0:
-
-                    //Github part
-                    GUILayout.BeginHorizontal();
-
-                    EditorGUILayout.LabelField(new GUIContent(isGitInstalled ? confirmedIcon.image : errorIconContent.image), GUILayout.Width(20));
-                    GUILayout.Label("Git executable " + gitVersion, labelStyle);
-                    GUILayout.FlexibleSpace();
-                    if (isGitInstalled)
-                        GUI.enabled = false;
-                    if (GUILayout.Button(new GUIContent("Install", "You have to install github in order to install packages"), GUILayout.Width(80)))
-                    {
-                        string gitDownloadUrl = "https://git-scm.com/downloads";
-                        Application.OpenURL(gitDownloadUrl);
-                    }
-                    GUI.enabled = true;
-                    GUILayout.EndHorizontal();
-
-                    //Core tab
-                    CreateGeneralSetupGUI();
-                    GUILayout.Space(20);
-
-                    lineRect = EditorGUILayout.GetControlRect(false, 1);
-                    EditorGUI.DrawRect(lineRect, Color.black);
-                    GUILayout.Space(15);
-                    SetupReflectisVersionGUI();
-                    GUILayout.Space(15);
-                    lineRect = EditorGUILayout.GetControlRect(false, 1);
-                    EditorGUI.DrawRect(lineRect, Color.black);
-                    GUILayout.Space(25);
-
-                    //Creator Kit Buttons
-                    configurationEvents.Invoke(); //add element to tab too(?)
-                    break;
-
-                case 1:
-                    //Optional tab
-                    GUILayout.Space(20);
-                    CreatePackagesSetupGUI(packageList);
-                    break;
-
-                default:
-                    break;
-
+                string gitDownloadUrl = "https://git-scm.com/downloads";
+                Application.OpenURL(gitDownloadUrl);
             }
+            GUI.enabled = true;
+            GUILayout.EndHorizontal();
+
+            //Core tab
+            CreateGeneralSetupGUI();
+            GUILayout.Space(20);
+
+            lineRect = EditorGUILayout.GetControlRect(false, 1);
+            EditorGUI.DrawRect(lineRect, Color.black);
+            GUILayout.Space(15);
+            SetupReflectisVersionGUI();
+            GUILayout.Space(15);
+            lineRect = EditorGUILayout.GetControlRect(false, 1);
+            EditorGUI.DrawRect(lineRect, Color.black);
+            GUILayout.Space(25);
+
+            //Creator Kit Buttons
+
+            configurationEvents.Invoke(); //add element to tab too(?)
+
+            //        break;
+
+            //    case 1:
+            //        //Optional tab
+            //        GUILayout.Space(20);
+            //        CreatePackagesSetupGUI(packageList);
+            //        break;
+
+            //    default:
+            //        break;
+
+            //}
             EditorGUILayout.EndVertical();
 
             //Documentation Link
@@ -514,7 +522,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             RefreshWindow();
         }
 
-
         private void SetupReflectisVersionGUI()
         {
             //Remove this comment to always reset the welcome page to the current installed version and not the selected one
@@ -531,10 +538,11 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             EditorGUILayout.LabelField("Choose Reflectis version", headerStyle, GUILayout.Width(250));
 
             EditorGUI.BeginChangeCheck();
-            reflectisVersionIndex = EditorGUILayout.Popup(reflectisVersionIndex, availableVersions.ToArray());
             selectedReflectisVersion = availableVersions[reflectisVersionIndex];
+            reflectisVersionIndex = EditorGUILayout.Popup(reflectisVersionIndex, availableVersions.ToArray());
             if (EditorGUI.EndChangeCheck())
             {
+                EditorPrefs.SetString(playerPrefsVersionKey, selectedReflectisVersion);
                 //set allCoreInstalled to true so to make it update the boolean to show correct icons, the boolean is then updated in the different functions.
                 allCoreInstalled = true;
                 //update the core and optional packages list
@@ -553,7 +561,14 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         {
             packageList = allVersionsPackageRegistries.FirstOrDefault(x => x.ReflectisVersion == selectedReflectisVersion).Packages;
             dependencyList = allVersionsPackageRegistries.FirstOrDefault(x => x.ReflectisVersion == selectedReflectisVersion).Dependencies;
+
+            packagesDictionary = packageList.ToDictionary(x => x.Name);
+
+            dependenciesWithData = dependencyList
+                .Where(x => packagesDictionary[x.Key].Visibility == EPackageVisibility.Visible)
+                .ToDictionary(k => packagesDictionary[k.Key], v => v.Value.Select(x => packagesDictionary[x]).ToArray());
         }
+
 
         private void ShowReflectisUpdate()
         {
@@ -578,39 +593,39 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         #region Package management
 
-        private void CreatePackagesSetupGUI(List<PackageDefinition> packageList)
-        {
-            GUIContent iconContent = warningIconContent;
-            GUILayout.BeginVertical();
+        //private void CreatePackagesSetupGUI(List<PackageDefinition> packageList)
+        //{
+        //    GUIContent iconContent = warningIconContent;
+        //    GUILayout.BeginVertical();
 
-            int currentLineStyleIndex = 0;
-            GUIStyle lineStyle = lineStyles[currentLineStyleIndex];
+        //    int currentLineStyleIndex = 0;
+        //    GUIStyle lineStyle = lineStyles[currentLineStyleIndex];
 
-            //Core Packages
-            for (int i = 0; i < packageList.Count; i++)
-            {
-                string description = "Install the " + packageList[i].DisplayName + " package ";
-                buttonFunction = new Action(() =>
-                {
-                    InstallPackageWithDependencies(packageList[i]);
-                    Client.Resolve();
-                });
+        //    //Core Packages
+        //    for (int i = 0; i < packageList.Count; i++)
+        //    {
+        //        string description = "Install the " + packageList[i].DisplayName + " package ";
+        //        buttonFunction = new Action(() =>
+        //        {
+        //            InstallPackageWithDependencies(packageList[i]);
+        //            Client.Resolve();
+        //        });
 
-                currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
-            }
+        //        currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
+        //    }
 
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button(new GUIContent("Install All"), fixAllStyle, GUILayout.Width(80)))
-            {
-                ImstallAllPackages(packageList);
-            }
-            GUI.enabled = true;
-            GUILayout.EndHorizontal();
-            GUILayout.EndVertical();
-        }
+        //    GUILayout.BeginHorizontal();
+        //    GUILayout.FlexibleSpace();
+        //    if (GUILayout.Button(new GUIContent("Install All"), fixAllStyle, GUILayout.Width(80)))
+        //    {
+        //        ImstallAllPackages(packageList);
+        //    }
+        //    GUI.enabled = true;
+        //    GUILayout.EndHorizontal();
+        //    GUILayout.EndVertical();
+        //}
 
-        private void InstallPackageWithDependencies(PackageDefinition package)
+        private void InstallPackageWithDependencies(PackageDefinition package, bool isDependency = false)
         {
             var dependencies = dependencyList.FirstOrDefault(x => x.Key == package.Name);
             if (dependencies.Key != null)
@@ -618,12 +633,13 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 foreach (string dependency in dependencies.Value)
                 {
                     packageList.Find(x => x.Name == dependency);
-                    InstallPackageWithDependencies(package);
+                    InstallPackageWithDependencies(package, true);
                 }
             }
             else
             {
                 InstallPackage(package);
+
             }
         }
 
@@ -669,52 +685,23 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         #endregion
 
-        private Dictionary<int, bool> dependenciesFoldouts = new();
         private void DisplayPackageList()
         {
-            List<PackageDefinition> installablePackages = packageList.Where(x => x.Visibility == EPackageVisibility.Visible).ToList();
-            foreach (PackageDefinition package in installablePackages)
+            foreach (var package in dependenciesWithData)
             {
+                GUILayout.BeginVertical();
+
                 GUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(package.DisplayName + " " + package.Version);
+                EditorGUILayout.LabelField(package.Key.DisplayName + " - version: " + package.Key.Version);
 
-                List<PackageDefinition> dependencies = FindPackageDependencies(package);
-                if (dependencies.Count > 0)
+                if (GUILayout.Button("Install", GUILayout.Width(100)))
                 {
-                    dependenciesFoldouts.Add(installablePackages.IndexOf(package), false);
-                    dependenciesFoldouts[installablePackages.IndexOf(package)] = EditorGUILayout.BeginFoldoutHeaderGroup(dependenciesFoldouts[installablePackages.IndexOf(package)], "Dependencies");
-
-                    foreach (PackageDefinition dependency in FindPackageDependencies(package))
-                    {
-
-                        GUILayout.BeginVertical();
-                        EditorGUI.BeginDisabledGroup(true);
-
-                        EditorGUILayout.LabelField(package.DisplayName + " " + package.Version);
-
-                        EditorGUI.EndDisabledGroup();
-                        GUILayout.EndVertical();
-                    }
-
-                    EditorGUILayout.EndFoldoutHeaderGroup();
+                    InstallPackageWithDependencies(package.Key);
                 }
-
-
                 GUILayout.EndHorizontal();
+
+                GUILayout.EndVertical();
             }
-        }
-
-        private List<PackageDefinition> FindPackageDependencies(PackageDefinition package)
-        {
-            var item = dependencyList.FirstOrDefault(x => x.Key == package.Name);
-
-            if (!string.IsNullOrEmpty(item.Key))
-            {
-                string[] packageDependencies = item.Value;
-                return packageList.Where(x => packageDependencies.Contains(x.Name)).ToList();
-            }
-            else return new();
-
         }
 
         private void CreateSettingFixField(string name, bool valueToCheck, string buttonDescription, int currentLineStyleIndex, Action buttonFunction, GUIContent errorIcon, string buttonText)
