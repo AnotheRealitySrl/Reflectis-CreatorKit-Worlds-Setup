@@ -63,9 +63,9 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private List<PackageDefinition> packageList = new(); //the selected version packages
         private Dictionary<string, PackageDefinition> packagesDictionary = new();
-        private List<PackageDefinition> installedPackages = new(); //the currently installed packages
+        private Dictionary<string, string[]> installedPackages = new(); //the currently installed packages, the values are the dependencies
 
-        private Dictionary<string, string[]> dependencyList = new(); //the currently installed packages
+        private Dictionary<string, string[]> dependencyList = new();
         private Dictionary<PackageDefinition, PackageDefinition[]> dependenciesWithData = new();
 
         #endregion
@@ -228,10 +228,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             EditorGUILayout.BeginVertical();
             GUILayout.Space(20);
 
-            //switch (selectedTab)
-            //{
-            //    case 0:
-
             //Github part
 
             GUILayout.BeginHorizontal();
@@ -266,18 +262,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             configurationEvents.Invoke(); //add element to tab too(?)
 
-            //        break;
-
-            //    case 1:
-            //        //Optional tab
-            //        GUILayout.Space(20);
-            //        CreatePackagesSetupGUI(packageList);
-            //        break;
-
-            //    default:
-            //        break;
-
-            //}
             EditorGUILayout.EndVertical();
 
             //Documentation Link
@@ -295,6 +279,17 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             GUILayout.EndHorizontal();
             EditorGUILayout.EndVertical();
             GUILayout.EndScrollView();
+
+            if (GUILayout.Button("test"))
+            {
+                PackageDefinition p = packageList[4];
+                UnityEngine.Debug.Log(p.Name);
+                List<string> dependencies = FindAllDependencies(p, new List<string>());
+                foreach (var dep in dependencies)
+                {
+                    UnityEngine.Debug.Log(dep);
+                }
+            }
         }
 
         #endregion
@@ -457,11 +452,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 //if urp package is installed do this, otherwise don't show it
                 if (urpInstalled)
                 {
-                    buttonFunction = new Action(() =>
-                    {
-                        SetURPRenderPipeline();
-
-                    });
+                    buttonFunction = new Action(SetURPRenderPipeline);
 
                     CreateSettingFixField("URP as Render Pipeline", renderPipelineURP, "You need to set URP as your render pipeline", currentLineStyleIndex, buttonFunction, errorIconContent, "Fix");
                     currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
@@ -593,54 +584,30 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         #region Package management
 
-        //private void CreatePackagesSetupGUI(List<PackageDefinition> packageList)
-        //{
-        //    GUIContent iconContent = warningIconContent;
-        //    GUILayout.BeginVertical();
-
-        //    int currentLineStyleIndex = 0;
-        //    GUIStyle lineStyle = lineStyles[currentLineStyleIndex];
-
-        //    //Core Packages
-        //    for (int i = 0; i < packageList.Count; i++)
-        //    {
-        //        string description = "Install the " + packageList[i].DisplayName + " package ";
-        //        buttonFunction = new Action(() =>
-        //        {
-        //            InstallPackageWithDependencies(packageList[i]);
-        //            Client.Resolve();
-        //        });
-
-        //        currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
-        //    }
-
-        //    GUILayout.BeginHorizontal();
-        //    GUILayout.FlexibleSpace();
-        //    if (GUILayout.Button(new GUIContent("Install All"), fixAllStyle, GUILayout.Width(80)))
-        //    {
-        //        ImstallAllPackages(packageList);
-        //    }
-        //    GUI.enabled = true;
-        //    GUILayout.EndHorizontal();
-        //    GUILayout.EndVertical();
-        //}
-
-        private void InstallPackageWithDependencies(PackageDefinition package, bool isDependency = false)
+        private List<string> FindAllDependencies(PackageDefinition package, List<string> dependencies)
         {
-            var dependencies = dependencyList.FirstOrDefault(x => x.Key == package.Name);
-            if (dependencies.Key != null)
+            if (dependencyList.TryGetValue(package.Name, out string[] packageDependencies))
             {
-                foreach (string dependency in dependencies.Value)
+                foreach (string dependency in packageDependencies)
                 {
-                    packageList.Find(x => x.Name == dependency);
-                    InstallPackageWithDependencies(package, true);
+                    FindAllDependencies(packagesDictionary[dependency], dependencies);
                 }
+                dependencies.AddRange(packageDependencies);
             }
-            else
+
+            return dependencies;
+        }
+
+        private void InstallPackageWithDependencies(PackageDefinition package, string dependencyOf = null)
+        {
+            List<string> dependenciesToInstall = FindAllDependencies(package, new());
+
+            foreach (var toInstall in dependenciesToInstall)
             {
-                InstallPackage(package);
 
             }
+            InstallPackage(package);
+            installedPackages.Add(package.Name, dependenciesToInstall.ToArray());
         }
 
         private void InstallPackage(PackageDefinition package)
@@ -694,10 +661,21 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 GUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField(package.Key.DisplayName + " - version: " + package.Key.Version);
 
-                if (GUILayout.Button("Install", GUILayout.Width(100)))
+                if (installedPackages.TryGetValue(package.Key.Name, out _))
                 {
-                    InstallPackageWithDependencies(package.Key);
+                    if (GUILayout.Button("Uninstall", GUILayout.Width(100)))
+                    {
+                        UninstallPackage(package.Key);
+                    }
                 }
+                else
+                {
+                    if (GUILayout.Button("Install", GUILayout.Width(100)))
+                    {
+                        InstallPackageWithDependencies(package.Key);
+                    }
+                }
+
                 GUILayout.EndHorizontal();
 
                 GUILayout.EndVertical();
@@ -744,15 +722,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             GUILayout.EndVertical();
         }
 
-
-        private void ImstallAllPackages(List<PackageDefinition> packageList)
-        {
-            for (int i = 0; i < packageList.Count; i++)
-            {
-                InstallPackageWithDependencies(packageList[i]);
-            }
-            Client.Resolve();
-        }
 
         private void Progress()
         {
