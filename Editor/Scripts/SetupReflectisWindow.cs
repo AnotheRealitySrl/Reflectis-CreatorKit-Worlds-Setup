@@ -23,13 +23,17 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
     public class SetupReflectisWindow : EditorWindow
     {
         #region Reflectis JSON data variables
+
         private readonly string playerPrefsVersionKey = "SelectedReflectisVersion"; //string used to know which reflectis version is installed. Set The first time you press the setup button. 
+        private readonly string installedPackagesKey = "InstalledPackages"; //string used to know which packages are installed.
+
         private PackageRegistry[] allVersionsPackageRegistries;
         private string reflectisJSONstring;
+
         #endregion
 
         private int reflectisVersionIndex;
-        private string selectedReflectisVersion;
+        private static string selectedReflectisVersion;
 
         #region booleanValues
         private bool isGitInstalled = false;
@@ -61,12 +65,12 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private List<string> availableVersions = new();
 
-        private List<PackageDefinition> packageList = new(); //the selected version packages
-        private Dictionary<string, PackageDefinition> packagesDictionary = new();
-        private Dictionary<string, string[]> installedPackages = new(); //the currently installed packages, the values are the dependencies
+        private static List<PackageDefinition> packageList = new(); //the selected version packages
+        private static Dictionary<string, PackageDefinition> packagesDictionary = new();
+        private static Dictionary<string, string[]> installedPackages; //the currently installed packages, the values are the dependencies
 
-        private Dictionary<string, string[]> dependencyList = new();
-        private Dictionary<PackageDefinition, PackageDefinition[]> dependenciesWithData = new();
+        private static Dictionary<string, string[]> dependencyList = new();
+        private static Dictionary<PackageDefinition, PackageDefinition[]> dependenciesWithData = new();
 
         #endregion
 
@@ -106,6 +110,25 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         //this variable is set by the other packages (like CK, used to show buttons and other GUI elements).
         public static UnityEvent configurationEvents = new();
 
+        private static Dictionary<string, List<string>> ReverseInstalledPackages
+        {
+            get
+            {
+                var reverseDict = new Dictionary<string, List<string>>();
+                foreach (var kvp in installedPackages)
+                {
+                    foreach (var dependency in kvp.Value)
+                    {
+                        if (!reverseDict.ContainsKey(dependency))
+                        {
+                            reverseDict[dependency] = new List<string>();
+                        }
+                        reverseDict[dependency].Add(kvp.Key);
+                    }
+                }
+                return reverseDict;
+            }
+        }
 
         //delete the player pref so to reshow the window when opening the priject again
         private void OnUnityQuit()
@@ -147,6 +170,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             //Get reflectis version and update list of packages
             selectedReflectisVersion = EditorPrefs.GetString(playerPrefsVersionKey);
+            installedPackages = JsonConvert.DeserializeObject<Dictionary<string, string[]>>(EditorPrefs.GetString(installedPackagesKey)) ?? new();
             if (string.IsNullOrEmpty(selectedReflectisVersion))
             {
                 selectedReflectisVersion = allVersionsPackageRegistries[^1].ReflectisVersion;
@@ -602,49 +626,59 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         {
             List<string> dependenciesToInstall = FindAllDependencies(package, new());
 
-            foreach (var toInstall in dependenciesToInstall)
-            {
-
-            }
-            InstallPackage(package);
             installedPackages.Add(package.Name, dependenciesToInstall.ToArray());
+            EditorPrefs.SetString(installedPackagesKey, JsonConvert.SerializeObject(installedPackages));
+
+            InstallPackages(dependenciesToInstall.Append(package.Name).Select(x => packagesDictionary[x]).ToList());
         }
 
-        private void InstallPackage(PackageDefinition package)
+        private void InstallPackages(List<PackageDefinition> toInstall)
         {
             string manifestFilePath = Path.Combine(Application.dataPath, "../Packages/manifest.json");
             string manifestJson = File.ReadAllText(manifestFilePath);
             JObject manifestObj = JObject.Parse(manifestJson);
 
             JObject dependencies = (JObject)manifestObj["dependencies"];
-            dependencies[package.Name] = package.Url;
+            foreach (PackageDefinition p in toInstall)
+            {
+                dependencies[p.Name] = p.Url;
+            }
 
             File.WriteAllText(manifestFilePath, manifestObj.ToString());
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-            RefreshWindow();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-
             RefreshWindow();
-
         }
 
-        private void UninstallPackage(PackageDefinition reflectisPackage)
+        private void UninstallPackageWithDependencies(PackageDefinition toUninstall)
+        {
+            installedPackages.Remove(toUninstall.Name);
+
+            List<string> dependenciesToUninstall = ReverseInstalledPackages
+                .Where(x => packagesDictionary[x.Key].Visibility == EPackageVisibility.Hidden && x.Value.Count == 0)
+                .Select(x => x.Key).ToList();
+
+            foreach (var toRemove in dependenciesToUninstall)
+                installedPackages.Remove(toRemove);
+
+            UninstallPackage(dependenciesToUninstall.Append(toUninstall.Name).Select(x => packagesDictionary[x]).ToList());
+        }
+
+        private void UninstallPackage(List<PackageDefinition> toRemove)
         {
             string manifestFilePath = Path.Combine(Application.dataPath, "../Packages/manifest.json");
             string manifestJson = File.ReadAllText(manifestFilePath);
             JObject manifestObj = JObject.Parse(manifestJson);
 
             JObject dependencies = (JObject)manifestObj["dependencies"];
-
-            //foreach (PackageDefinition subpkg in reflectisPackage.subpackages)
-            //{
-            //    dependencies.Remove(subpkg.Name);
-            //}
+            foreach (PackageDefinition p in toRemove)
+            {
+                dependencies.Remove(p.Name);
+            }
 
             File.WriteAllText(manifestFilePath, manifestObj.ToString());
+
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             RefreshWindow();
@@ -665,7 +699,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 {
                     if (GUILayout.Button("Uninstall", GUILayout.Width(100)))
                     {
-                        UninstallPackage(package.Key);
+                        UninstallPackageWithDependencies(package.Key);
                     }
                 }
                 else
