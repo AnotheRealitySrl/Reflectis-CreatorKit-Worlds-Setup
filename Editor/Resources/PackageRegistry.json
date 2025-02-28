@@ -76,7 +76,7 @@
         "com.anotherealitysrl.reflectis-creatorkit-worlds-core"
       ],
       "com.anotherealitysrl.reflectis-creatorkit-worlds-visualscripting": [
-        "com.anotherealitysrl.reflectis-creatorkit-worlds-core"
+        "com.anotherealitysrl.reflectis-creatorkit-worlds-placeholders"
       ],
       "com.anotherealitysrl.reflectis-creatorkit-worlds-tasks": [
         "com.anotherealitysrl.reflectis-creatorkit-worlds-core",
@@ -167,7 +167,7 @@
         "com.anotherealitysrl.reflectis-creatorkit-worlds-core"
       ],
       "com.anotherealitysrl.reflectis-creatorkit-worlds-visualscripting": [
-        "com.anotherealitysrl.reflectis-creatorkit-worlds-core"
+        "com.anotherealitysrl.reflectis-creatorkit-worlds-placeholders"
       ],
       "com.anotherealitysrl.reflectis-creatorkit-worlds-tasks": [
         "com.anotherealitysrl.reflectis-creatorkit-worlds-core",
@@ -258,7 +258,7 @@
         "com.anotherealitysrl.reflectis-creatorkit-worlds-core"
       ],
       "com.anotherealitysrl.reflectis-creatorkit-worlds-visualscripting": [
-        "com.anotherealitysrl.reflectis-creatorkit-worlds-core"
+        "com.anotherealitysrl.reflectis-creatorkit-worlds-placeholders"
       ],
       "com.anotherealitysrl.reflectis-creatorkit-worlds-tasks": [
         "com.anotherealitysrl.reflectis-creatorkit-worlds-core",

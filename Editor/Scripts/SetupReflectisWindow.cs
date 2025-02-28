@@ -306,13 +306,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             if (GUILayout.Button("test"))
             {
-                PackageDefinition p = packageList[4];
-                UnityEngine.Debug.Log(p.Name);
-                List<string> dependencies = FindAllDependencies(p, new List<string>());
-                foreach (var dep in dependencies)
-                {
-                    UnityEngine.Debug.Log(dep);
-                }
+                UnityEngine.Debug.Log(JsonConvert.SerializeObject(installedPackages));
             }
         }
 
@@ -627,6 +621,10 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             List<string> dependenciesToInstall = FindAllDependencies(package, new());
 
             installedPackages.Add(package.Name, dependenciesToInstall.ToArray());
+
+            foreach (string depToInstall in dependenciesToInstall.Where(x => packagesDictionary[package.Name].Visibility == EPackageVisibility.Visible))
+                installedPackages.Add(depToInstall, FindAllDependencies(packagesDictionary[depToInstall], new()).ToArray());
+
             EditorPrefs.SetString(installedPackagesKey, JsonConvert.SerializeObject(installedPackages));
 
             InstallPackages(dependenciesToInstall.Append(package.Name).Select(x => packagesDictionary[x]).ToList());
@@ -655,14 +653,21 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         {
             installedPackages.Remove(toUninstall.Name);
 
-            List<string> dependenciesToUninstall = ReverseInstalledPackages
-                .Where(x => packagesDictionary[x.Key].Visibility == EPackageVisibility.Hidden && x.Value.Count == 0)
-                .Select(x => x.Key).ToList();
+            List<string> dependenciesToUninstall = packagesDictionary
+                .Where(x => packagesDictionary[x.Key].Visibility == EPackageVisibility.Hidden && x.Key == toUninstall.Name && !installedPackages.Values.Any(array => array.Contains(x.Key)))
+                .Select(x => x.Key)
+                .ToList();
 
-            foreach (var toRemove in dependenciesToUninstall)
-                installedPackages.Remove(toRemove);
+            foreach (var el in dependenciesToUninstall)
+                UnityEngine.Debug.Log(el);
 
-            UninstallPackage(dependenciesToUninstall.Append(toUninstall.Name).Select(x => packagesDictionary[x]).ToList());
+            //foreach (var toRemove in dependenciesToUninstall)
+            //    installedPackages.Remove(toRemove);
+
+            //installedPackages.Remove(toUninstall.Name);
+            //EditorPrefs.SetString(installedPackagesKey, JsonConvert.SerializeObject(installedPackages));
+
+            //UninstallPackage(dependenciesToUninstall.Append(toUninstall.Name).Select(x => packagesDictionary[x]).ToList());
         }
 
         private void UninstallPackage(List<PackageDefinition> toRemove)
@@ -776,7 +781,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 EditorApplication.update -= Progress;
             }
         }
-
     }
 }
 
