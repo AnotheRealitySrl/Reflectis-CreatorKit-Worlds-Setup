@@ -67,6 +67,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private static List<PackageDefinition> packageList = new(); //the selected version packages
         private static Dictionary<string, PackageDefinition> packagesDictionary = new();
+
         private static Dictionary<string, string[]> installedPackages; //the currently installed packages, the values are the dependencies
 
         private static Dictionary<string, string[]> dependencyList = new();
@@ -109,26 +110,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         //this variable is set by the other packages (like CK, used to show buttons and other GUI elements).
         public static UnityEvent configurationEvents = new();
-
-        private static Dictionary<string, List<string>> ReverseInstalledPackages
-        {
-            get
-            {
-                var reverseDict = new Dictionary<string, List<string>>();
-                foreach (var kvp in installedPackages)
-                {
-                    foreach (var dependency in kvp.Value)
-                    {
-                        if (!reverseDict.ContainsKey(dependency))
-                        {
-                            reverseDict[dependency] = new List<string>();
-                        }
-                        reverseDict[dependency].Add(kvp.Key);
-                    }
-                }
-                return reverseDict;
-            }
-        }
 
         //delete the player pref so to reshow the window when opening the priject again
         private void OnUnityQuit()
@@ -623,7 +604,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             installedPackages.Add(package.Name, dependenciesToInstall.ToArray());
 
             foreach (string depToInstall in dependenciesToInstall.Where(x => packagesDictionary[package.Name].Visibility == EPackageVisibility.Visible))
-                installedPackages.Add(depToInstall, FindAllDependencies(packagesDictionary[depToInstall], new()).ToArray());
+                installedPackages.TryAdd(depToInstall, FindAllDependencies(packagesDictionary[depToInstall], new()).ToArray());
 
             EditorPrefs.SetString(installedPackagesKey, JsonConvert.SerializeObject(installedPackages));
 
@@ -653,21 +634,42 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         {
             installedPackages.Remove(toUninstall.Name);
 
-            List<string> dependenciesToUninstall = packagesDictionary
-                .Where(x => packagesDictionary[x.Key].Visibility == EPackageVisibility.Hidden && x.Key == toUninstall.Name && !installedPackages.Values.Any(array => array.Contains(x.Key)))
-                .Select(x => x.Key)
-                .ToList();
+            List<string> hiddenPackages = installedPackages.Where(x => packagesDictionary[x.Key].Visibility == EPackageVisibility.Hidden).Select(x => x.Key).ToList();
+            Dictionary<string, List<string>> inverted = InvertDictionary(installedPackages);
 
-            foreach (var el in dependenciesToUninstall)
-                UnityEngine.Debug.Log(el);
+            List<string> dependenciesToUninstall = new();
+            List<string> allValues = installedPackages.Select(x => x.Value).SelectMany(innerList => innerList).ToList();
+            foreach (string hidden in hiddenPackages)
+            {
+                if (!allValues.Contains(hidden))
+                {
+                    dependenciesToUninstall.Add(hidden);
+                    installedPackages.Remove(hidden);
+                }
+            }
 
-            //foreach (var toRemove in dependenciesToUninstall)
-            //    installedPackages.Remove(toRemove);
+            EditorPrefs.SetString(installedPackagesKey, JsonConvert.SerializeObject(installedPackages));
 
-            //installedPackages.Remove(toUninstall.Name);
-            //EditorPrefs.SetString(installedPackagesKey, JsonConvert.SerializeObject(installedPackages));
+            UninstallPackage(dependenciesToUninstall.Select(x => packagesDictionary[x]).Append(toUninstall).ToList());
+        }
 
-            //UninstallPackage(dependenciesToUninstall.Append(toUninstall.Name).Select(x => packagesDictionary[x]).ToList());
+        public static Dictionary<string, List<string>> InvertDictionary(Dictionary<string, string[]> dictionary)
+        {
+            var invertedDictionary = new Dictionary<string, List<string>>();
+
+            foreach (var kvp in dictionary)
+            {
+                foreach (var value in kvp.Value)
+                {
+                    if (!invertedDictionary.ContainsKey(value))
+                    {
+                        invertedDictionary[value] = new List<string>();
+                    }
+                    invertedDictionary[value].Add(kvp.Key);
+                }
+            }
+
+            return invertedDictionary;
         }
 
         private void UninstallPackage(List<PackageDefinition> toRemove)
