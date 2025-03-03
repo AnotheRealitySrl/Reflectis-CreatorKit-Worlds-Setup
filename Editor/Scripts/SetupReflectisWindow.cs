@@ -45,11 +45,9 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private bool allSettingsFixed = true;
         private bool allPlatformFixed = true;
-        private bool allCoreInstalled = true;
 
         private bool showPlatformSupport = false;
         private bool showProjectSettingss = false;
-        private bool showOptionalPackages = false;
 
         private bool canUpdateReflectis = false;
         #endregion
@@ -206,11 +204,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 margin = new RectOffset(15, 0, 0, 0)
             };
 
-            tabContents = new GUIContent[]
-            {
-                new(" Core", allCoreInstalled ? confirmedIcon.image : errorIconContent.image),
-                //new GUIContent(" Optional")
-            };
             // Create a custom GUIStyle for the toolbar buttons with bold font
             boldTabStyle = new GUIStyle(EditorStyles.toolbarButton)
             {
@@ -220,7 +213,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             GUIStyle lineStyle = lineStyles[0];
             //-----------------------------------------------------
 
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition, false, false);
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, false, false);
 
             // Draw the title text with the specified GUIStyle
             EditorGUILayout.Space(10);
@@ -228,10 +221,10 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             EditorGUILayout.Space();
             Rect lineRect = EditorGUILayout.GetControlRect(false, 1);
             EditorGUI.DrawRect(lineRect, Color.black);
-            GUILayout.Space(20);
+            EditorGUILayout.Space(20);
 
             EditorGUILayout.BeginVertical();
-            GUILayout.Space(20);
+            EditorGUILayout.Space(20);
 
             //Github part
 
@@ -248,20 +241,20 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 Application.OpenURL(gitDownloadUrl);
             }
             GUI.enabled = true;
-            GUILayout.EndHorizontal();
+            EditorGUILayout.EndHorizontal();
 
             //Core tab
             CreateGeneralSetupGUI();
-            GUILayout.Space(20);
+            EditorGUILayout.Space(20);
 
             lineRect = EditorGUILayout.GetControlRect(false, 1);
             EditorGUI.DrawRect(lineRect, Color.black);
-            GUILayout.Space(15);
+            EditorGUILayout.Space(15);
             SetupReflectisVersionGUI();
-            GUILayout.Space(15);
+            EditorGUILayout.Space(15);
             lineRect = EditorGUILayout.GetControlRect(false, 1);
             EditorGUI.DrawRect(lineRect, Color.black);
-            GUILayout.Space(25);
+            EditorGUILayout.Space(25);
 
             //Creator Kit Buttons
 
@@ -271,9 +264,9 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             //Documentation Link
             EditorGUILayout.BeginVertical();
-            GUILayout.Space(20);
+            EditorGUILayout.Space(20);
             GUILayout.FlexibleSpace();
-            GUILayout.BeginHorizontal();
+            EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
 
             if (GUILayout.Button("Open Creator Kit Documentation", EditorStyles.linkLabel))
@@ -281,9 +274,10 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 Application.OpenURL("https://reflectis.io/docs/2024.4/CK/intro");
             }
 
-            GUILayout.EndHorizontal();
+            EditorGUILayout.EndHorizontal();
             EditorGUILayout.EndVertical();
-            GUILayout.EndScrollView();
+
+            EditorGUILayout.EndScrollView();
 
             if (GUILayout.Button("test"))
             {
@@ -305,7 +299,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private void RefreshWindow()
         {
-            allCoreInstalled = true;
             allPlatformFixed = true;
             allSettingsFixed = true;
             CheckGitInstallation();
@@ -342,7 +335,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 else
                 {
                     isGitInstalled = false;
-                    allCoreInstalled = false;
                 }
             }
             catch (Exception ex)
@@ -367,7 +359,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             {
                 if (element.Value == false)
                 {
-                    allCoreInstalled = false;
                     allPlatformFixed = false;
                 }
             }
@@ -380,7 +371,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             else
             {
                 renderPipelineURP = false;
-                allCoreInstalled = false;
                 allSettingsFixed = false;
             }
 
@@ -392,7 +382,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             else
             {
                 netFramework = false;
-                allCoreInstalled = false;
                 allSettingsFixed = false;
             }
 
@@ -514,17 +503,10 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private void SetupReflectisVersionGUI()
         {
-            //Remove this comment to always reset the welcome page to the current installed version and not the selected one
-            //set allCoreInstalled to true so to make it update the boolean to show correct icons, the boolean is then updated in the different functions.
-            /*allCoreInstalled = true;
-            //update the core and optional packages list
-            corePackageList = reflectisJSON.reflectisVersions[reflectisSelectedVersion].reflectisPackages;
-            optionalPackageList = reflectisJSON.reflectisVersions[reflectisSelectedVersion].optionalPackages;*/
-
             ShowReflectisUpdate();
 
-            GUILayout.BeginVertical(new GUIStyle(lineStyles[1]));
-            GUILayout.BeginHorizontal();
+            EditorGUILayout.BeginVertical(new GUIStyle(lineStyles[1]));
+            EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Choose Reflectis version", headerStyle, GUILayout.Width(250));
 
             EditorGUI.BeginChangeCheck();
@@ -533,18 +515,15 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             if (EditorGUI.EndChangeCheck())
             {
                 EditorPrefs.SetString(playerPrefsVersionKey, selectedReflectisVersion);
-                //set allCoreInstalled to true so to make it update the boolean to show correct icons, the boolean is then updated in the different functions.
-                allCoreInstalled = true;
-                //update the core and optional packages list
                 UpdatePackageAndDependencies();
             }
-            GUILayout.EndHorizontal();
+            EditorGUILayout.EndHorizontal();
 
             DisplayPackageList();
 
-            GUILayout.Space(10);
+            EditorGUILayout.Space(10);
 
-            GUILayout.EndVertical();
+            EditorGUILayout.EndVertical();
         }
 
         private void UpdatePackageAndDependencies()
@@ -692,43 +671,76 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         }
 
         #endregion
-
+        private Dictionary<string, bool> packagesDropdown = packagesDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
+        private Dictionary<string, bool> dependenciesDropdown = packagesDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
         private void DisplayPackageList()
         {
-            foreach (var package in dependenciesWithData)
+            foreach (var package in packagesDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible))
             {
-                GUILayout.BeginVertical();
+                EditorGUILayout.BeginVertical();
 
-                GUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(package.Key.DisplayName + " - version: " + package.Key.Version);
+                EditorGUILayout.BeginHorizontal();
 
-                if (installedPackages.TryGetValue(package.Key.Name, out _))
+                packagesDropdown[package.Value.Name] = EditorGUILayout.Foldout(packagesDropdown[package.Value.Name], package.Value.DisplayName + " - version: " + package.Value.Version);
+
+                if (!installedPackages.TryGetValue(package.Value.Name, out _))
                 {
-                    if (GUILayout.Button("Uninstall", GUILayout.Width(100)))
+                    GUI.enabled = !IsInstalledAsDependency(package.Value); // Disable button if condition is true
+                    if (GUILayout.Button(EditorGUIUtility.IconContent("Toolbar Plus"), GUILayout.Width(20)))
                     {
-                        UninstallPackageWithDependencies(package.Key);
+                        InstallPackageWithDependencies(package.Value);
                     }
+                    GUI.enabled = true; // Re-enable GUI
                 }
                 else
                 {
-                    if (GUILayout.Button("Install", GUILayout.Width(100)))
+                    GUI.enabled = !IsInstalledAsDependency(package.Value);
+                    if (GUILayout.Button(EditorGUIUtility.IconContent("Toolbar Minus"), GUILayout.Width(20)))
                     {
-                        InstallPackageWithDependencies(package.Key);
+                        UninstallPackageWithDependencies(package.Value);
                     }
+                    GUI.enabled = true; // Re-enable GUI
                 }
 
-                GUILayout.EndHorizontal();
+                EditorGUILayout.EndHorizontal();
 
-                GUILayout.EndVertical();
+                // Dropdown for package details
+                if (packagesDropdown[package.Value.Name])
+                {
+                    EditorGUILayout.LabelField("Description: " + package.Value.Description);
+                    EditorGUILayout.LabelField("URL: " + package.Value.Url);
+
+                    dependenciesDropdown[package.Value.Name] = EditorGUILayout.Foldout(dependenciesDropdown[package.Value.Name], "Show dependencies");
+
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.Space(20); // Add margin to the left
+                    EditorGUILayout.BeginVertical();
+
+                    foreach (string dependency in dependencyList[package.Key])
+                        EditorGUILayout.LabelField(packagesDictionary[dependency].DisplayName);
+
+                    EditorGUILayout.EndVertical();
+                    EditorGUILayout.EndHorizontal();
+                }
+
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.EndVertical();
+
             }
+        }
+
+        private bool IsInstalledAsDependency(PackageDefinition package)
+        {
+            return installedPackages.SelectMany(x => x.Value).Contains(package.Name);
         }
 
         private void CreateSettingFixField(string name, bool valueToCheck, string buttonDescription, int currentLineStyleIndex, Action buttonFunction, GUIContent errorIcon, string buttonText)
         {
             GUIStyle lineStyle = lineStyles[currentLineStyleIndex];
 
-            GUILayout.BeginVertical(lineStyle);
-            GUILayout.BeginHorizontal();
+            EditorGUILayout.BeginVertical(lineStyle);
+            EditorGUILayout.BeginHorizontal();
 
             //EditorGUILayout.LabelField($"{(valueToCheck ? "<b>[<color=lime>√</color>]</b>" : "<b>[<color=red>X</color>]</b>")}", iconStyle, GUILayout.Width(20));
             EditorGUILayout.LabelField(new GUIContent(valueToCheck ? confirmedIcon.image : errorIcon.image), GUILayout.Width(15));
@@ -759,8 +771,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             }
             GUI.enabled = true;
-            GUILayout.EndHorizontal();
-            GUILayout.EndVertical();
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
         }
 
 
