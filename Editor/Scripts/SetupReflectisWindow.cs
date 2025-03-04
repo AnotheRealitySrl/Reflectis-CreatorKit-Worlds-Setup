@@ -98,6 +98,9 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         int selectedTab = 0;
 
         private Vector2 scrollPosition = Vector2.zero;
+
+        private Rect lineRect;
+
         #endregion
 
         private AddRequest addRequest;
@@ -174,7 +177,10 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             //----------------------------------------------------
             iconStyle = new(EditorStyles.label);
             titleStyle = new GUIStyle(GUI.skin.label);
-            labelStyle = new GUIStyle(GUI.skin.label);
+            labelStyle = new(EditorStyles.label)
+            {
+                richText = true,
+            };
             headerStyle = new GUIStyle(GUI.skin.label);
             arrowStyle = new GUIStyle(GUI.skin.label);
             lineStyles = new GUIStyle[] { GUI.skin.box, GUI.skin.textField }; // Different line styles for alternating colors
@@ -186,6 +192,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             labelStyle.fontSize = 12;
             headerStyle.fontStyle = FontStyle.Bold;
             arrowStyle.fontSize = 16;
+            lineRect = EditorGUILayout.GetControlRect(false, 1);
 
             warningIconContent = EditorGUIUtility.IconContent("DotFill");
             errorIconContent = EditorGUIUtility.IconContent("console.erroricon");
@@ -219,7 +226,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             EditorGUILayout.Space(10);
             EditorGUILayout.LabelField("WELCOME TO REFLECTIS", titleStyle);
             EditorGUILayout.Space();
-            Rect lineRect = EditorGUILayout.GetControlRect(false, 1);
             EditorGUI.DrawRect(lineRect, Color.black);
             EditorGUILayout.Space(20);
 
@@ -671,6 +677,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         }
 
         #endregion
+
         private Dictionary<string, bool> packagesDropdown = packagesDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
         private Dictionary<string, bool> dependenciesDropdown = packagesDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
         private void DisplayPackageList()
@@ -708,25 +715,25 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 if (packagesDropdown[package.Value.Name])
                 {
                     EditorGUILayout.LabelField("Description: " + package.Value.Description);
-                    EditorGUILayout.LabelField("URL: " + package.Value.Url);
+                    EditorGUILayout.LabelField(new GUIContent($"<a href='{package.Value.Url}'><i>{package.Value.Url}</i></a>"), labelStyle);
 
                     dependenciesDropdown[package.Value.Name] = EditorGUILayout.Foldout(dependenciesDropdown[package.Value.Name], "Show dependencies");
 
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.Space(20); // Add margin to the left
-                    EditorGUILayout.BeginVertical();
+                    if (dependenciesDropdown[package.Value.Name])
+                    {
+                        EditorGUILayout.BeginVertical();
 
-                    foreach (string dependency in dependencyList[package.Key])
-                        EditorGUILayout.LabelField(packagesDictionary[dependency].DisplayName);
+                        foreach (string dependency in dependencyList[package.Key])
+                            EditorGUILayout.LabelField(packagesDictionary[dependency].DisplayName);
 
-                    EditorGUILayout.EndVertical();
-                    EditorGUILayout.EndHorizontal();
+                        EditorGUILayout.EndVertical();
+                    }
                 }
-
-                EditorGUILayout.EndHorizontal();
 
                 EditorGUILayout.EndVertical();
 
+                EditorGUI.DrawRect(lineRect, Color.black);
+                EditorGUILayout.Space(5);
             }
         }
 
