@@ -14,8 +14,6 @@ using UnityEditor.PackageManager.Requests;
 
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
 
 namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 {
@@ -37,17 +35,18 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         #region booleanValues
         private bool isGitInstalled = false;
-        private string gitVersion = "";
-        private bool urpInstalled = true;
+        private string gitVersion = string.Empty;
+        private bool urpConfigured = true;
         private bool renderPipelineURP = false;
         private bool netFramework = false;
+        private bool maxTextureSizeOverride = false;
         private static readonly string reflectisSetupShown = "EditorWindowAlreadyShown";
 
         private bool allSettingsFixed = true;
         private bool allPlatformFixed = true;
 
         private bool showPlatformSupport = false;
-        private bool showProjectSettingss = false;
+        private bool showProjectSettings = false;
 
         private bool canUpdateReflectis = false;
         #endregion
@@ -80,7 +79,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         GUIStyle labelStyle;
         GUIStyle headerStyle;
         GUIStyle arrowStyle;
-        GUIStyle fixAllStyle;
+        GUIStyle configureAllStyle;
         GUIStyle[] lineStyles; // Different line styles for alternating colors
         GUIStyle boldTabStyle;
         GUIStyle toggleStyle;
@@ -131,7 +130,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                     ShowWindow();
                 }
             };
-
         }
 
         [MenuItem("Reflectis/Setup Window")]
@@ -184,7 +182,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             headerStyle = new GUIStyle(GUI.skin.label);
             arrowStyle = new GUIStyle(GUI.skin.label);
             lineStyles = new GUIStyle[] { GUI.skin.box, GUI.skin.textField }; // Different line styles for alternating colors
-            fixAllStyle = new GUIStyle(GUI.skin.button) { margin = new RectOffset(0, 7, 0, 0) };
+            configureAllStyle = new GUIStyle(GUI.skin.button) { margin = new RectOffset(0, 7, 0, 0) };
             iconStyle.richText = true;
             titleStyle.fontSize = 20;
             titleStyle.fontStyle = FontStyle.Bold;
@@ -370,27 +368,13 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             }
 
             //URP Pipeline
-            if (GraphicsSettings.defaultRenderPipeline is UniversalRenderPipelineAsset)
-            {
-                renderPipelineURP = true;
-            }
-            else
-            {
-                renderPipelineURP = false;
-                allSettingsFixed = false;
-            }
-
+            renderPipelineURP = GetURPConfigurationStatus();
             //NET Framework
-            if (PlayerSettings.GetApiCompatibilityLevel(NamedBuildTarget.Standalone) == ApiCompatibilityLevel.NET_Unity_4_8)
-            {
-                netFramework = true;
-            }
-            else
-            {
-                netFramework = false;
-                allSettingsFixed = false;
-            }
+            netFramework = GetProjectSettingsStatus();
+            //Max texture override
+            maxTextureSizeOverride = GetMaxTextureSizeOverride();
 
+            allSettingsFixed = renderPipelineURP && netFramework && maxTextureSizeOverride;
         }
 
         private void CheckBuildTarget(BuildTargetGroup group, BuildTarget target, string platform)
@@ -402,7 +386,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             }
         }
 
-
         private void CreateGeneralSetupGUI()
         {
             //---------------------------------------------------------------
@@ -412,11 +395,10 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             int currentLineStyleIndex = 0;
             GUIStyle lineStyle = lineStyles[currentLineStyleIndex];
 
-            showPlatformSupport = GUILayout.Toggle(showPlatformSupport, new GUIContent("Platform build support", allPlatformFixed ? confirmedIcon.image : errorIconContent.image), new GUIStyle(toggleStyle));
+            showPlatformSupport = GUILayout.Toggle(showPlatformSupport, new GUIContent("Unity Editor configuration", allPlatformFixed ? confirmedIcon.image : errorIconContent.image), new GUIStyle(toggleStyle));
 
             if (showPlatformSupport)
             {
-
                 GUILayout.Space(5);
 
                 foreach (KeyValuePair<string, bool> element in supportedPlatform)
@@ -428,7 +410,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
                         }
                     });
-                    CreateSettingFixField(element.Key, element.Value, "You have to install the " + element.Key + " build support from the Unity Hub", currentLineStyleIndex, buttonFunction, errorIconContent, "Fix");
+                    CreateSettingFixField(element.Key, element.Value, "You have to install the " + element.Key + " build support from Unity Hub", currentLineStyleIndex, buttonFunction, errorIconContent, "Fix");
                     currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
                 }
             }
@@ -436,75 +418,94 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             //---------------------------------------------------------------
             //---------------------------------------------------------------Project Settings
             GUILayout.Space(10);
-            showProjectSettingss = GUILayout.Toggle(showProjectSettingss, new GUIContent("Project Settings", allSettingsFixed ? confirmedIcon.image : errorIconContent.image), new GUIStyle(toggleStyle));
+            showProjectSettings = GUILayout.Toggle(showProjectSettings, new GUIContent("Project Settings", allSettingsFixed ? confirmedIcon.image : errorIconContent.image), new GUIStyle(toggleStyle));
 
-            if (showProjectSettingss)
+            if (showProjectSettings)
             {
                 GUILayout.Space(6);
 
                 //Graphic Setting
                 //if urp package is installed do this, otherwise don't show it
-                if (urpInstalled)
+                if (urpConfigured)
                 {
-                    buttonFunction = new Action(SetURPRenderPipeline);
+                    buttonFunction = new Action(SetURPConfiguration);
 
-                    CreateSettingFixField("URP as Render Pipeline", renderPipelineURP, "You need to set URP as your render pipeline", currentLineStyleIndex, buttonFunction, errorIconContent, "Fix");
+                    CreateSettingFixField("Configure URP as render pipeline", renderPipelineURP, "You need to set URP as your render pipeline", currentLineStyleIndex, buttonFunction, errorIconContent, "Configure");
                     currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
                 }
 
                 //Net Framework
-                buttonFunction = new Action(SetNetFramework);
+                buttonFunction = new Action(SetProjectSettings);
 
-                CreateSettingFixField("Net Framework compability Level", netFramework, "You need to set .NET Framework in the Api Compability Level field", currentLineStyleIndex, buttonFunction, errorIconContent, "Fix");
+                CreateSettingFixField("Net Framework compability Level", netFramework, "You need to set .NET Framework in the Api Compability Level field", currentLineStyleIndex, buttonFunction, errorIconContent, "Configure");
                 currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
                 //---------------------------------------------------------------
 
-                GUILayout.BeginHorizontal();
+                //Max texture size override
+                buttonFunction = new Action(SetMaxTextureSizeOverride);
+
+                CreateSettingFixField("Configure max textures size", maxTextureSizeOverride, "You need to set URP as your render pipeline", currentLineStyleIndex, buttonFunction, errorIconContent, "Configure");
+                currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
+
+                EditorGUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
-                if (GUILayout.Button("Fix All", fixAllStyle, GUILayout.Width(80)))
+
+                if (GUILayout.Button("Configure all", configureAllStyle, GUILayout.Width(100)))
                 {
-                    FixAllProjectSettings();
+                    SetURPConfiguration();
+                    SetProjectSettings();
+                    SetMaxTextureSizeOverride();
+
+                    AssetDatabase.SaveAssets();
+                    AssetDatabase.Refresh();
+                    RefreshWindow();
                 }
-                GUILayout.EndHorizontal();
+
+                EditorGUILayout.EndHorizontal();
             }
         }
 
-        private void SetURPRenderPipeline()
+        private bool GetURPConfigurationStatus()
         {
-            string[] guids = AssetDatabase.FindAssets("t:UniversalRenderPipelineAsset");
-
-            if (guids.Length <= 0)
-            {
-                //Open window to tell user to setup URP in graphic settings
-                if (EditorUtility.DisplayDialog("Graphic Settings", "You need to setup URP in your project, head to Edit/Project Settings/Graphics/URP Global Settings and press the fix button. After that you need to create a render pipeline asset to put in the graphic field!", "Ok"))
-                {
-
-                }
-            }
-            else
-            {
-
-                string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
-                var urpAsset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(assetPath);
-                GraphicsSettings.defaultRenderPipeline = urpAsset;
-                QualitySettings.renderPipeline = urpAsset;
-            }
-
+            string[] guids = AssetDatabase.FindAssets("t:UniversalRenderPipelineGlobalSettings");
+            return guids.Length == 1 && guids[0] == "edf6e41e487713f45862ce6ae2f5dffd";
         }
 
-        private void SetNetFramework()
+        private void SetURPConfiguration()
+        {
+            string[] guids = AssetDatabase.FindAssets("t:UniversalRenderPipelineGlobalSettings");
+
+            if (guids.Length > 1)
+            {
+                foreach (string guid in guids.Where(x => x != "edf6e41e487713f45862ce6ae2f5dffd"))
+                {
+                    var path = AssetDatabase.GUIDToAssetPath(guid);
+                    AssetDatabase.DeleteAsset(path);
+                }
+            }
+
+            urpConfigured = true;
+        }
+
+        private bool GetProjectSettingsStatus()
+        {
+            return PlayerSettings.GetApiCompatibilityLevel(NamedBuildTarget.Standalone) == ApiCompatibilityLevel.NET_Unity_4_8;
+        }
+
+        private void SetProjectSettings()
         {
             PlayerSettings.SetApiCompatibilityLevel(NamedBuildTarget.Standalone, ApiCompatibilityLevel.NET_Unity_4_8);
         }
 
-        private void FixAllProjectSettings()
+        private bool GetMaxTextureSizeOverride()
         {
-            SetURPRenderPipeline();
-            SetNetFramework();
+            return EditorUserBuildSettings.overrideMaxTextureSize == 1024;
+        }
 
-            AssetDatabase.SaveAssets();
+        private void SetMaxTextureSizeOverride()
+        {
+            EditorUserBuildSettings.overrideMaxTextureSize = 1024;
             AssetDatabase.Refresh();
-            RefreshWindow();
         }
 
         private void SetupReflectisVersionGUI()
@@ -582,7 +583,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             return dependencies;
         }
 
-        private void InstallPackageWithDependencies(PackageDefinition package, string dependencyOf = null)
+        private void InstallPackageWithDependencies(PackageDefinition package)
         {
             List<string> dependenciesToInstall = FindAllDependencies(package, new());
 
@@ -678,8 +679,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         #endregion
 
-        private Dictionary<string, bool> packagesDropdown = packagesDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
-        private Dictionary<string, bool> dependenciesDropdown = packagesDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
+        private readonly Dictionary<string, bool> packagesDropdown = packagesDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
+        private readonly Dictionary<string, bool> dependenciesDropdown = packagesDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
         private void DisplayPackageList()
         {
             foreach (var package in packagesDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible))
