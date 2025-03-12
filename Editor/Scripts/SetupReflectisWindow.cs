@@ -38,7 +38,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         private string gitVersion = string.Empty;
         private bool urpConfigured = true;
         private bool renderPipelineURP = false;
-        private bool netFramework = false;
+        private bool projectSettings = false;
         private bool maxTextureSizeOverride = false;
 
         private bool allSettingsFixed = true;
@@ -259,9 +259,11 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
                         }
                     });
-                    CreateSettingFixField(element.Key, element.Value, "You have to install the " + element.Key + " build support from Unity Hub", currentLineStyleIndex, buttonFunction, errorIconContent, "Fix");
+                    CreateSettingFixField(element.Key, element.Value, currentLineStyleIndex, errorIconContent);
                     currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
                 }
+
+                CreateSettingFixField("Unity version", true, currentLineStyleIndex, errorIconContent);
 
                 EditorGUILayout.EndVertical();
             }
@@ -273,7 +275,22 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             //---------------------------------------------------------------
             //---------------------------------------------------------------Project Settings
             GUILayout.Space(10);
+
+            EditorGUILayout.BeginHorizontal();
             showProjectSettings = GUILayout.Toggle(showProjectSettings, new GUIContent("Project Settings", allSettingsFixed ? confirmedIcon.image : errorIconContent.image), new GUIStyle(toggleStyle));
+
+            if (GUILayout.Button("Configure all", configureAllStyle, GUILayout.Width(100)))
+            {
+                SetURPConfiguration();
+                SetProjectSettings();
+                SetMaxTextureSizeOverride();
+
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+                RefreshWindow();
+            }
+
+            EditorGUILayout.EndHorizontal();
 
             if (showProjectSettings)
             {
@@ -285,38 +302,21 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 //if urp package is installed do this, otherwise don't show it
                 if (urpConfigured)
                 {
-                    buttonFunction = new Action(SetURPConfiguration);
-
-                    CreateSettingFixField("Configure URP as render pipeline", renderPipelineURP, "You need to set URP as your render pipeline", currentLineStyleIndex, buttonFunction, errorIconContent, "Configure");
+                    CreateSettingFixField("Configure URP as render pipeline", renderPipelineURP, currentLineStyleIndex, errorIconContent);
                     currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
                 }
 
-                //Net Framework
-                buttonFunction = new Action(SetProjectSettings);
-
-                CreateSettingFixField("Net Framework compability Level", netFramework, "You need to set .NET Framework in the Api Compability Level field", currentLineStyleIndex, buttonFunction, errorIconContent, "Configure");
+                CreateSettingFixField("Net Framework compability Level", projectSettings, currentLineStyleIndex, errorIconContent);
                 currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
                 //---------------------------------------------------------------
 
-                //Max texture size override
-                buttonFunction = new Action(SetMaxTextureSizeOverride);
-
-                CreateSettingFixField("Configure max textures size", maxTextureSizeOverride, "You need to set URP as your render pipeline", currentLineStyleIndex, buttonFunction, errorIconContent, "Configure");
+                CreateSettingFixField("Configure max textures size", maxTextureSizeOverride, currentLineStyleIndex, errorIconContent);
                 currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
 
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
 
-                if (GUILayout.Button("Configure all", configureAllStyle, GUILayout.Width(100)))
-                {
-                    SetURPConfiguration();
-                    SetProjectSettings();
-                    SetMaxTextureSizeOverride();
 
-                    AssetDatabase.SaveAssets();
-                    AssetDatabase.Refresh();
-                    RefreshWindow();
-                }
 
                 EditorGUILayout.EndHorizontal();
 
@@ -474,7 +474,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             EditorGUILayout.EndScrollView();
         }
 
-        private void CreateSettingFixField(string name, bool valueToCheck, string buttonDescription, int currentLineStyleIndex, Action buttonFunction, GUIContent errorIcon, string buttonText)
+        private void CreateSettingFixField(string name, bool valueToCheck, int currentLineStyleIndex, GUIContent errorIcon)
         {
             GUIStyle lineStyle = lineStyles[currentLineStyleIndex];
 
@@ -485,26 +485,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             GUILayout.Label(name, labelStyle);
             GUILayout.FlexibleSpace();
 
-            if (valueToCheck)
-                GUI.enabled = false;
-
-            if (GUILayout.Button(new GUIContent(buttonText, buttonDescription), GUILayout.Width(80)))
-            {
-                try
-                {
-                    EditorUtility.DisplayProgressBar("Loading", "Applying Changes...", 0.75f);
-                    buttonFunction();
-                }
-                finally
-                {
-                    EditorUtility.ClearProgressBar();
-                }
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
-                RefreshWindow();
-
-            }
-            GUI.enabled = true;
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.EndVertical();
         }
@@ -619,11 +599,11 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             //URP Pipeline
             renderPipelineURP = GetURPConfigurationStatus();
             //NET Framework
-            netFramework = GetProjectSettingsStatus();
+            projectSettings = GetProjectSettingsStatus();
             //Max texture override
             maxTextureSizeOverride = GetMaxTextureSizeOverride();
 
-            allSettingsFixed = renderPipelineURP && netFramework && maxTextureSizeOverride;
+            allSettingsFixed = renderPipelineURP && projectSettings && maxTextureSizeOverride;
         }
 
         private void CheckBuildTarget(BuildTargetGroup group, BuildTarget target, string platform)
