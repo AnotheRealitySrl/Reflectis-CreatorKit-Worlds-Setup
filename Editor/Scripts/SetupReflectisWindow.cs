@@ -25,8 +25,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         private readonly string playerPrefsVersionKey = "SelectedReflectisVersion"; //string used to know which reflectis version is installed. Set The first time you press the setup button. 
         private readonly string installedPackagesKey = "InstalledPackages"; //string used to know which packages are installed.
 
-        private PackageRegistry[] allVersionsPackageRegistries;
-        private string reflectisJSONstring;
+        private static PackageRegistry[] allVersionsPackageRegistries;
+        private static string packagesTextAsset;
 
         #endregion
 
@@ -40,7 +40,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         private bool renderPipelineURP = false;
         private bool netFramework = false;
         private bool maxTextureSizeOverride = false;
-        private static readonly string reflectisSetupShown = "EditorWindowAlreadyShown";
 
         private bool allSettingsFixed = true;
         private bool allPlatformFixed = true;
@@ -48,10 +47,12 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         private bool showPlatformSupport = false;
         private bool showProjectSettings = false;
 
-        private bool canUpdateReflectis = false;
+        private bool setupCompleted = false;
+
         #endregion
 
         #region Package and platform lists
+
         public Dictionary<string, bool> supportedPlatform = new()
         {
             { "Android", true },
@@ -59,8 +60,11 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             { "Windows", true }
         };
 
-
         private List<string> availableVersions = new();
+
+        #endregion
+
+        #region Packages details
 
         private static List<PackageDefinition> packageList = new(); //the selected version packages
         private static Dictionary<string, PackageDefinition> packagesDictionary = new();
@@ -68,19 +72,20 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         private static Dictionary<string, string[]> installedPackages; //the currently installed packages, the values are the dependencies
 
         private static Dictionary<string, string[]> dependencyList = new();
-        private static Dictionary<PackageDefinition, PackageDefinition[]> dependenciesWithData = new();
 
-        private readonly Dictionary<string, bool> packagesDropdown = packagesDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
-        private readonly Dictionary<string, bool> dependenciesDropdown = packagesDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
+        private static Dictionary<string, bool> packagesDropdown;
+        private static Dictionary<string, bool> dependenciesDropdown;
 
         #endregion
 
-        #region GuiElements
+        #region GUIElements
+
         //GUI Styles
         GUIStyle iconStyle;
         GUIStyle titleStyle;
         GUIStyle labelStyle;
         GUIStyle headerStyle;
+        GUIStyle paragraphStyle;
         GUIStyle arrowStyle;
         GUIStyle configureAllStyle;
         GUIStyle[] lineStyles; // Different line styles for alternating colors
@@ -109,31 +114,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private Action buttonFunction;
 
-        ListRequest listRequest; //used to keep track of the installed packages
-
         //this variable is set by the other packages (like CK, used to show buttons and other GUI elements).
         public static UnityEvent configurationEvents = new();
-
-        //delete the player pref so to reshow the window when opening the priject again
-        private void OnUnityQuit()
-        {
-            // Reset the PlayerPrefs flag when Unity is quitting
-            PlayerPrefs.DeleteKey(reflectisSetupShown);
-            PlayerPrefs.Save(); // Save PlayerPrefs
-        }
-
-        static SetupReflectisWindow()
-        {
-            EditorApplication.delayCall += () =>
-            {
-                if (!PlayerPrefs.HasKey(reflectisSetupShown))
-                {
-                    PlayerPrefs.SetFloat(reflectisSetupShown, 1f);
-                    PlayerPrefs.Save();
-                    ShowWindow();
-                }
-            };
-        }
 
         [MenuItem("Reflectis/Setup Window")]
         public static void ShowWindow()
@@ -145,43 +127,25 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private void Awake()
         {
-            //For now load the json via the resource folder. In the future calla an api to retrieve the json
-            reflectisJSONstring ??= Resources.Load<TextAsset>("PackageRegistry").text;
-
-            allVersionsPackageRegistries = JsonConvert.DeserializeObject<PackageRegistry[]>(reflectisJSONstring);
-            availableVersions = allVersionsPackageRegistries.Select(x => x.ReflectisVersion).ToList();
-
-            //Get reflectis version and update list of packages
-            selectedReflectisVersion = EditorPrefs.GetString(playerPrefsVersionKey);
-            installedPackages = JsonConvert.DeserializeObject<Dictionary<string, string[]>>(EditorPrefs.GetString(installedPackagesKey)) ?? new();
-            if (string.IsNullOrEmpty(selectedReflectisVersion))
-            {
-                selectedReflectisVersion = allVersionsPackageRegistries[^1].ReflectisVersion;
-            }
-            reflectisVersionIndex = availableVersions.IndexOf(selectedReflectisVersion);
-
-            UpdatePackageAndDependencies();
-
-            ClientListCall();
-            CheckGitInstallation();
-            CheckGeneralSetup();
-
-            if (PlayerPrefs.HasKey(reflectisSetupShown))
-            {
-                EditorApplication.quitting += OnUnityQuit;
-            }
+            SetupWindowData();
         }
+
+        #endregion
 
         #region GUI
 
         private void OnGUI()
         {
+            if (!setupCompleted)
+                return;
+
             #region GUI Styles definition
 
             // Define the GUIStyle
             //----------------------------------------------------
             iconStyle = new(EditorStyles.label);
             titleStyle = new GUIStyle(GUI.skin.label);
+            paragraphStyle = new GUIStyle(GUI.skin.label);
             labelStyle = new(EditorStyles.label)
             {
                 richText = true,
@@ -197,6 +161,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             labelStyle.fontSize = 12;
             headerStyle.fontStyle = FontStyle.Bold;
             arrowStyle.fontSize = 16;
+            paragraphStyle.fontSize = 14;
+            paragraphStyle.fontStyle = FontStyle.Bold;
             lineRect = EditorGUILayout.GetControlRect(false, 1);
 
             warningIconContent = EditorGUIUtility.IconContent("DotFill");
@@ -241,10 +207,13 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             #region Project configuration
 
+            EditorGUILayout.LabelField("Project configuration", paragraphStyle);
+            EditorGUILayout.Space(10);
+
             #region Git installation
+
             //Github part
             GUILayout.BeginHorizontal();
-
 
             EditorGUILayout.LabelField(new GUIContent(isGitInstalled ? confirmedIcon.image : errorIconContent.image), GUILayout.Width(20));
             GUILayout.Label("Git executable " + gitVersion, labelStyle);
@@ -264,7 +233,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             #region Project settings configuration
 
             //Core tab
-
             //---------------------------------------------------------------
             //---------------------------------------------------------------Platform Build Support
 
@@ -272,13 +240,15 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             int currentLineStyleIndex = 0;
             lineStyle = lineStyles[currentLineStyleIndex];
 
-            #region Platform support
+            #region Editor installations
 
             showPlatformSupport = GUILayout.Toggle(showPlatformSupport, new GUIContent("Unity Editor configuration", allPlatformFixed ? confirmedIcon.image : errorIconContent.image), new GUIStyle(toggleStyle));
 
             if (showPlatformSupport)
             {
                 GUILayout.Space(5);
+
+                EditorGUILayout.BeginVertical(new GUIStyle { margin = new RectOffset(10, 10, 0, 0) });
 
                 foreach (KeyValuePair<string, bool> element in supportedPlatform)
                 {
@@ -292,6 +262,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                     CreateSettingFixField(element.Key, element.Value, "You have to install the " + element.Key + " build support from Unity Hub", currentLineStyleIndex, buttonFunction, errorIconContent, "Fix");
                     currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
                 }
+
+                EditorGUILayout.EndVertical();
             }
 
             #endregion
@@ -305,6 +277,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             if (showProjectSettings)
             {
+                EditorGUILayout.BeginVertical(new GUIStyle { margin = new RectOffset(10, 10, 0, 0) });
+
                 GUILayout.Space(6);
 
                 //Graphic Setting
@@ -345,6 +319,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 }
 
                 EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.EndVertical();
             }
 
             EditorGUILayout.Space(20);
@@ -355,11 +331,14 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             #endregion
 
-            #region Package manager
-
             lineRect = EditorGUILayout.GetControlRect(false, 1);
             EditorGUI.DrawRect(lineRect, Color.black);
             EditorGUILayout.Space(15);
+
+            #region Package manager
+
+            EditorGUILayout.LabelField("Package manager", paragraphStyle);
+            EditorGUILayout.Space(10);
 
             //GUIContent updateIcon = EditorGUIUtility.IconContent("d_console.infoicon.sml");
             GUIStyle textStyle = new(GUI.skin.label)
@@ -367,16 +346,10 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 fontStyle = FontStyle.Italic
             };
 
-            if (canUpdateReflectis)
+            if (GUILayout.Button("Refresh"))
             {
-                //Display message that user can Update reflectis
-                EditorGUILayout.BeginHorizontal();
-                //EditorGUILayout.LabelField(new GUIContent(updateIcon.image), GUILayout.Width(20));
-                EditorGUILayout.LabelField("There is a new Reflectis update", textStyle);
-                EditorGUILayout.EndHorizontal();
+                SetupWindowData();
             }
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Current Reflectis version " + selectedReflectisVersion, textStyle);
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginVertical(new GUIStyle(lineStyles[1]));
@@ -392,6 +365,14 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 UpdatePackageAndDependencies();
             }
             EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.Space(10);
+
+            if (packagesDropdown == null || packagesDropdown.Count == 0)
+                packagesDropdown = packagesDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
+
+            if (dependenciesDropdown == null || dependenciesDropdown.Count == 0)
+                dependenciesDropdown = packagesDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
 
             foreach (var package in packagesDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible))
             {
@@ -425,26 +406,34 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 // Dropdown for package details
                 if (packagesDropdown[package.Value.Name])
                 {
-                    EditorGUILayout.LabelField("Description: " + package.Value.Description);
-                    EditorGUILayout.LabelField(new GUIContent($"<a href='{package.Value.Url}'><i>{package.Value.Url}</i></a>"), labelStyle);
+                    EditorGUILayout.BeginVertical(new GUIStyle { margin = new RectOffset(20, 0, 0, 0) });
+
+                    EditorGUILayout.LabelField(package.Value.Description);
+                    if (GUILayout.Button($"{package.Value.Url}", EditorStyles.linkLabel))
+                    {
+                        Application.OpenURL(package.Value.Url);
+                    }
 
                     dependenciesDropdown[package.Value.Name] = EditorGUILayout.Foldout(dependenciesDropdown[package.Value.Name], "Show dependencies");
 
                     if (dependenciesDropdown[package.Value.Name])
                     {
-                        EditorGUILayout.BeginVertical();
+                        EditorGUILayout.BeginVertical(new GUIStyle { margin = new RectOffset(20, 0, 0, 0) });
 
                         foreach (string dependency in dependencyList[package.Key])
-                            EditorGUILayout.LabelField(packagesDictionary[dependency].DisplayName);
+                        {
+                            EditorGUILayout.LabelField($"{packagesDictionary[dependency].DisplayName} - {packagesDictionary[dependency].Version}");
+                        }
 
                         EditorGUILayout.EndVertical();
                     }
+
+                    EditorGUILayout.EndVertical();
                 }
 
-                EditorGUILayout.EndVertical();
+                CreateSeparator();
 
-                EditorGUI.DrawRect(lineRect, Color.black);
-                EditorGUILayout.Space(5);
+                EditorGUILayout.EndVertical();
             }
 
             EditorGUILayout.Space(10);
@@ -480,11 +469,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.EndVertical();
 
-            if (GUILayout.Button("test"))
-            {
-                UnityEngine.Debug.Log(JsonConvert.SerializeObject(installedPackages));
-            }
-
             #endregion
 
             EditorGUILayout.EndScrollView();
@@ -497,7 +481,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             EditorGUILayout.BeginVertical(lineStyle);
             EditorGUILayout.BeginHorizontal();
 
-            //EditorGUILayout.LabelField($"{(valueToCheck ? "<b>[<color=lime>√</color>]</b>" : "<b>[<color=red>X</color>]</b>")}", iconStyle, GUILayout.Width(20));
             EditorGUILayout.LabelField(new GUIContent(valueToCheck ? confirmedIcon.image : errorIcon.image), GUILayout.Width(15));
             GUILayout.Label(name, labelStyle);
             GUILayout.FlexibleSpace();
@@ -505,24 +488,20 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             if (valueToCheck)
                 GUI.enabled = false;
 
-            //GUI.Box(new Rect(5, 35, 110, 75), new GUIContent("Box", "this box has a tooltip"));
             if (GUILayout.Button(new GUIContent(buttonText, buttonDescription), GUILayout.Width(80)))
             {
                 try
                 {
                     EditorUtility.DisplayProgressBar("Loading", "Applying Changes...", 0.75f);
                     buttonFunction();
-                    AssetDatabase.SaveAssets();
-                    AssetDatabase.Refresh();
-                    RefreshWindow();
                 }
                 finally
                 {
                     EditorUtility.ClearProgressBar();
-                    AssetDatabase.SaveAssets();
-                    AssetDatabase.Refresh();
-                    RefreshWindow();
                 }
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+                RefreshWindow();
 
             }
             GUI.enabled = true;
@@ -530,28 +509,54 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             EditorGUILayout.EndVertical();
         }
 
-        #endregion
-
-        #endregion
-
-        private void ClientListCall()
+        private void CreateSeparator()
         {
-            listRequest = Client.List(true);
-            while (!listRequest.IsCompleted)
+            Rect rect = EditorGUILayout.GetControlRect(false, 1);
+            rect.height = 1;
+            EditorGUI.DrawRect(rect, new Color(0.5f, 0.5f, 0.5f, 1));
+        }
+
+        #endregion
+
+        private void SetupWindowData()
+        {
+            //For now load the json via the resource folder. In the future calla an api to retrieve the json
+            packagesTextAsset ??= Resources.Load<TextAsset>("PackageRegistry").text;
+
+            allVersionsPackageRegistries = JsonConvert.DeserializeObject<PackageRegistry[]>(packagesTextAsset);
+            availableVersions = allVersionsPackageRegistries.Select(x => x.ReflectisVersion).ToList();
+
+            //Get reflectis version and update list of packages
+            selectedReflectisVersion = EditorPrefs.GetString(playerPrefsVersionKey);
+            installedPackages = JsonConvert.DeserializeObject<Dictionary<string, string[]>>(EditorPrefs.GetString(installedPackagesKey)) ?? new();
+            if (string.IsNullOrEmpty(selectedReflectisVersion))
             {
-                // Wait for the list request to complete
+                selectedReflectisVersion = allVersionsPackageRegistries[^1].ReflectisVersion;
             }
+            reflectisVersionIndex = availableVersions.IndexOf(selectedReflectisVersion);
+
+            packagesDropdown = packagesDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
+            dependenciesDropdown = packagesDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
+
+            UpdatePackageAndDependencies();
+
+            CheckGitInstallation();
+            CheckEditorModulesInstallation();
+
+            setupCompleted = true;
         }
 
         private void RefreshWindow()
         {
+            Repaint(); // Request Unity to redraw the window
+
             allPlatformFixed = true;
             allSettingsFixed = true;
-            CheckGitInstallation();
-            ClientListCall(); //call the manifest and retrieve the isntalled packages again. That way the page will be updated.
-            CheckGeneralSetup();
 
-            Repaint(); // Request Unity to redraw the window
+            UpdatePackageAndDependencies();
+
+            CheckGitInstallation();
+            CheckEditorModulesInstallation();
         }
 
         #region Project settings
@@ -591,7 +596,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             }
         }
 
-        private void CheckGeneralSetup()
+        private void CheckEditorModulesInstallation()
         {
             //Check supported platform
             BuildTargetGroup[] buildTargetGroups = (BuildTargetGroup[])System.Enum.GetValues(typeof(BuildTargetGroup));
@@ -696,11 +701,10 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             packageList = allVersionsPackageRegistries.FirstOrDefault(x => x.ReflectisVersion == selectedReflectisVersion).Packages;
             dependencyList = allVersionsPackageRegistries.FirstOrDefault(x => x.ReflectisVersion == selectedReflectisVersion).Dependencies;
 
-            packagesDictionary = packageList.ToDictionary(x => x.Name);
+            packagesDropdown = packagesDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
+            dependenciesDropdown = packagesDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
 
-            dependenciesWithData = dependencyList
-                .Where(x => packagesDictionary[x.Key].Visibility == EPackageVisibility.Visible)
-                .ToDictionary(k => packagesDictionary[k.Key], v => v.Value.Select(x => packagesDictionary[x]).ToArray());
+            packagesDictionary = packageList.ToDictionary(x => x.Name);
         }
 
         private void InstallPackageWithDependencies(PackageDefinition package)
