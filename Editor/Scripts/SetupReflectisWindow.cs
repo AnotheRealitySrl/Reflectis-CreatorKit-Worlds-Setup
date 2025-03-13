@@ -12,6 +12,8 @@ using UnityEditor.Build;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 
+using UnityEditorInternal;
+
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -34,18 +36,17 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         private static string selectedReflectisVersion;
 
         #region booleanValues
+
         private bool isGitInstalled = false;
         private string gitVersion = string.Empty;
-        private bool urpConfigured = true;
+
+        private bool allPlatformFixed = true;
+
         private bool renderPipelineURP = false;
         private bool projectSettings = false;
         private bool maxTextureSizeOverride = false;
 
         private bool allSettingsFixed = true;
-        private bool allPlatformFixed = true;
-
-        private bool showPlatformSupport = false;
-        private bool showProjectSettings = false;
 
         private bool setupCompleted = false;
 
@@ -53,7 +54,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         #region Package and platform lists
 
-        public Dictionary<string, bool> supportedPlatform = new()
+        public Dictionary<string, bool> installedModules = new()
         {
             { "Android", true },
             { "WebGL", true },
@@ -96,23 +97,15 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         GUIContent errorIconContent;
         GUIContent confirmedIcon;
 
-        public GUIContent[] tabContents = new GUIContent[]
-        {
-            new(" Core"),
-            new(" Optional")
-        };
-
-        int selectedTab = 0;
+        private bool showPlatformSupport = false;
+        private bool showProjectSettings = false;
 
         private Vector2 scrollPosition = Vector2.zero;
-
         private Rect lineRect;
 
         #endregion
 
         private AddRequest addRequest;
-
-        private Action buttonFunction;
 
         //this variable is set by the other packages (like CK, used to show buttons and other GUI elements).
         public static UnityEvent configurationEvents = new();
@@ -232,14 +225,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             #region Project settings configuration
 
-            //Core tab
-            //---------------------------------------------------------------
-            //---------------------------------------------------------------Platform Build Support
-
-            //General project setup
-            int currentLineStyleIndex = 0;
-            lineStyle = lineStyles[currentLineStyleIndex];
-
             #region Editor installations
 
             showPlatformSupport = GUILayout.Toggle(showPlatformSupport, new GUIContent("Unity Editor configuration", allPlatformFixed ? confirmedIcon.image : errorIconContent.image), new GUIStyle(toggleStyle));
@@ -250,20 +235,13 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
                 EditorGUILayout.BeginVertical(new GUIStyle { margin = new RectOffset(10, 10, 0, 0) });
 
-                foreach (KeyValuePair<string, bool> element in supportedPlatform)
-                {
-                    buttonFunction = new Action(() =>
-                    {
-                        if (EditorUtility.DisplayDialog("Build Support", "You need to install the " + element.Key + " build support from the Unity Hub. If already installed try to close the setup window and reopen it or reopen the project", "Ok"))
-                        {
+                string text = $"All editor modules installed properly";
+                string alternativeText = $"[{string.Join(", ", installedModules.Where(kv => !kv.Value).Select(kv => kv.Key))}] editor modules are not installed";
+                CreateSettingEntry(text, !installedModules.Values.Contains(false), errorIconContent, alternativeText);
 
-                        }
-                    });
-                    CreateSettingFixField(element.Key, element.Value, currentLineStyleIndex, errorIconContent);
-                    currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
-                }
-
-                CreateSettingFixField("Unity version", true, currentLineStyleIndex, errorIconContent);
+                string shortUnityVersion = InternalEditorUtility.GetUnityVersion().ToString();
+                string alternateText = $"You have to install Unity version {allVersionsPackageRegistries[reflectisVersionIndex].RequiredUnityVersion}";
+                CreateSettingEntry($"Unity version: {InternalEditorUtility.GetFullUnityVersion()}", shortUnityVersion == allVersionsPackageRegistries[reflectisVersionIndex].RequiredUnityVersion, errorIconContent, alternateText);
 
                 EditorGUILayout.EndVertical();
             }
@@ -298,27 +276,9 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
                 GUILayout.Space(6);
 
-                //Graphic Setting
-                //if urp package is installed do this, otherwise don't show it
-                if (urpConfigured)
-                {
-                    CreateSettingFixField("Configure URP as render pipeline", renderPipelineURP, currentLineStyleIndex, errorIconContent);
-                    currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
-                }
-
-                CreateSettingFixField("Net Framework compability Level", projectSettings, currentLineStyleIndex, errorIconContent);
-                currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
-                //---------------------------------------------------------------
-
-                CreateSettingFixField("Configure max textures size", maxTextureSizeOverride, currentLineStyleIndex, errorIconContent);
-                currentLineStyleIndex = (currentLineStyleIndex + 1) % lineStyles.Length;
-
-                EditorGUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
-
-
-
-                EditorGUILayout.EndHorizontal();
+                CreateSettingEntry("Configure URP as render pipeline", renderPipelineURP, errorIconContent);
+                CreateSettingEntry("Project settings configuration", projectSettings, errorIconContent);
+                CreateSettingEntry("Configure max textures size", maxTextureSizeOverride, errorIconContent);
 
                 EditorGUILayout.EndVertical();
             }
@@ -350,7 +310,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             {
                 SetupWindowData();
             }
-            EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginVertical(new GUIStyle(lineStyles[1]));
             EditorGUILayout.BeginHorizontal();
@@ -382,24 +341,13 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
                 packagesDropdown[package.Value.Name] = EditorGUILayout.Foldout(packagesDropdown[package.Value.Name], package.Value.DisplayName + " - version: " + package.Value.Version);
 
-                if (!installedPackages.TryGetValue(package.Value.Name, out _))
+                GUI.enabled = !IsPackageInstalledAsDependency(package.Value); // Disable button if condition is true
+                if (GUILayout.Button(EditorGUIUtility.IconContent(installedPackages.TryGetValue(package.Value.Name, out _) ? "Toolbar Minus" : "Toolbar Plus"), GUILayout.Width(20)))
                 {
-                    GUI.enabled = !IsPackageInstalledAsDependency(package.Value); // Disable button if condition is true
-                    if (GUILayout.Button(EditorGUIUtility.IconContent("Toolbar Plus"), GUILayout.Width(20)))
-                    {
-                        InstallPackageWithDependencies(package.Value);
-                    }
-                    GUI.enabled = true; // Re-enable GUI
+                    InstallPackageWithDependencies(package.Value);
                 }
-                else
-                {
-                    GUI.enabled = !IsPackageInstalledAsDependency(package.Value);
-                    if (GUILayout.Button(EditorGUIUtility.IconContent("Toolbar Minus"), GUILayout.Width(20)))
-                    {
-                        UninstallPackageWithDependencies(package.Value);
-                    }
-                    GUI.enabled = true; // Re-enable GUI
-                }
+                GUI.enabled = true; // Re-enable GUI
+
 
                 EditorGUILayout.EndHorizontal();
 
@@ -474,15 +422,15 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             EditorGUILayout.EndScrollView();
         }
 
-        private void CreateSettingFixField(string name, bool valueToCheck, int currentLineStyleIndex, GUIContent errorIcon)
+        private void CreateSettingEntry(string name, bool valueToCheck, GUIContent errorIcon, string errorText = null)
         {
-            GUIStyle lineStyle = lineStyles[currentLineStyleIndex];
+            GUIStyle lineStyle = lineStyles[0];
 
             EditorGUILayout.BeginVertical(lineStyle);
             EditorGUILayout.BeginHorizontal();
 
             EditorGUILayout.LabelField(new GUIContent(valueToCheck ? confirmedIcon.image : errorIcon.image), GUILayout.Width(15));
-            GUILayout.Label(name, labelStyle);
+            EditorGUILayout.TextField(valueToCheck ? name : errorText, labelStyle);
             GUILayout.FlexibleSpace();
 
             EditorGUILayout.EndHorizontal();
@@ -522,6 +470,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             CheckGitInstallation();
             CheckEditorModulesInstallation();
+            CheckProjectSettings();
 
             setupCompleted = true;
         }
@@ -537,6 +486,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             CheckGitInstallation();
             CheckEditorModulesInstallation();
+            CheckProjectSettings();
         }
 
         #region Project settings
@@ -588,19 +538,19 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             }
 
             //update the coreInstalled value
-            foreach (var element in supportedPlatform)
+            foreach (var element in installedModules)
             {
                 if (element.Value == false)
                 {
                     allPlatformFixed = false;
                 }
             }
+        }
 
-            //URP Pipeline
+        private void CheckProjectSettings()
+        {
             renderPipelineURP = GetURPConfigurationStatus();
-            //NET Framework
             projectSettings = GetProjectSettingsStatus();
-            //Max texture override
             maxTextureSizeOverride = GetMaxTextureSizeOverride();
 
             allSettingsFixed = renderPipelineURP && projectSettings && maxTextureSizeOverride;
@@ -611,7 +561,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             bool value = BuildPipeline.IsBuildTargetSupported(group, target);
             if (value)
             {
-                supportedPlatform[platform] = true;
+                installedModules[platform] = true;
             }
         }
 
@@ -633,8 +583,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                     AssetDatabase.DeleteAsset(path);
                 }
             }
-
-            urpConfigured = true;
         }
 
         private bool GetProjectSettingsStatus()
