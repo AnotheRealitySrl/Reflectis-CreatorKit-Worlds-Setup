@@ -75,8 +75,10 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private static Dictionary<string, string[]> selectedVersionDependencies = new();
         private static Dictionary<string, string[]> selectedVersionDependenciesFull = new();
+        private static Dictionary<string, List<string>> reverseDependencies = new();
 
         private static HashSet<PackageDefinition> installedPackages;
+        private static Dictionary<string, bool> installationAsDependency = new();
 
         private static Dictionary<string, bool> packagesDropdown;
         private static Dictionary<string, bool> dependenciesDropdown;
@@ -353,8 +355,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
                 packagesDropdown[package.Value.Name] = EditorGUILayout.Foldout(packagesDropdown[package.Value.Name], package.Value.DisplayName + " - version: " + package.Value.Version);
 
-                //GUI.enabled = !IsPackageInstalledAsDependency(package.Value); // Disable button if condition is true
-
+                GUI.enabled = installationAsDependency.TryGetValue(package.Key, out bool value) ? !value : true; // Disable button if condition is true
                 //TODO: change to a dictionary?
                 bool installed = installedPackages.Select(x => x.Name).Contains(package.Value.Name);
                 if (installed)
@@ -371,8 +372,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                         InstallPackageWithDependencies(package.Value);
                     }
                 }
-
-                //GUI.enabled = true; // Re-enable GUI
+                GUI.enabled = true; // Re-enable GUI
 
 
                 EditorGUILayout.EndHorizontal();
@@ -394,7 +394,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                     {
                         EditorGUILayout.BeginVertical(new GUIStyle { margin = new RectOffset(20, 0, 0, 0) });
 
-                        foreach (string dependency in selectedVersionDependencies[package.Key])
+                        foreach (string dependency in selectedVersionDependenciesFull[package.Key])
                         {
                             EditorGUILayout.LabelField($"{selectedVersionPackageDictionary[dependency].DisplayName} - {selectedVersionPackageDictionary[dependency].Version}");
                         }
@@ -667,6 +667,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 kvp => kvp.Key,
                 kvp => FindAllDependencies(selectedVersionPackageDictionary[kvp.Key], new List<string>()).ToArray()
             );
+            reverseDependencies = InvertDictionary(selectedVersionDependenciesFull);
 
             packagesDropdown = selectedVersionPackageDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
             dependenciesDropdown = selectedVersionPackageDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
@@ -680,6 +681,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             EditorPrefs.SetString(installedPackagesKey, JsonConvert.SerializeObject(installedPackages));
 
             InstallPackages(dependenciesToInstall.Append(package.Name).Select(x => selectedVersionPackageDictionary[x]).ToList());
+
+            installationAsDependency = installedPackages.ToDictionary(x => x.Name, y => IsPackageInstalledAsDependency(y));
         }
 
         private void InstallPackages(List<PackageDefinition> toInstall)
@@ -707,11 +710,9 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             List<PackageDefinition> packagesToRemove = new() { toUninstall };
 
-            Dictionary<string, List<string>> invertedDictionary = InvertDictionary(selectedVersionDependenciesFull);
-
             foreach (var hiddenPackage in installedPackages.Where(x => x.Visibility == EPackageVisibility.Hidden))
             {
-                if (invertedDictionary[hiddenPackage.Name].Intersect(installedPackages.Select(x => x.Name)).Count() == 0)
+                if (reverseDependencies[hiddenPackage.Name].Intersect(installedPackages.Select(x => x.Name)).Count() == 0)
                 {
                     packagesToRemove.Add(selectedVersionPackageDictionary[hiddenPackage.Name]);
                     installedPackages.Remove(selectedVersionPackageDictionary[hiddenPackage.Name]);
@@ -763,7 +764,25 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private bool IsPackageInstalledAsDependency(PackageDefinition package)
         {
-            return installedPackages.Contains(package);
+            bool isDependency = false;
+
+            if (reverseDependencies.TryGetValue(package.Name, out List<string> deps))
+            {
+                foreach (string dep in deps)
+                {
+                    if (installedPackages.Select(x => x.Name).Contains(dep))
+                    {
+                        isDependency = true;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                isDependency = false;
+            }
+
+            return isDependency;
         }
 
         #endregion
