@@ -6,7 +6,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-sdk-core",
         "displayName": "Reflectis SDK Core",
-        "version": "12.0.0",
+        "version": "v12.0.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-SDK-Core.git",
         "description": "Core module",
         "visibility": "Hidden"
@@ -14,7 +14,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-sdk-graphs",
         "displayName": "Reflectis SDK Graphs",
-        "version": "2.0.0",
+        "version": "v2.0.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-SDK-Graphs.git",
         "description": "Graphs module",
         "visibility": "Hidden"
@@ -30,7 +30,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-core",
         "displayName": "Reflectis CreatorKit Worlds Core",
-        "version": "4.0.0",
+        "version": "v4.0.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-Core.git",
         "description": "Reflectis CreatorKit Worlds Core module",
         "visibility": "Visible"
@@ -38,7 +38,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-placeholders",
         "displayName": "Reflectis CreatorKit Worlds Placeholders",
-        "version": "1.0.0",
+        "version": "v1.0.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-Placeholders.git",
         "description": "Reflectis CreatorKit Worlds Placeholder module",
         "visibility": "Visible"
@@ -46,7 +46,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-visualscripting",
         "displayName": "Reflectis CreatorKit Worlds Visual Scripting",
-        "version": "1.0.0",
+        "version": "v1.0.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-VisualScripting.git",
         "description": "Reflectis CreatorKit Worlds Visual Scripting module",
         "visibility": "Visible"
@@ -54,7 +54,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-tasks",
         "displayName": "Reflectis CreatorKit Tasks",
-        "version": "2.0.0",
+        "version": "v2.0.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-Tasks.git",
         "description": "Reflectis CreatorKit Tasks module",
         "visibility": "Visible"
@@ -62,7 +62,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-analytics",
         "displayName": "Reflectis CreatorKit Worlds Analytics",
-        "version": "1.0.0",
+        "version": "v1.0.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-Analytics.git",
         "description": "Reflectis CreatorKit Worlds Analytics module",
         "visibility": "Visible"
@@ -97,7 +97,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-sdk-core",
         "displayName": "Reflectis SDK Core",
-        "version": "12.0.0",
+        "version": "v12.0.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-SDK-Core.git",
         "description": "Core module",
         "visibility": "Hidden"
@@ -105,7 +105,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-sdk-graphs",
         "displayName": "Reflectis SDK Graphs",
-        "version": "2.0.0",
+        "version": "v2.0.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-SDK-Graphs.git",
         "description": "Graphs module",
         "visibility": "Hidden"
@@ -113,7 +113,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-sdk-tasks",
         "displayName": "Reflectis CreatorKit Worlds Core",
-        "version": "2.0.0",
+        "version": "v2.0.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-SDK-Tasks.git",
         "description": "Tasks module",
         "visibility": "Hidden"
@@ -121,7 +121,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-core",
         "displayName": "Reflectis CreatorKit Worlds Core",
-        "version": "4.1.0",
+        "version": "v4.1.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-Core.git",
         "description": "Reflectis CreatorKit Worlds Core module",
         "visibility": "Visible"
@@ -129,7 +129,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-placeholders",
         "displayName": "Reflectis CreatorKit Worlds Placeholders",
-        "version": "1.0.0",
+        "version": "v1.0.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-Placeholders.git",
         "description": "Reflectis CreatorKit Worlds Placeholder module",
         "visibility": "Visible"
@@ -137,7 +137,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-visualscripting",
         "displayName": "Reflectis CreatorKit Worlds Visual Scripting",
-        "version": "1.1.0",
+        "version": "v1.1.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-VisualScripting.git",
         "description": "Reflectis CreatorKit Worlds Visual Scripting module",
         "visibility": "Visible"
@@ -145,7 +145,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-tasks",
         "displayName": "Reflectis CreatorKit Tasks",
-        "version": "2.0.0",
+        "version": "v2.0.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-Tasks.git",
         "description": "Reflectis CreatorKit Tasks module",
         "visibility": "Visible"
@@ -153,7 +153,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-analytics",
         "displayName": "Reflectis CreatorKit Worlds Analytics",
-        "version": "1.1.0",
+        "version": "v1.1.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-Analytics.git",
         "description": "Reflectis CreatorKit Worlds Analytics module",
         "visibility": "Visible"
@@ -188,7 +188,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-sdk-core",
         "displayName": "Reflectis SDK Core",
-        "version": "12.0.0",
+        "version": "v12.0.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-SDK-Core.git",
         "description": "Core module",
         "visibility": "Hidden"
@@ -196,7 +196,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-sdk-graphs",
         "displayName": "Reflectis SDK Graphs",
-        "version": "2.0.0",
+        "version": "v2.0.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-SDK-Graphs.git",
         "description": "Graphs module",
         "visibility": "Hidden"
@@ -204,7 +204,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-sdk-tasks",
         "displayName": "Reflectis CreatorKit Worlds Core",
-        "version": "2.0.0",
+        "version": "v2.0.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-SDK-Tasks.git",
         "description": "Tasks module",
         "visibility": "Hidden"
@@ -212,7 +212,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-core",
         "displayName": "Reflectis CreatorKit Worlds Core",
-        "version": "4.1.0",
+        "version": "v4.1.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-Core.git",
         "description": "Reflectis CreatorKit Worlds Core module",
         "visibility": "Visible"
@@ -220,7 +220,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-placeholders",
         "displayName": "Reflectis CreatorKit Worlds Placeholders",
-        "version": "1.0.0",
+        "version": "v1.0.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-Placeholders.git",
         "description": "Reflectis CreatorKit Worlds Placeholder module",
         "visibility": "Visible"
@@ -228,7 +228,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-visualscripting",
         "displayName": "Reflectis CreatorKit Worlds Visual Scripting",
-        "version": "1.1.0",
+        "version": "v1.1.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-VisualScripting.git",
         "description": "Reflectis CreatorKit Worlds Visual Scripting module",
         "visibility": "Visible"
@@ -236,7 +236,7 @@
       {
         "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-tasks",
         "displayName": "Reflectis CreatorKit Tasks",
-        "version": "2.0.0",
+        "version": "v2.0.0",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-Tasks.git",
         "description": "Reflectis CreatorKit Tasks module",
         "visibility": "Visible"
@@ -244,7 +244,98 @@
       {
         "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-analytics",
         "displayName": "Reflectis CreatorKit Worlds Analytics",
-        "version": "1.1.0",
+        "version": "v1.1.0",
+        "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-Analytics.git",
+        "description": "Reflectis CreatorKit Worlds Analytics module",
+        "visibility": "Visible"
+      }
+    ],
+    "dependencies": {
+      "com.anotherealitysrl.reflectis-creatorkit-worlds-core": [
+        "com.anotherealitysrl.reflectis-sdk-core"
+      ],
+      "com.anotherealitysrl.reflectis-creatorkit-worlds-placeholders": [
+        "com.anotherealitysrl.reflectis-creatorkit-worlds-core"
+      ],
+      "com.anotherealitysrl.reflectis-creatorkit-worlds-visualscripting": [
+        "com.anotherealitysrl.reflectis-creatorkit-worlds-placeholders"
+      ],
+      "com.anotherealitysrl.reflectis-creatorkit-worlds-tasks": [
+        "com.anotherealitysrl.reflectis-creatorkit-worlds-core",
+        "com.anotherealitysrl.reflectis-sdk-tasks"
+      ],
+      "com.anotherealitysrl.reflectis-creatorkit-worlds-analytics": [
+        "com.anotherealitysrl.reflectis-creatorkit-worlds-core"
+      ],
+      "com.anotherealitysrl.reflectis-sdk-tasks": [
+        "com.anotherealitysrl.reflectis-sdk-graphs"
+      ]
+    }
+  },
+  {
+    "reflectisVersion": "develop",
+    "requiredUnityVersion": "6000.0.32f1",
+    "packages": [
+      {
+        "name": "com.anotherealitysrl.reflectis-sdk-core",
+        "displayName": "Reflectis SDK Core",
+        "version": "develop",
+        "url": "https://github.com/AnotheRealitySrl/Reflectis-SDK-Core.git",
+        "description": "Core module",
+        "visibility": "Hidden"
+      },
+      {
+        "name": "com.anotherealitysrl.reflectis-sdk-graphs",
+        "displayName": "Reflectis SDK Graphs",
+        "version": "develop",
+        "url": "https://github.com/AnotheRealitySrl/Reflectis-SDK-Graphs.git",
+        "description": "Graphs module",
+        "visibility": "Hidden"
+      },
+      {
+        "name": "com.anotherealitysrl.reflectis-sdk-tasks",
+        "displayName": "Reflectis CreatorKit Worlds Core",
+        "version": "develop",
+        "url": "https://github.com/AnotheRealitySrl/Reflectis-SDK-Tasks.git",
+        "description": "Tasks module",
+        "visibility": "Hidden"
+      },
+      {
+        "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-core",
+        "displayName": "Reflectis CreatorKit Worlds Core",
+        "version": "develop",
+        "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-Core.git",
+        "description": "Reflectis CreatorKit Worlds Core module",
+        "visibility": "Visible"
+      },
+      {
+        "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-placeholders",
+        "displayName": "Reflectis CreatorKit Worlds Placeholders",
+        "version": "develop",
+        "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-Placeholders.git",
+        "description": "Reflectis CreatorKit Worlds Placeholder module",
+        "visibility": "Visible"
+      },
+      {
+        "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-visualscripting",
+        "displayName": "Reflectis CreatorKit Worlds Visual Scripting",
+        "version": "develop",
+        "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-VisualScripting.git",
+        "description": "Reflectis CreatorKit Worlds Visual Scripting module",
+        "visibility": "Visible"
+      },
+      {
+        "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-tasks",
+        "displayName": "Reflectis CreatorKit Tasks",
+        "version": "develop",
+        "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-Tasks.git",
+        "description": "Reflectis CreatorKit Tasks module",
+        "visibility": "Visible"
+      },
+      {
+        "name": "com.anotherealitysrl.reflectis-creatorkit-worlds-analytics",
+        "displayName": "Reflectis CreatorKit Worlds Analytics",
+        "version": "develop",
         "url": "https://github.com/AnotheRealitySrl/Reflectis-CreatorKit-Worlds-Analytics.git",
         "description": "Reflectis CreatorKit Worlds Analytics module",
         "visibility": "Visible"

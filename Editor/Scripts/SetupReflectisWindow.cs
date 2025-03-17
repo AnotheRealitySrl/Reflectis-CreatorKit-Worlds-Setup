@@ -35,8 +35,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         private int displayedReflectisVersionIndex;
         private static string displayedReflectisVersion;
 
-        private bool hasSelectedAnotherVersion;
-
         #region booleanValues
 
         private bool isGitInstalled = false;
@@ -330,10 +328,16 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             EditorGUILayout.LabelField("Choose Reflectis version", headerStyle, GUILayout.Width(250));
 
             EditorGUI.BeginChangeCheck();
-            displayedReflectisVersion = availableVersions[displayedReflectisVersionIndex];
             displayedReflectisVersionIndex = EditorGUILayout.Popup(displayedReflectisVersionIndex, availableVersions.ToArray());
             if (EditorGUI.EndChangeCheck())
             {
+                displayedReflectisVersion = availableVersions[displayedReflectisVersionIndex];
+                if (installedPackages.Count == 0)
+                {
+                    EditorPrefs.SetString(playerPrefsVersionKey, selectedInstallation);
+                    selectedInstallation = displayedReflectisVersion;
+                }
+
                 EditorPrefs.SetString(playerPrefsVersionKey, displayedReflectisVersion);
                 UpdateDisplayedPacakgesAndDependencies();
             }
@@ -355,7 +359,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
                 packagesDropdown[package.Value.Name] = EditorGUILayout.Foldout(packagesDropdown[package.Value.Name], package.Value.DisplayName + " - version: " + package.Value.Version);
 
-                GUI.enabled = installationAsDependency.TryGetValue(package.Key, out bool value) ? !value : true; // Disable button if condition is true
+                GUI.enabled = !installationAsDependency.TryGetValue(package.Key, out bool value) || !value; // Disable button if condition is true
                 //TODO: change to a dictionary?
                 bool installed = installedPackages.Select(x => x.Name).Contains(package.Value.Name);
                 if (installed)
@@ -412,10 +416,13 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             EditorGUILayout.Space(10);
 
-            GUI.enabled = hasSelectedAnotherVersion;
+            GUI.enabled = selectedInstallation != displayedReflectisVersion;
             if (GUILayout.Button("Update packages to selected version"))
             {
-                //UpdatePackagesToSelectedVersion();
+                if (EditorUtility.DisplayDialog("Warning", "Do you want to update all the packages to the selected Reflectis version?", "Yes", "Cancel"))
+                {
+                    UpdatePackagesToSelectedVersion();
+                }
             }
             GUI.enabled = true;
 
@@ -694,7 +701,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             JObject dependencies = (JObject)manifestObj["dependencies"];
             foreach (PackageDefinition p in toInstall)
             {
-                dependencies[p.Name] = p.Url;
+                dependencies[p.Name] = $"{p.Url}#{p.Version}";
             }
 
             File.WriteAllText(manifestFilePath, manifestObj.ToString());
@@ -721,7 +728,26 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             EditorPrefs.SetString(installedPackagesKey, JsonConvert.SerializeObject(installedPackages));
 
-            UninstallPackages(packagesToRemove);
+            UninstallPackages(packagesToRemove.Select(x => x.Name).ToList());
+        }
+
+        private void UninstallPackages(List<string> toRemove)
+        {
+            string manifestFilePath = Path.Combine(Application.dataPath, "../Packages/manifest.json");
+            string manifestJson = File.ReadAllText(manifestFilePath);
+            JObject manifestObj = JObject.Parse(manifestJson);
+
+            JObject dependencies = (JObject)manifestObj["dependencies"];
+            foreach (string pName in toRemove)
+            {
+                dependencies.Remove(pName);
+            }
+
+            File.WriteAllText(manifestFilePath, manifestObj.ToString());
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            RefreshWindow();
         }
 
         public static Dictionary<string, List<string>> InvertDictionary(Dictionary<string, string[]> dictionary)
@@ -741,25 +767,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             }
 
             return invertedDictionary;
-        }
-
-        private void UninstallPackages(List<PackageDefinition> toRemove)
-        {
-            string manifestFilePath = Path.Combine(Application.dataPath, "../Packages/manifest.json");
-            string manifestJson = File.ReadAllText(manifestFilePath);
-            JObject manifestObj = JObject.Parse(manifestJson);
-
-            JObject dependencies = (JObject)manifestObj["dependencies"];
-            foreach (PackageDefinition p in toRemove)
-            {
-                dependencies.Remove(p.Name);
-            }
-
-            File.WriteAllText(manifestFilePath, manifestObj.ToString());
-
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-            RefreshWindow();
         }
 
         private bool IsPackageInstalledAsDependency(PackageDefinition package)
@@ -783,6 +790,35 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             }
 
             return isDependency;
+        }
+
+        private void UpdatePackagesToSelectedVersion()
+        {
+            if (selectedInstallation != displayedReflectisVersion)
+            {
+                selectedInstallation = displayedReflectisVersion;
+                EditorPrefs.SetString(playerPrefsVersionKey, selectedInstallation);
+
+                Dictionary<string, PackageDefinition> packages = allVersionsPackageRegistries
+                    .FirstOrDefault(x => x.ReflectisVersion == selectedInstallation).Packages
+                    .ToDictionary(x => x.Name, y => y);
+
+                List<PackageDefinition> installedPackagesCopy = new(installedPackages);
+                foreach (PackageDefinition package in installedPackagesCopy)
+                {
+                    if (package.Version != selectedVersionPackageDictionary[package.Name].Version)
+                    {
+                        installedPackages.Remove(package);
+                        UninstallPackages(new() { package.Name });
+
+                        installedPackages.Add(selectedVersionPackageDictionary[package.Name]);
+                        InstallPackages(new() { selectedVersionPackageDictionary[package.Name] });
+                    }
+                }
+
+                EditorPrefs.SetString(installedPackagesKey, JsonConvert.SerializeObject(installedPackages));
+
+            }
         }
 
         #endregion
