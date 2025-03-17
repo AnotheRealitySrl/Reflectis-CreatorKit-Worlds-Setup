@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 
 using UnityEditor;
 using UnityEditor.Build;
@@ -23,6 +24,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
     public class SetupReflectisWindow : EditorWindow
     {
         #region Reflectis JSON data variables
+
+        private readonly string packageRegistryPath = "https://spacsglobal.blob.core.windows.net/reflectis2023-prep-upload/25/PackageRegistry.json";
 
         private readonly string playerPrefsVersionKey = "SelectedReflectisVersion"; //string used to know which reflectis version is installed. Set The first time you press the setup button. 
         private readonly string installedPackagesKey = "InstalledPackages"; //string used to know which packages are installed.
@@ -486,12 +489,14 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         #endregion
 
-        private void SetupWindowData()
+        private async void SetupWindowData()
         {
-            //For now load the json via the resource folder. In the future calla an api to retrieve the json
-            packagesTextAsset ??= Resources.Load<TextAsset>("PackageRegistry").text;
+            using HttpClient client = new();
+            HttpResponseMessage response = await client.GetAsync(packageRegistryPath);
+            response.EnsureSuccessStatusCode();
+            string responseBody = await response.Content.ReadAsStringAsync();
+            allVersionsPackageRegistries = JsonConvert.DeserializeObject<PackageRegistry[]>(responseBody);
 
-            allVersionsPackageRegistries = JsonConvert.DeserializeObject<PackageRegistry[]>(packagesTextAsset);
             availableVersions = allVersionsPackageRegistries.Select(x => x.ReflectisVersion).ToList();
 
             //Get reflectis version and update list of packages
