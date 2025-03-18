@@ -29,7 +29,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         private readonly string packageRegistryPath = "https://spacsglobal.dfs.core.windows.net/reflectis2023-public/PackageManager/PackageRegistry.json";
         private readonly string breakingChangesSolverPath = "https://spacsglobal.dfs.core.windows.net/reflectis2023-public/PackageManager/BreakingChangesSolverIndex.json";
 
-        private readonly string playerPrefsVersionKey = "SelectedReflectisVersion"; //string used to know which reflectis version is installed. Set The first time you press the setup button. 
+        private readonly string currentInstallationKey = "SelectedReflectisVersion"; //string used to know which reflectis version is installed. Set The first time you press the setup button. 
         private readonly string installedPackagesKey = "InstalledPackages"; //string used to know which packages are installed.
 
         private static PackageRegistry[] allVersionsPackageRegistries;
@@ -55,7 +55,9 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private bool setupCompleted = false;
 
+        private bool packageManagerAdvancedSettings;
         private bool resolveBreakingChangesAutomatically = true;
+        private bool showPrereleases = false;
 
         #endregion
 
@@ -310,7 +312,21 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             #region Package manager
 
-            EditorGUILayout.LabelField("Package manager", paragraphStyle);
+
+            EditorGUILayout.BeginHorizontal();
+
+            EditorGUILayout.LabelField("Package manager", paragraphStyle, GUILayout.ExpandWidth(true));
+
+            EditorGUILayout.BeginHorizontal(GUILayout.Width(70));
+            EditorGUILayout.LabelField("Refresh", GUILayout.Width(50));
+            if (GUILayout.Button(EditorGUIUtility.IconContent("Refresh"), GUILayout.ExpandWidth(false)))
+            {
+                SetupWindowData();
+            };
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.EndHorizontal();
+
             EditorGUILayout.Space(10);
 
             //GUIContent updateIcon = EditorGUIUtility.IconContent("d_console.infoicon.sml");
@@ -318,23 +334,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             {
                 fontStyle = FontStyle.Italic
             };
-
-            if (GUILayout.Button("Refresh"))
-            {
-                SetupWindowData();
-            }
-            if (GUILayout.Button("Log"))
-            {
-                UnityEngine.Debug.LogWarning(EditorPrefs.GetString(installedPackagesKey));
-            }
-            if (GUILayout.Button("Reset"))
-            {
-                EditorPrefs.SetString(installedPackagesKey, string.Empty);
-            }
-            if (GUILayout.Button("Test"))
-            {
-                ResolveBreakingChanges();
-            }
 
             EditorGUILayout.BeginVertical(new GUIStyle(lineStyles[1]));
             EditorGUILayout.BeginHorizontal();
@@ -347,11 +346,11 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 displayedReflectisVersion = availableVersions[displayedReflectisVersionIndex];
                 if (installedPackages.Count == 0)
                 {
-                    EditorPrefs.SetString(playerPrefsVersionKey, currentInstallationVersion);
+                    EditorPrefs.SetString(currentInstallationKey, currentInstallationVersion);
                     currentInstallationVersion = displayedReflectisVersion;
                 }
 
-                EditorPrefs.SetString(playerPrefsVersionKey, displayedReflectisVersion);
+                EditorPrefs.SetString(currentInstallationKey, displayedReflectisVersion);
                 UpdateDisplayedPacakgesAndDependencies();
             }
             EditorGUILayout.EndHorizontal();
@@ -430,7 +429,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             EditorGUILayout.Space(10);
 
             GUI.enabled = currentInstallationVersion != displayedReflectisVersion;
-            if (GUILayout.Button("Update packages to selected version"))
+            if (GUILayout.Button("Update packages to selected version", GUILayout.ExpandWidth(false)))
             {
                 if (EditorUtility.DisplayDialog("Warning", "Do you want to update all the packages to the selected Reflectis version?", "Yes", "Cancel"))
                 {
@@ -440,6 +439,28 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             GUI.enabled = true;
 
             EditorGUILayout.EndVertical();
+
+            packageManagerAdvancedSettings = EditorGUILayout.Foldout(packageManagerAdvancedSettings, "Advanced settings");
+            if (packageManagerAdvancedSettings)
+            {
+                EditorGUILayout.BeginVertical();
+                EditorGUILayout.BeginHorizontal();
+
+                resolveBreakingChangesAutomatically = EditorGUILayout.Toggle(resolveBreakingChangesAutomatically, GUILayout.Width(20));
+                EditorGUILayout.LabelField("Resolve breaking changes automatically when updating version", GUILayout.ExpandWidth(true));
+
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.EndVertical();
+
+                EditorGUILayout.BeginVertical();
+                EditorGUILayout.BeginHorizontal(GUILayout.Width(250));
+
+                showPrereleases = EditorGUILayout.Toggle(showPrereleases, GUILayout.Width(20));
+                EditorGUILayout.LabelField("Show pre-releases", GUILayout.ExpandWidth(true));
+
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.EndVertical();
+            }
 
             EditorGUILayout.Space(15);
             lineRect = EditorGUILayout.GetControlRect(false, 1);
@@ -526,7 +547,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             availableVersions = allVersionsPackageRegistries.Select(x => x.ReflectisVersion).ToList();
 
             //Get reflectis version and update list of packages
-            currentInstallationVersion = EditorPrefs.GetString(playerPrefsVersionKey);
+            currentInstallationVersion = EditorPrefs.GetString(currentInstallationKey);
             previousInstallationVersion = currentInstallationVersion;
             displayedReflectisVersion = currentInstallationVersion;
             installedPackages = JsonConvert.DeserializeObject<HashSet<PackageDefinition>>(EditorPrefs.GetString(installedPackagesKey)) ?? new();
@@ -832,7 +853,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             {
                 previousInstallationVersion = currentInstallationVersion;
                 currentInstallationVersion = displayedReflectisVersion;
-                EditorPrefs.SetString(playerPrefsVersionKey, currentInstallationVersion);
+                EditorPrefs.SetString(currentInstallationKey, currentInstallationVersion);
 
                 Dictionary<string, PackageDefinition> packages = allVersionsPackageRegistries
                     .FirstOrDefault(x => x.ReflectisVersion == currentInstallationVersion).Packages
