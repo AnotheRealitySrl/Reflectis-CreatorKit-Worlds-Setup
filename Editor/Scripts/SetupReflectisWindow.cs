@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 
 using UnityEditor;
 using UnityEditor.Build;
@@ -25,13 +26,14 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
     {
         #region Reflectis JSON data variables
 
-        private readonly string packageRegistryPath = "https://spacsglobal.blob.core.windows.net/reflectis2023-prep-upload/25/PackageRegistry.json";
+        private readonly string packageRegistryPath = "https://spacsglobal.dfs.core.windows.net/reflectis2023-public/PackageManager/PackageRegistry.json";
+        private readonly string breakingChangesSolverPath = "https://spacsglobal.dfs.core.windows.net/reflectis2023-public/PackageManager/BreakingChangesSolverIndex.json";
 
         private readonly string playerPrefsVersionKey = "SelectedReflectisVersion"; //string used to know which reflectis version is installed. Set The first time you press the setup button. 
         private readonly string installedPackagesKey = "InstalledPackages"; //string used to know which packages are installed.
 
         private static PackageRegistry[] allVersionsPackageRegistries;
-        private static string packagesTextAsset;
+        private static Dictionary<(string, string), string> breakingChangesSolverDictionary;
 
         #endregion
 
@@ -53,6 +55,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private bool setupCompleted = false;
 
+        private bool resolveBreakingChangesAutomatically = true;
+
         #endregion
 
         #region Package and platform lists
@@ -69,7 +73,9 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         #region Packages details
 
         private List<string> availableVersions = new();
-        private string selectedInstallation;
+
+        private string currentInstallationVersion;
+        private string previousInstallationVersion;
 
         private static List<PackageDefinition> selectedVersionPackageList = new(); //the selected version packages
         private static Dictionary<string, PackageDefinition> selectedVersionPackageDictionary = new();
@@ -325,6 +331,10 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             {
                 EditorPrefs.SetString(installedPackagesKey, string.Empty);
             }
+            if (GUILayout.Button("Test"))
+            {
+                ResolveBreakingChanges();
+            }
 
             EditorGUILayout.BeginVertical(new GUIStyle(lineStyles[1]));
             EditorGUILayout.BeginHorizontal();
@@ -337,8 +347,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 displayedReflectisVersion = availableVersions[displayedReflectisVersionIndex];
                 if (installedPackages.Count == 0)
                 {
-                    EditorPrefs.SetString(playerPrefsVersionKey, selectedInstallation);
-                    selectedInstallation = displayedReflectisVersion;
+                    EditorPrefs.SetString(playerPrefsVersionKey, currentInstallationVersion);
+                    currentInstallationVersion = displayedReflectisVersion;
                 }
 
                 EditorPrefs.SetString(playerPrefsVersionKey, displayedReflectisVersion);
@@ -419,7 +429,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             EditorGUILayout.Space(10);
 
-            GUI.enabled = selectedInstallation != displayedReflectisVersion;
+            GUI.enabled = currentInstallationVersion != displayedReflectisVersion;
             if (GUILayout.Button("Update packages to selected version"))
             {
                 if (EditorUtility.DisplayDialog("Warning", "Do you want to update all the packages to the selected Reflectis version?", "Yes", "Cancel"))
@@ -497,16 +507,35 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             string responseBody = await response.Content.ReadAsStringAsync();
             allVersionsPackageRegistries = JsonConvert.DeserializeObject<PackageRegistry[]>(responseBody);
 
+            HttpResponseMessage routineResponse = await client.GetAsync(breakingChangesSolverPath);
+            routineResponse.EnsureSuccessStatusCode();
+            string routineResponseBody = await routineResponse.Content.ReadAsStringAsync();
+
+            // Deserialize into a Dictionary<string, string>
+            var dictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(routineResponseBody);
+            // Convert the keys into tuples
+            breakingChangesSolverDictionary = new Dictionary<(string, string), string>();
+            foreach (var kvp in dictionary)
+            {
+                // Parse the key into a tuple
+                var key = kvp.Key.Trim('(', ')').Split(", ");
+                var tupleKey = (key[0].Trim('"'), key[1].Trim('"'));
+                breakingChangesSolverDictionary[tupleKey] = kvp.Value;
+            }
+
             availableVersions = allVersionsPackageRegistries.Select(x => x.ReflectisVersion).ToList();
 
             //Get reflectis version and update list of packages
-            displayedReflectisVersion = EditorPrefs.GetString(playerPrefsVersionKey);
+            currentInstallationVersion = EditorPrefs.GetString(playerPrefsVersionKey);
+            previousInstallationVersion = currentInstallationVersion;
+            displayedReflectisVersion = currentInstallationVersion;
             installedPackages = JsonConvert.DeserializeObject<HashSet<PackageDefinition>>(EditorPrefs.GetString(installedPackagesKey)) ?? new();
             if (string.IsNullOrEmpty(displayedReflectisVersion))
             {
                 displayedReflectisVersion = allVersionsPackageRegistries[^1].ReflectisVersion;
             }
             displayedReflectisVersionIndex = availableVersions.IndexOf(displayedReflectisVersion);
+
 
             packagesDropdown = selectedVersionPackageDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
             dependenciesDropdown = selectedVersionPackageDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
@@ -799,13 +828,14 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private void UpdatePackagesToSelectedVersion()
         {
-            if (selectedInstallation != displayedReflectisVersion)
+            if (currentInstallationVersion != displayedReflectisVersion)
             {
-                selectedInstallation = displayedReflectisVersion;
-                EditorPrefs.SetString(playerPrefsVersionKey, selectedInstallation);
+                previousInstallationVersion = currentInstallationVersion;
+                currentInstallationVersion = displayedReflectisVersion;
+                EditorPrefs.SetString(playerPrefsVersionKey, currentInstallationVersion);
 
                 Dictionary<string, PackageDefinition> packages = allVersionsPackageRegistries
-                    .FirstOrDefault(x => x.ReflectisVersion == selectedInstallation).Packages
+                    .FirstOrDefault(x => x.ReflectisVersion == currentInstallationVersion).Packages
                     .ToDictionary(x => x.Name, y => y);
 
                 List<PackageDefinition> installedPackagesCopy = new(installedPackages);
@@ -823,7 +853,59 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
                 EditorPrefs.SetString(installedPackagesKey, JsonConvert.SerializeObject(installedPackages));
 
+                if (resolveBreakingChangesAutomatically)
+                {
+                    ResolveBreakingChanges();
+                }
             }
+        }
+
+        private async void ResolveBreakingChanges()
+        {
+            if (!AssetDatabase.IsValidFolder("Assets/CKBreakingChangesSolvers"))
+                AssetDatabase.CreateFolder("Assets", "CKBreakingChangesSolvers");
+
+            string prev = FilterPatch(previousInstallationVersion);
+            string cur = FilterPatch(currentInstallationVersion);
+            (string, string) routineKey = (prev, cur);
+
+            string routinePath = breakingChangesSolverDictionary[routineKey];
+
+            using HttpClient client = new();
+            HttpResponseMessage response = await client.GetAsync(routinePath);
+            response.EnsureSuccessStatusCode();
+            string responseBody = await response.Content.ReadAsStringAsync();
+
+            string assetPath = $"Assets/CKBreakingChangesSolvers/{routinePath.Split('/').Last()}";
+            StreamWriter writer = new(assetPath, false);
+            writer.WriteLine(responseBody);
+            writer.Close();
+            AssetDatabase.ImportAsset(assetPath);
+        }
+
+        public static void ResolveBreakingChangesCallback(string type)
+        {
+            Type myClassType = AppDomain.CurrentDomain.GetAssemblies()
+                    .SelectMany(assembly => assembly.GetTypes())
+                    .FirstOrDefault(t => t.Name == type);
+
+            try
+            {
+                myClassType.GetMethod("SolveBreakingChanges", BindingFlags.Public | BindingFlags.Static).Invoke(null, null);
+            }
+            catch
+            {
+                UnityEngine.Debug.LogError($"Failed to load breaking changes solver: {myClassType}");
+            }
+        }
+
+        private string FilterPatch(string input)
+        {
+            int index = input.LastIndexOf('.');
+            if (index != -1)
+                return input[..index];
+
+            return input;
         }
 
         #endregion
@@ -885,6 +967,26 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             else
             {
                 outgoingEdges[node] = Array.Empty<string>();
+            }
+        }
+    }
+
+    public class CustomAssetPostprocessor : AssetPostprocessor
+    {
+        // This method is called when importing any number of assets is completed
+        static void OnPostprocessAllAssets(
+            string[] importedAssets,
+            string[] deletedAssets,
+            string[] movedAssets,
+            string[] movedFromAssetPaths)
+        {
+            foreach (var importedAsset in importedAssets)
+            {
+                UnityEngine.Object obj = AssetDatabase.LoadAssetAtPath(importedAsset, typeof(MonoScript));
+                if (obj != null)
+                {
+                    SetupReflectisWindow.ResolveBreakingChangesCallback(importedAsset.Split('/').Last()[..^3]);
+                }
             }
         }
     }
