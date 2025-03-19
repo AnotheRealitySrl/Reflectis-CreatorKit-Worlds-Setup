@@ -24,55 +24,53 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
     [InitializeOnLoad]
     public class SetupReflectisWindow : EditorWindow
     {
-        #region Reflectis JSON data variables
+        #region editor window setup
 
-        private readonly string packageRegistryPath = "https://spacsglobal.dfs.core.windows.net/reflectis2023-public/PackageManager/PackageRegistry.json";
-        private readonly string breakingChangesSolverPath = "https://spacsglobal.dfs.core.windows.net/reflectis2023-public/PackageManager/BreakingChangesSolverIndex.json";
-
-        private readonly string currentInstallationKey = "SelectedReflectisVersion"; //string used to know which reflectis version is installed. Set The first time you press the setup button. 
-        private readonly string installedPackagesKey = "InstalledPackages"; //string used to know which packages are installed.
-
-        private static PackageRegistry[] allVersionsPackageRegistries;
-        private static Dictionary<(string, string), string> breakingChangesSolverDictionary;
+        private static bool isSetupping = false;
+        private static bool setupCompleted = false;
 
         #endregion
 
-        private int displayedReflectisVersionIndex;
-        private static string displayedReflectisVersion;
-
-        #region booleanValues
+        #region Project configuration
 
         private bool isGitInstalled = false;
         private string gitVersion = string.Empty;
 
-        private bool allPlatformFixed = true;
+        private bool UnityVersionIsMatching => InternalEditorUtility.GetFullUnityVersion().Split(' ')[0] == allVersionsPackageRegistries[displayedReflectisVersionIndex].RequiredUnityVersion;
+        private bool AllEditorModulesInstalled => !installedModules.Values.Contains(false);
 
         private bool renderPipelineURP = false;
-        private bool projectSettings = false;
+        private bool playerSettings = false;
         private bool maxTextureSizeOverride = false;
 
         private bool allSettingsFixed = true;
 
-        private bool setupCompleted = false;
+        private bool EditorConfigurationOk => UnityVersionIsMatching && AllEditorModulesInstalled;
+        private bool ProjectSettingsOk => renderPipelineURP && playerSettings && maxTextureSizeOverride;
 
-        private bool packageManagerAdvancedSettings;
-        private bool resolveBreakingChangesAutomatically = true;
-        private bool showPrereleases = false;
-
-        #endregion
-
-        #region Package and platform lists
-
-        public Dictionary<string, bool> installedModules = new()
+        public static Dictionary<string, bool> installedModules = new()
         {
             { "Android", true },
             { "WebGL", true },
             { "Windows", true }
         };
 
+        private bool showGitInstallation = false;
+        private bool showEditorConfiguration = false;
+        private bool showProjectSettings = false;
+
         #endregion
 
-        #region Packages details
+        #region Package manager
+
+        private readonly string packageRegistryPath = "https://spacsglobal.dfs.core.windows.net/reflectis2023-public/PackageManager/PackageRegistry.json";
+        private readonly string breakingChangesSolverPath = "https://spacsglobal.dfs.core.windows.net/reflectis2023-public/PackageManager/BreakingChangesSolverIndex.json";
+
+        private static PackageRegistry[] allVersionsPackageRegistries;
+        private static Dictionary<(string, string), string> breakingChangesSolverDictionary;
+
+        private int displayedReflectisVersionIndex;
+        private static string displayedReflectisVersion;
 
         private List<string> availableVersions = new();
 
@@ -91,6 +89,15 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private static Dictionary<string, bool> packagesDropdown;
         private static Dictionary<string, bool> dependenciesDropdown;
+
+        private bool packageManagerAdvancedSettings;
+        private bool resolveBreakingChangesAutomatically = true;
+        private bool showPrereleases = false;
+
+        private readonly string currentInstallationKey = "SelectedReflectisVersion"; //string used to know which reflectis version is installed. Set The first time you press the setup button. 
+        private readonly string installedPackagesKey = "InstalledPackages"; //string used to know which packages are installed.
+
+        private DateTime lastPackageManagerRefresh;
 
         #endregion
 
@@ -111,9 +118,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         GUIContent warningIconContent;
         GUIContent errorIconContent;
         GUIContent confirmedIcon;
-
-        private bool showPlatformSupport = false;
-        private bool showProjectSettings = false;
 
         private Vector2 scrollPosition = Vector2.zero;
         private Rect lineRect;
@@ -144,8 +148,13 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private void OnGUI()
         {
-            if (!setupCompleted)
+            if (isSetupping)
                 return;
+
+            if (!setupCompleted)
+            {
+                SetupWindowData();
+            }
 
             #region GUI Styles definition
 
@@ -220,21 +229,31 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             #region Git installation
 
-            //Github part
             GUILayout.BeginHorizontal();
+            showGitInstallation = GUILayout.Toggle(showGitInstallation, new GUIContent("Git installation", isGitInstalled ? confirmedIcon.image : errorIconContent.image), new GUIStyle(toggleStyle));
 
-            EditorGUILayout.LabelField(new GUIContent(isGitInstalled ? confirmedIcon.image : errorIconContent.image), GUILayout.Width(20));
-            GUILayout.Label("Git executable " + gitVersion, labelStyle);
-            GUILayout.FlexibleSpace();
-            if (isGitInstalled)
-                GUI.enabled = false;
-            if (GUILayout.Button(new GUIContent("Install", "You have to install github in order to install packages"), GUILayout.Width(80)))
+            GUI.enabled = !isGitInstalled;
+            if (GUILayout.Button(new GUIContent("Download", "You have to install github in order to install packages"), GUILayout.Width(80)))
             {
                 string gitDownloadUrl = "https://git-scm.com/downloads";
                 Application.OpenURL(gitDownloadUrl);
             }
             GUI.enabled = true;
+
             EditorGUILayout.EndHorizontal();
+
+            if (showGitInstallation)
+            {
+                GUILayout.Space(5);
+
+                EditorGUILayout.BeginHorizontal(new GUIStyle { margin = new RectOffset(10, 10, 0, 0) });
+                GUILayout.Label(isGitInstalled ? $"Installed Git instance: {gitVersion}" : "No Git installation found! Click on the Download button to obtain it from the official website", labelStyle);
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+            }
+
+            GUILayout.Space(10);
+
 
             #endregion
 
@@ -242,21 +261,21 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             #region Editor installations
 
-            showPlatformSupport = GUILayout.Toggle(showPlatformSupport, new GUIContent("Unity Editor configuration", allPlatformFixed ? confirmedIcon.image : errorIconContent.image), new GUIStyle(toggleStyle));
+            showEditorConfiguration = GUILayout.Toggle(showEditorConfiguration, new GUIContent("Unity Editor configuration", EditorConfigurationOk ? confirmedIcon.image : errorIconContent.image), new GUIStyle(toggleStyle));
 
-            if (showPlatformSupport)
+            if (showEditorConfiguration)
             {
                 GUILayout.Space(5);
 
                 EditorGUILayout.BeginVertical(new GUIStyle { margin = new RectOffset(10, 10, 0, 0) });
 
+                string shortUnityVersion = InternalEditorUtility.GetFullUnityVersion().Split(' ')[0];
+                string alternateText = $"You have to install Unity version {allVersionsPackageRegistries[displayedReflectisVersionIndex].RequiredUnityVersion}";
+                CreateSettingEntry($"Unity version: {shortUnityVersion}", UnityVersionIsMatching, errorIconContent, alternateText);
+
                 string text = $"All editor modules installed properly";
                 string alternativeText = $"[{string.Join(", ", installedModules.Where(kv => !kv.Value).Select(kv => kv.Key))}] editor modules are not installed";
                 CreateSettingEntry(text, !installedModules.Values.Contains(false), errorIconContent, alternativeText);
-
-                string shortUnityVersion = InternalEditorUtility.GetUnityVersion().ToString();
-                string alternateText = $"You have to install Unity version {allVersionsPackageRegistries[displayedReflectisVersionIndex].RequiredUnityVersion}";
-                CreateSettingEntry($"Unity version: {InternalEditorUtility.GetFullUnityVersion()}", shortUnityVersion == allVersionsPackageRegistries[displayedReflectisVersionIndex].RequiredUnityVersion, errorIconContent, alternateText);
 
                 EditorGUILayout.EndVertical();
             }
@@ -270,7 +289,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             GUILayout.Space(10);
 
             EditorGUILayout.BeginHorizontal();
-            showProjectSettings = GUILayout.Toggle(showProjectSettings, new GUIContent("Project Settings", allSettingsFixed ? confirmedIcon.image : errorIconContent.image), new GUIStyle(toggleStyle));
+            showProjectSettings = GUILayout.Toggle(showProjectSettings, new GUIContent("Project Settings", ProjectSettingsOk ? confirmedIcon.image : errorIconContent.image), new GUIStyle(toggleStyle));
 
             if (GUILayout.Button("Configure all", configureAllStyle, GUILayout.Width(100)))
             {
@@ -292,7 +311,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 GUILayout.Space(6);
 
                 CreateSettingEntry("Configure URP as render pipeline", renderPipelineURP, errorIconContent);
-                CreateSettingEntry("Project settings configuration", projectSettings, errorIconContent);
+                CreateSettingEntry("Project settings configuration", playerSettings, errorIconContent);
                 CreateSettingEntry("Configure max textures size", maxTextureSizeOverride, errorIconContent);
 
                 EditorGUILayout.EndVertical();
@@ -318,7 +337,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             EditorGUILayout.LabelField("Package manager", paragraphStyle, GUILayout.ExpandWidth(true));
 
             EditorGUILayout.BeginHorizontal(GUILayout.Width(70));
-            EditorGUILayout.LabelField("Refresh", GUILayout.Width(50));
+            EditorGUILayout.LabelField($"Last refresh {lastPackageManagerRefresh:MMM dd, HH:mm}", GUILayout.Width(160));
             if (GUILayout.Button(EditorGUIUtility.IconContent("Refresh"), GUILayout.ExpandWidth(false)))
             {
                 SetupWindowData();
@@ -329,7 +348,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             EditorGUILayout.Space(10);
 
-            //GUIContent updateIcon = EditorGUIUtility.IconContent("d_console.infoicon.sml");
             GUIStyle textStyle = new(GUI.skin.label)
             {
                 fontStyle = FontStyle.Italic
@@ -337,10 +355,15 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             EditorGUILayout.BeginVertical(new GUIStyle(lineStyles[1]));
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Choose Reflectis version", headerStyle, GUILayout.Width(250));
+            EditorGUILayout.LabelField($"Current Reflectis version: {currentInstallationVersion}", headerStyle, GUILayout.Width(250));
 
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace(); // Add flexible space to push the next BeginHorizontal to the center
+            EditorGUILayout.LabelField($"Select another version", GUILayout.Width(140));
             EditorGUI.BeginChangeCheck();
             displayedReflectisVersionIndex = EditorGUILayout.Popup(displayedReflectisVersionIndex, availableVersions.ToArray());
+            EditorGUILayout.EndHorizontal();
+
             if (EditorGUI.EndChangeCheck())
             {
                 displayedReflectisVersion = availableVersions[displayedReflectisVersionIndex];
@@ -353,6 +376,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 EditorPrefs.SetString(currentInstallationKey, displayedReflectisVersion);
                 UpdateDisplayedPacakgesAndDependencies();
             }
+
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.Space(10);
@@ -428,6 +452,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             EditorGUILayout.Space(10);
 
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
             GUI.enabled = currentInstallationVersion != displayedReflectisVersion;
             if (GUILayout.Button("Update packages to selected version", GUILayout.ExpandWidth(false)))
             {
@@ -437,8 +463,11 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 }
             }
             GUI.enabled = true;
+            EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.EndVertical();
+
+            EditorGUILayout.Space(10);
 
             packageManagerAdvancedSettings = EditorGUILayout.Foldout(packageManagerAdvancedSettings, "Advanced settings");
             if (packageManagerAdvancedSettings)
@@ -485,7 +514,15 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             if (GUILayout.Button("Open Creator Kit Documentation", EditorStyles.linkLabel))
             {
-                Application.OpenURL("https://reflectis.io/docs/2024.4/CK/intro");
+                try
+                {
+                    string version = displayedReflectisVersion[..displayedReflectisVersion.LastIndexOf('.')];
+                    Application.OpenURL($"https://reflectis.io/docs/{version}/CK/intro");
+                }
+                catch
+                {
+                    UnityEngine.Debug.LogWarning("Unable to find documentation for pre-releases");
+                }
             }
 
             EditorGUILayout.EndHorizontal();
@@ -522,6 +559,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private async void SetupWindowData()
         {
+            isSetupping = true;
+
             using HttpClient client = new();
             HttpResponseMessage response = await client.GetAsync(packageRegistryPath);
             response.EnsureSuccessStatusCode();
@@ -561,6 +600,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             packagesDropdown = selectedVersionPackageDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
             dependenciesDropdown = selectedVersionPackageDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
 
+            lastPackageManagerRefresh = DateTime.Now;
+
             UpdateDisplayedPacakgesAndDependencies();
 
             CheckGitInstallation();
@@ -568,14 +609,12 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             CheckProjectSettings();
 
             setupCompleted = true;
+            isSetupping = false;
         }
 
         private void RefreshWindow()
         {
             Repaint(); // Request Unity to redraw the window
-
-            allPlatformFixed = true;
-            allSettingsFixed = true;
 
             UpdateDisplayedPacakgesAndDependencies();
 
@@ -624,31 +663,20 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         private void CheckEditorModulesInstallation()
         {
             //Check supported platform
-            BuildTargetGroup[] buildTargetGroups = (BuildTargetGroup[])System.Enum.GetValues(typeof(BuildTargetGroup));
+            BuildTargetGroup[] buildTargetGroups = (BuildTargetGroup[])Enum.GetValues(typeof(BuildTargetGroup));
             foreach (BuildTargetGroup group in buildTargetGroups)
             {
                 CheckBuildTarget(group, BuildTarget.Android, "Android");
                 CheckBuildTarget(group, BuildTarget.StandaloneWindows, "Windows");
                 CheckBuildTarget(group, BuildTarget.WebGL, "WebGL");
             }
-
-            //update the coreInstalled value
-            foreach (var element in installedModules)
-            {
-                if (element.Value == false)
-                {
-                    allPlatformFixed = false;
-                }
-            }
         }
 
         private void CheckProjectSettings()
         {
             renderPipelineURP = GetURPConfigurationStatus();
-            projectSettings = GetProjectSettingsStatus();
+            playerSettings = GetProjectSettingsStatus();
             maxTextureSizeOverride = GetMaxTextureSizeOverride();
-
-            allSettingsFixed = renderPipelineURP && projectSettings && maxTextureSizeOverride;
         }
 
         private void CheckBuildTarget(BuildTargetGroup group, BuildTarget target, string platform)
