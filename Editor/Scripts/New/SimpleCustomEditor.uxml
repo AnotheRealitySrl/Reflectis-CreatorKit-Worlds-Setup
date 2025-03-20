@@ -1,5 +1,5 @@
 <engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <Style src="project://database/Assets/Editor/styles.uss?fileID=7433441132597879392&amp;guid=ca7a0c867793b12469d64e21b6c3abe7&amp;type=3#styles" />
+    <Style src="project://database/Packages/com.anotherealitysrl.reflectis-creatorkit-worlds-installer/Editor/Scripts/New/styles.uss?fileID=7433441132597879392&amp;guid=ca7a0c867793b12469d64e21b6c3abe7&amp;type=3#styles" />
     <engine:ScrollView style="height: 875px; width: 1008px;">
         <engine:Label text="Creator Kit Configuration Window" name="Header" style="-unity-text-align: upper-center; -unity-font-style: bold; font-size: 24px;" />
         <engine:VisualElement name="Separator" class="separator" style="flex-grow: 1;" />
@@ -13,7 +13,7 @@
                     </engine:VisualElement>
                 </engine:Foldout>
                 <engine:GroupBox name="ButtonContainer" style="justify-content: space-between; align-items: auto;">
-                    <engine:Button text="Button" />
+                    <engine:Button text="Download" />
                 </engine:GroupBox>
             </engine:GroupBox>
             <engine:GroupBox name="EditorConfiguration">
@@ -44,7 +44,7 @@
                     </engine:VisualElement>
                 </engine:Foldout>
                 <engine:GroupBox name="ButtonContainer" style="justify-content: space-between; align-items: auto;">
-                    <engine:Button text="Button" />
+                    <engine:Button text="Configure" />
                 </engine:GroupBox>
             </engine:GroupBox>
         </engine:GroupBox>

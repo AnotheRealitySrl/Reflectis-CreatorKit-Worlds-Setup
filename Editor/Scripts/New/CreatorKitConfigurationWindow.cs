@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 using System;
@@ -11,19 +11,19 @@ using System.Reflection;
 
 using UnityEditor;
 using UnityEditor.Build;
-using UnityEditor.PackageManager;
-using UnityEditor.PackageManager.Requests;
 
 using UnityEditorInternal;
 
 using UnityEngine;
-using UnityEngine.Events;
+using UnityEngine.UIElements;
 
 namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 {
-    [InitializeOnLoad]
-    public class SetupReflectisWindow : EditorWindow
+    public class CreatorKitConfigurationWindow : EditorWindow
     {
+        [SerializeField]
+        private VisualTreeAsset m_VisualTreeAsset = default;
+
         #region editor window setup
 
         private static bool isSetupping = false;
@@ -124,438 +124,27 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         #endregion
 
-        private AddRequest addRequest;
 
-        //this variable is set by the other packages (like CK, used to show buttons and other GUI elements).
-        public static UnityEvent configurationEvents = new();
-
-        [MenuItem("Reflectis/Setup Window")]
-        public static void ShowWindow()
+        [MenuItem("Reflectis/Creator Kit configuration window")]
+        public static void ShowExample()
         {
-            GetWindow(typeof(SetupReflectisWindow));
+            CreatorKitConfigurationWindow wnd = GetWindow<CreatorKitConfigurationWindow>();
+            wnd.titleContent = new GUIContent("Creator Kit configuration window");
         }
 
-        #region Unity callbacks
-
-        private void Awake()
+        public void CreateGUI()
         {
+            // Each editor window contains a root VisualElement object
+            VisualElement root = rootVisualElement;
+
+            // Instantiate UXML
+            VisualElement labelFromUXML = m_VisualTreeAsset.Instantiate();
+            root.Add(labelFromUXML);
+
+
+
             SetupWindowData();
         }
-
-        #endregion
-
-        #region GUI
-
-        private void OnGUI()
-        {
-            if (isSetupping)
-                return;
-
-            if (!setupCompleted)
-            {
-                SetupWindowData();
-            }
-
-            #region GUI Styles definition
-
-            // Define the GUIStyle
-            //----------------------------------------------------
-            iconStyle = new(EditorStyles.label);
-            titleStyle = new GUIStyle(GUI.skin.label);
-            paragraphStyle = new GUIStyle(GUI.skin.label);
-            labelStyle = new(EditorStyles.label)
-            {
-                richText = true,
-            };
-            headerStyle = new GUIStyle(GUI.skin.label);
-            arrowStyle = new GUIStyle(GUI.skin.label);
-            lineStyles = new GUIStyle[] { GUI.skin.box, GUI.skin.textField }; // Different line styles for alternating colors
-            configureAllStyle = new GUIStyle(GUI.skin.button) { margin = new RectOffset(0, 7, 0, 0) };
-            iconStyle.richText = true;
-            titleStyle.fontSize = 20;
-            titleStyle.fontStyle = FontStyle.Bold;
-            titleStyle.alignment = TextAnchor.MiddleCenter;
-            labelStyle.fontSize = 12;
-            headerStyle.fontStyle = FontStyle.Bold;
-            arrowStyle.fontSize = 16;
-            paragraphStyle.fontSize = 14;
-            paragraphStyle.fontStyle = FontStyle.Bold;
-            lineRect = EditorGUILayout.GetControlRect(false, 1);
-
-            warningIconContent = EditorGUIUtility.IconContent("DotFill");
-            errorIconContent = EditorGUIUtility.IconContent("console.erroricon");
-            confirmedIcon = EditorGUIUtility.IconContent("Installed@2x"); //Assets / Editor Default Resources/ Icons
-
-            toggleStyle = new GUIStyle("Foldout")
-            {
-                fixedHeight = 18f,
-                fontStyle = FontStyle.Bold
-            };
-
-            optionalToggleStyle = new GUIStyle("Foldout")
-            {
-                fixedHeight = 16f,
-                fontStyle = FontStyle.Italic,
-                margin = new RectOffset(15, 0, 0, 0)
-            };
-
-            // Create a custom GUIStyle for the toolbar buttons with bold font
-            boldTabStyle = new GUIStyle(EditorStyles.toolbarButton)
-            {
-                fontStyle = FontStyle.Bold
-            };
-
-            GUIStyle lineStyle = lineStyles[0];
-            //-----------------------------------------------------
-
-            #endregion
-
-            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, false, false);
-
-            // Draw the title text with the specified GUIStyle
-            EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField("Creator Kit configuration window".ToUpper(), titleStyle);
-            EditorGUILayout.Space();
-            EditorGUI.DrawRect(lineRect, Color.black);
-            EditorGUILayout.Space(20);
-
-            EditorGUILayout.BeginVertical();
-            EditorGUILayout.Space(20);
-
-            #region Project configuration
-
-            EditorGUILayout.LabelField("Project configuration", paragraphStyle);
-            EditorGUILayout.Space(10);
-
-            #region Git installation
-
-            GUILayout.BeginHorizontal();
-            showGitInstallation = GUILayout.Toggle(showGitInstallation, new GUIContent("Git installation", isGitInstalled ? confirmedIcon.image : errorIconContent.image), new GUIStyle(toggleStyle));
-
-            GUI.enabled = !isGitInstalled;
-            if (GUILayout.Button(new GUIContent("Download", "You have to install github in order to install packages"), GUILayout.Width(80)))
-            {
-                string gitDownloadUrl = "https://git-scm.com/downloads";
-                Application.OpenURL(gitDownloadUrl);
-            }
-            GUI.enabled = true;
-
-            EditorGUILayout.EndHorizontal();
-
-            if (showGitInstallation)
-            {
-                GUILayout.Space(5);
-
-                EditorGUILayout.BeginHorizontal(new GUIStyle { margin = new RectOffset(10, 10, 0, 0) });
-                GUILayout.Label(isGitInstalled ? $"Installed Git instance: {gitVersion}" : "No Git installation found! Click on the Download button to obtain it from the official website", labelStyle);
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.EndHorizontal();
-            }
-
-            GUILayout.Space(10);
-
-
-            #endregion
-
-            #region Project settings configuration
-
-            #region Editor installations
-
-            showEditorConfiguration = GUILayout.Toggle(showEditorConfiguration, new GUIContent("Unity Editor configuration", EditorConfigurationOk ? confirmedIcon.image : errorIconContent.image), new GUIStyle(toggleStyle));
-
-            if (showEditorConfiguration)
-            {
-                GUILayout.Space(5);
-
-                EditorGUILayout.BeginVertical(new GUIStyle { margin = new RectOffset(10, 10, 0, 0) });
-
-                string shortUnityVersion = InternalEditorUtility.GetFullUnityVersion().Split(' ')[0];
-                string alternateText = $"You have to install Unity version {allVersionsPackageRegistries[displayedReflectisVersionIndex].RequiredUnityVersion}";
-                CreateSettingEntry($"Unity version: {shortUnityVersion}", UnityVersionIsMatching, errorIconContent, alternateText);
-
-                string text = $"All editor modules installed properly";
-                string alternativeText = $"[{string.Join(", ", installedModules.Where(kv => !kv.Value).Select(kv => kv.Key))}] editor modules are not installed";
-                CreateSettingEntry(text, !installedModules.Values.Contains(false), errorIconContent, alternativeText);
-
-                EditorGUILayout.EndVertical();
-            }
-
-            #endregion
-
-            #region Project settings
-
-            //---------------------------------------------------------------
-            //---------------------------------------------------------------Project Settings
-            GUILayout.Space(10);
-
-            EditorGUILayout.BeginHorizontal();
-            showProjectSettings = GUILayout.Toggle(showProjectSettings, new GUIContent("Project Settings", ProjectSettingsOk ? confirmedIcon.image : errorIconContent.image), new GUIStyle(toggleStyle));
-
-            if (GUILayout.Button("Configure all", configureAllStyle, GUILayout.Width(100)))
-            {
-                SetURPConfiguration();
-                SetProjectSettings();
-                SetMaxTextureSizeOverride();
-
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
-                RefreshWindow();
-            }
-
-            EditorGUILayout.EndHorizontal();
-
-            if (showProjectSettings)
-            {
-                EditorGUILayout.BeginVertical(new GUIStyle { margin = new RectOffset(10, 10, 0, 0) });
-
-                GUILayout.Space(6);
-
-                CreateSettingEntry("Configure URP as render pipeline", renderPipelineURP, errorIconContent);
-                CreateSettingEntry("Project settings configuration", playerSettings, errorIconContent);
-                CreateSettingEntry("Configure max textures size", maxTextureSizeOverride, errorIconContent);
-
-                EditorGUILayout.EndVertical();
-            }
-
-            EditorGUILayout.Space(20);
-
-            #endregion
-
-            #endregion
-
-            #endregion
-
-            lineRect = EditorGUILayout.GetControlRect(false, 1);
-            EditorGUI.DrawRect(lineRect, Color.black);
-            EditorGUILayout.Space(15);
-
-            #region Package manager
-
-
-            EditorGUILayout.BeginHorizontal();
-
-            EditorGUILayout.LabelField("Package manager", paragraphStyle, GUILayout.ExpandWidth(true));
-
-            EditorGUILayout.BeginHorizontal(GUILayout.Width(70));
-            EditorGUILayout.LabelField($"Last refresh {lastPackageManagerRefresh:MMM dd, HH:mm}", GUILayout.Width(160));
-            if (GUILayout.Button(EditorGUIUtility.IconContent("Refresh"), GUILayout.ExpandWidth(false)))
-            {
-                SetupWindowData();
-            };
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.Space(10);
-
-            GUIStyle textStyle = new(GUI.skin.label)
-            {
-                fontStyle = FontStyle.Italic
-            };
-
-            EditorGUILayout.BeginVertical(new GUIStyle(lineStyles[1]));
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField($"Current Reflectis version: {currentInstallationVersion}", headerStyle, GUILayout.Width(250));
-
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace(); // Add flexible space to push the next BeginHorizontal to the center
-            EditorGUILayout.LabelField($"Select another version", GUILayout.Width(140));
-            EditorGUI.BeginChangeCheck();
-            displayedReflectisVersionIndex = EditorGUILayout.Popup(displayedReflectisVersionIndex, availableVersions.ToArray());
-            EditorGUILayout.EndHorizontal();
-
-            if (EditorGUI.EndChangeCheck())
-            {
-                displayedReflectisVersion = availableVersions[displayedReflectisVersionIndex];
-                if (installedPackages.Count == 0)
-                {
-                    EditorPrefs.SetString(currentInstallationKey, currentInstallationVersion);
-                    currentInstallationVersion = displayedReflectisVersion;
-                }
-
-                EditorPrefs.SetString(currentInstallationKey, displayedReflectisVersion);
-                UpdateDisplayedPacakgesAndDependencies();
-            }
-
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.Space(10);
-
-            if (packagesDropdown == null || packagesDropdown.Count == 0)
-                packagesDropdown = selectedVersionPackageDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
-
-            if (dependenciesDropdown == null || dependenciesDropdown.Count == 0)
-                dependenciesDropdown = selectedVersionPackageDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
-
-            foreach (var package in selectedVersionPackageDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible))
-            {
-                EditorGUILayout.BeginVertical();
-
-                EditorGUILayout.BeginHorizontal();
-
-                packagesDropdown[package.Value.Name] = EditorGUILayout.Foldout(packagesDropdown[package.Value.Name], package.Value.DisplayName + " - version: " + package.Value.Version);
-
-                GUI.enabled = !installationAsDependency.TryGetValue(package.Key, out bool value) || !value; // Disable button if condition is true
-                //TODO: change to a dictionary?
-                bool installed = installedPackages.Select(x => x.Name).Contains(package.Value.Name);
-                if (installed)
-                {
-                    if (GUILayout.Button(EditorGUIUtility.IconContent("Toolbar Minus"), GUILayout.Width(20)))
-                    {
-                        UninstallPackageWithDependencies(package.Value);
-                    }
-                }
-                else
-                {
-                    if (GUILayout.Button(EditorGUIUtility.IconContent("Toolbar Plus"), GUILayout.Width(20)))
-                    {
-                        InstallPackageWithDependencies(package.Value);
-                    }
-                }
-                GUI.enabled = true; // Re-enable GUI
-
-
-                EditorGUILayout.EndHorizontal();
-
-                // Dropdown for package details
-                if (packagesDropdown[package.Value.Name])
-                {
-                    EditorGUILayout.BeginVertical(new GUIStyle { margin = new RectOffset(20, 0, 0, 0) });
-
-                    EditorGUILayout.LabelField(package.Value.Description);
-                    if (GUILayout.Button($"{package.Value.Url}", EditorStyles.linkLabel))
-                    {
-                        Application.OpenURL(package.Value.Url);
-                    }
-
-                    dependenciesDropdown[package.Value.Name] = EditorGUILayout.Foldout(dependenciesDropdown[package.Value.Name], "Show dependencies");
-
-                    if (dependenciesDropdown[package.Value.Name])
-                    {
-                        EditorGUILayout.BeginVertical(new GUIStyle { margin = new RectOffset(20, 0, 0, 0) });
-
-                        foreach (string dependency in selectedVersionDependenciesFull[package.Key])
-                        {
-                            EditorGUILayout.LabelField($"{selectedVersionPackageDictionary[dependency].DisplayName} - {selectedVersionPackageDictionary[dependency].Version}");
-                        }
-
-                        EditorGUILayout.EndVertical();
-                    }
-
-                    EditorGUILayout.EndVertical();
-                }
-
-                CreateSeparator();
-
-                EditorGUILayout.EndVertical();
-            }
-
-            EditorGUILayout.Space(10);
-
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            GUI.enabled = currentInstallationVersion != displayedReflectisVersion;
-            if (GUILayout.Button("Update packages to selected version", GUILayout.ExpandWidth(false)))
-            {
-                if (EditorUtility.DisplayDialog("Warning", "Do you want to update all the packages to the selected Reflectis version?", "Yes", "Cancel"))
-                {
-                    UpdatePackagesToSelectedVersion();
-                }
-            }
-            GUI.enabled = true;
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.EndVertical();
-
-            EditorGUILayout.Space(10);
-
-            packageManagerAdvancedSettings = EditorGUILayout.Foldout(packageManagerAdvancedSettings, "Advanced settings");
-            if (packageManagerAdvancedSettings)
-            {
-                EditorGUILayout.BeginVertical();
-                EditorGUILayout.BeginHorizontal();
-
-                resolveBreakingChangesAutomatically = EditorGUILayout.Toggle(resolveBreakingChangesAutomatically, GUILayout.Width(20));
-                EditorGUILayout.LabelField("Resolve breaking changes automatically when updating version", GUILayout.ExpandWidth(true));
-
-                EditorGUILayout.EndHorizontal();
-                EditorGUILayout.EndVertical();
-
-                EditorGUILayout.BeginVertical();
-                EditorGUILayout.BeginHorizontal(GUILayout.Width(250));
-
-                showPrereleases = EditorGUILayout.Toggle(showPrereleases, GUILayout.Width(20));
-                EditorGUILayout.LabelField("Show pre-releases", GUILayout.ExpandWidth(true));
-
-                EditorGUILayout.EndHorizontal();
-                EditorGUILayout.EndVertical();
-            }
-
-            EditorGUILayout.Space(15);
-            lineRect = EditorGUILayout.GetControlRect(false, 1);
-            EditorGUI.DrawRect(lineRect, Color.black);
-            EditorGUILayout.Space(25);
-
-            //Creator Kit Buttons
-            configurationEvents.Invoke(); //add element to tab too(?)
-
-            EditorGUILayout.EndVertical();
-
-            //Documentation Link
-            EditorGUILayout.BeginVertical();
-            EditorGUILayout.Space(20);
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-
-            #endregion
-
-            #region Footer
-
-            if (GUILayout.Button("Open Creator Kit Documentation", EditorStyles.linkLabel))
-            {
-                try
-                {
-                    string version = displayedReflectisVersion[..displayedReflectisVersion.LastIndexOf('.')];
-                    Application.OpenURL($"https://reflectis.io/docs/{version}/CK/intro");
-                }
-                catch
-                {
-                    UnityEngine.Debug.LogWarning("Unable to find documentation for pre-releases");
-                }
-            }
-
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.EndVertical();
-
-            #endregion
-
-            EditorGUILayout.EndScrollView();
-        }
-
-        private void CreateSettingEntry(string name, bool valueToCheck, GUIContent errorIcon, string errorText = null)
-        {
-            GUIStyle lineStyle = lineStyles[0];
-
-            EditorGUILayout.BeginVertical(lineStyle);
-            EditorGUILayout.BeginHorizontal();
-
-            EditorGUILayout.LabelField(new GUIContent(valueToCheck ? confirmedIcon.image : errorIcon.image), GUILayout.Width(15));
-            EditorGUILayout.TextField(valueToCheck ? name : errorText, labelStyle);
-            GUILayout.FlexibleSpace();
-
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.EndVertical();
-        }
-
-        private void CreateSeparator()
-        {
-            Rect rect = EditorGUILayout.GetControlRect(false, 1);
-            rect.height = 1;
-            EditorGUI.DrawRect(rect, new Color(0.5f, 0.5f, 0.5f, 1));
-        }
-
-        #endregion
 
         private async void SetupWindowData()
         {
@@ -959,26 +548,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         #endregion
 
-        private void Progress()
-        {
-            if (addRequest.IsCompleted)
-            {
-                if (addRequest.Status == StatusCode.Success)
-                {
-                    UnityEngine.Debug.Log("Git package added successfully.");
-                    AssetDatabase.SaveAssets();
-                    AssetDatabase.Refresh();
-                    RefreshWindow();
-                }
-                else if (addRequest.Status >= StatusCode.Failure)
-                {
-                    UnityEngine.Debug.LogError("Failed to add Git package: " + addRequest.Error.message);
-                }
-
-                EditorApplication.update -= Progress;
-            }
-        }
-
         private Dictionary<string, string[]> TraverseGraph(Dictionary<string, PackageDefinition> graph)
         {
             HashSet<string> visited = new();
@@ -1043,4 +612,3 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         }
     }
 }
-
