@@ -1,0 +1,87 @@
+<engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/Editor/styles.uss?fileID=7433441132597879392&amp;guid=ca7a0c867793b12469d64e21b6c3abe7&amp;type=3#styles" />
+    <engine:ScrollView style="height: 875px; width: 1008px;">
+        <engine:Label text="Creator Kit Configuration Window" name="Header" style="-unity-text-align: upper-center; -unity-font-style: bold; font-size: 24px;" />
+        <engine:VisualElement name="Separator" class="separator" style="flex-grow: 1;" />
+        <engine:GroupBox name="Settings">
+            <engine:Label text="Project settings" name="Header" class="h1" style="-unity-font-style: bold;" />
+            <engine:GroupBox name="Git" style="flex-direction: row; align-items: stretch; justify-content: space-between;">
+                <engine:Foldout text="Git installation" name="SettingsItemFoldout" class="settings-item">
+                    <engine:VisualElement name="GitInstance" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
+                        <engine:VisualElement name="SettingsItemIcon" class="settings-item-icon" />
+                        <engine:Label text="Installed Git instance: {0}" name="Label" />
+                    </engine:VisualElement>
+                </engine:Foldout>
+                <engine:GroupBox name="ButtonContainer" style="justify-content: space-between; align-items: auto;">
+                    <engine:Button text="Button" />
+                </engine:GroupBox>
+            </engine:GroupBox>
+            <engine:GroupBox name="EditorConfiguration">
+                <engine:Foldout text="Editor configuration" name="SettingsItemFoldout">
+                    <engine:VisualElement name="UnityVersion" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
+                        <engine:VisualElement name="SettingsItemIcon" class="settings-item-icon" />
+                        <engine:Label text="Unity version: {0}" name="Label" />
+                    </engine:VisualElement>
+                    <engine:VisualElement name="EditorModules" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
+                        <engine:VisualElement name="SettingsItemIcon" class="settings-item-icon" />
+                        <engine:Label text="All editor modules are installed properly" name="Label" />
+                    </engine:VisualElement>
+                </engine:Foldout>
+            </engine:GroupBox>
+            <engine:GroupBox name="ProjectSettings" style="flex-direction: row; align-items: stretch; justify-content: space-between;">
+                <engine:Foldout text="Project settings" name="SettingsItemFoldout">
+                    <engine:VisualElement name="URPSettings" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
+                        <engine:VisualElement name="SettingsItemIcon" class="settings-item-icon" />
+                        <engine:Label text="Configure URP as render pipeline" name="Label" />
+                    </engine:VisualElement>
+                    <engine:VisualElement name="TextureSize" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
+                        <engine:VisualElement name="SettingsItemIcon" class="settings-item-icon" />
+                        <engine:Label text="Project settings configuration" name="Label" />
+                    </engine:VisualElement>
+                    <engine:VisualElement style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
+                        <engine:VisualElement name="SettingsItemIcon" class="settings-item-icon" />
+                        <engine:Label text="Configure mex texture size" name="Label" />
+                    </engine:VisualElement>
+                </engine:Foldout>
+                <engine:GroupBox name="ButtonContainer" style="justify-content: space-between; align-items: auto;">
+                    <engine:Button text="Button" />
+                </engine:GroupBox>
+            </engine:GroupBox>
+        </engine:GroupBox>
+        <engine:VisualElement name="Separator" class="separator" style="flex-grow: 1; background-color: rgb(0, 0, 0); -unity-background-image-tint-color: rgb(255, 255, 255);" />
+        <engine:GroupBox name="PackageManager">
+            <engine:GroupBox name="Header" style="flex-direction: row; align-items: center; justify-content: space-between;">
+                <engine:Label text="Package manager" class="h1" style="-unity-font-style: bold; -unity-text-align: middle-left;" />
+                <engine:GroupBox style="flex-direction: row; align-items: stretch;">
+                    <engine:Label text="Last refresh: {0}" name="LastUpdateText" style="-unity-text-align: middle-left;" />
+                    <engine:Button name="LastUpdateButton" icon-image="project://database/Packages/com.unity.collab-proxy/Editor/Assets/Images/refresh.png?fileID=2800000&amp;guid=6f6a4c6bd7cdc654d9d91f7de72afcb6&amp;type=3#refresh" />
+                </engine:GroupBox>
+            </engine:GroupBox>
+            <engine:GroupBox name="Body" style="background-color: rgba(0, 0, 0, 0.1); border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px; border-top-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px; border-bottom-left-radius: 5px; justify-content: flex-start;">
+                <engine:GroupBox name="FirstLine" style="flex-direction: row; justify-content: space-between; align-items: stretch; align-self: stretch;">
+                    <engine:Label text="Current Reflectis version:" name="Label" />
+                    <engine:DropdownField label="Select another version" name="DropdownField" style="justify-content: space-between;" />
+                </engine:GroupBox>
+                <engine:GroupBox name="PackagesList">
+                    <engine:GroupBox name="PackageItem" style="flex-direction: column; justify-content: space-between;">
+                        <engine:GroupBox name="PackageBody" style="flex-direction: row;">
+                            <engine:Foldout text="{0} - {1}" style="justify-content: flex-start; width: 100%;">
+                                <engine:Label text="PackageName" name="PackageName" />
+                                <engine:Label text="PackageDescription" name="PackageDescription" />
+                                <engine:Foldout text="Foldout" name="PackageDependencies">
+                                    <engine:Label text="Label" name="Dependency" />
+                                </engine:Foldout>
+                            </engine:Foldout>
+                            <engine:GroupBox style="flex-direction: column;">
+                                <engine:Button text="Install" name="InstallButton" />
+                            </engine:GroupBox>
+                        </engine:GroupBox>
+                        <engine:VisualElement name="Separator" class="separator" style="flex-grow: 1;" />
+                    </engine:GroupBox>
+                </engine:GroupBox>
+                <engine:Button text="Update packages to selected version" name="UpdatePackagesButton" style="align-self: flex-end;" />
+            </engine:GroupBox>
+        </engine:GroupBox>
+        <engine:VisualElement name="Separator" class="separator" style="flex-grow: 1; height: 1px; border-left-color: rgba(0, 0, 0, 0); border-right-color: rgba(0, 0, 0, 0); border-top-color: rgba(0, 0, 0, 0); border-bottom-color: rgba(0, 0, 0, 0); background-color: rgb(0, 0, 0);" />
+    </engine:ScrollView>
+</engine:UXML>
