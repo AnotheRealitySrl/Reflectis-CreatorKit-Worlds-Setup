@@ -126,24 +126,32 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
 
         [MenuItem("Reflectis/Creator Kit configuration window")]
-        public static void ShowExample()
+        public static void ShowWindow()
         {
             CreatorKitConfigurationWindow wnd = GetWindow<CreatorKitConfigurationWindow>();
             wnd.titleContent = new GUIContent("Creator Kit configuration window");
         }
 
+        private VisualElement root;
+
         public void CreateGUI()
         {
             // Each editor window contains a root VisualElement object
-            VisualElement root = rootVisualElement;
+            root = rootVisualElement;
 
             // Instantiate UXML
             VisualElement labelFromUXML = m_VisualTreeAsset.Instantiate();
             root.Add(labelFromUXML);
 
-
+            AddDataBindings();
 
             SetupWindowData();
+        }
+
+        private void AddDataBindings()
+        {
+            Label result = root.Q<Label>("GitVersionLabel");
+            result.SetBinding(result.text, new DataBinding() { dataSourcePath = new Unity.Properties.PropertyPath(nameof(gitVersion)) });
         }
 
         private async void SetupWindowData()

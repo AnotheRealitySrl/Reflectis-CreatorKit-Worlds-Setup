@@ -9,7 +9,7 @@
                 <engine:Foldout text="Git installation" name="SettingsItemFoldout" class="settings-item">
                     <engine:VisualElement name="GitInstance" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
                         <engine:VisualElement name="SettingsItemIcon" class="settings-item-icon" />
-                        <engine:Label text="Installed Git instance: {0}" name="Label" />
+                        <engine:Label text="Installed Git instance: {0}" name="GitVersionLabel" />
                     </engine:VisualElement>
                 </engine:Foldout>
                 <engine:GroupBox name="ButtonContainer" style="justify-content: space-between; align-items: auto;">

@@ -1020,27 +1020,27 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         }
     }
 
-    public class CustomAssetPostprocessor : AssetPostprocessor
-    {
-        // This method is called when importing any number of assets is completed
-        static void OnPostprocessAllAssets(
-            string[] importedAssets,
-            string[] deletedAssets,
-            string[] movedAssets,
-            string[] movedFromAssetPaths)
-        {
-            foreach (var importedAsset in importedAssets)
-            {
-                if (!importedAsset.Contains("CKBreakingChangesSolvers"))
-                    return;
+    //public class CustomAssetPostprocessor : AssetPostprocessor
+    //{
+    //    // This method is called when importing any number of assets is completed
+    //    static void OnPostprocessAllAssets(
+    //        string[] importedAssets,
+    //        string[] deletedAssets,
+    //        string[] movedAssets,
+    //        string[] movedFromAssetPaths)
+    //    {
+    //        foreach (var importedAsset in importedAssets)
+    //        {
+    //            if (!importedAsset.Contains("CKBreakingChangesSolvers"))
+    //                return;
 
-                UnityEngine.Object obj = AssetDatabase.LoadAssetAtPath(importedAsset, typeof(MonoScript));
-                if (obj != null)
-                {
-                    SetupReflectisWindow.ResolveBreakingChangesCallback(importedAsset.Split('/').Last()[..^3]);
-                }
-            }
-        }
-    }
+    //            UnityEngine.Object obj = AssetDatabase.LoadAssetAtPath(importedAsset, typeof(MonoScript));
+    //            if (obj != null)
+    //            {
+    //                SetupReflectisWindow.ResolveBreakingChangesCallback(importedAsset.Split('/').Last()[..^3]);
+    //            }
+    //        }
+    //    }
+    //}
 }
 
