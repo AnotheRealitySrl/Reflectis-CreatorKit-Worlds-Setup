@@ -60,7 +60,7 @@
             <engine:GroupBox name="Body" style="background-color: rgba(0, 0, 0, 0.1); border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px; border-top-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px; border-bottom-left-radius: 5px; justify-content: flex-start;">
                 <engine:GroupBox name="FirstLine" style="flex-direction: row; justify-content: space-between; align-items: stretch; align-self: stretch;">
                     <engine:Label text="Current Reflectis version:" name="Label" />
-                    <engine:DropdownField label="Select another version" name="DropdownField" style="justify-content: space-between;" />
+                    <engine:DropdownField label="Select another version" name="DropdownField" choices="Item 1,Item 2" index="0" style="justify-content: space-between;" />
                 </engine:GroupBox>
                 <engine:GroupBox name="PackagesList">
                     <engine:GroupBox name="PackageItem" style="flex-direction: column; justify-content: space-between;">
