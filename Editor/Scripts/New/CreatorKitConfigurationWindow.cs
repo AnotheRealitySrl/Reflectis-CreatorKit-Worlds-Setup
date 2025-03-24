@@ -24,6 +24,9 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         [SerializeField]
         private VisualTreeAsset m_VisualTreeAsset = default;
 
+        private VisualElement root;
+        private CreatorKitConfigurationWindowDataSource dataSource;
+
         #region editor window setup
 
         private static bool isSetupping = false;
@@ -32,9 +35,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         #endregion
 
         #region Project configuration
-
-        private bool isGitInstalled = false;
-        private string gitVersion = string.Empty;
 
         private bool UnityVersionIsMatching => InternalEditorUtility.GetFullUnityVersion().Split(' ')[0] == allVersionsPackageRegistries[displayedReflectisVersionIndex].RequiredUnityVersion;
         private bool AllEditorModulesInstalled => !installedModules.Values.Contains(false);
@@ -54,10 +54,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             { "WebGL", true },
             { "Windows", true }
         };
-
-        private bool showGitInstallation = false;
-        private bool showEditorConfiguration = false;
-        private bool showProjectSettings = false;
 
         #endregion
 
@@ -101,38 +97,17 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         #endregion
 
-        #region GUIElements
-
-        //GUI Styles
-        GUIStyle iconStyle;
-        GUIStyle titleStyle;
-        GUIStyle labelStyle;
-        GUIStyle headerStyle;
-        GUIStyle paragraphStyle;
-        GUIStyle arrowStyle;
-        GUIStyle configureAllStyle;
-        GUIStyle[] lineStyles; // Different line styles for alternating colors
-        GUIStyle boldTabStyle;
-        GUIStyle toggleStyle;
-        GUIStyle optionalToggleStyle;
-        GUIContent warningIconContent;
-        GUIContent errorIconContent;
-        GUIContent confirmedIcon;
-
-        private Vector2 scrollPosition = Vector2.zero;
-        private Rect lineRect;
-
-        #endregion
-
 
         [MenuItem("Reflectis/Creator Kit configuration window")]
         public static void ShowWindow()
         {
             CreatorKitConfigurationWindow wnd = GetWindow<CreatorKitConfigurationWindow>();
             wnd.titleContent = new GUIContent("Creator Kit configuration window");
+
+            wnd.LoadOrCreateDataSource();
+            wnd.AddDataBindings();
         }
 
-        private VisualElement root;
 
         public void CreateGUI()
         {
@@ -143,15 +118,41 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             VisualElement labelFromUXML = m_VisualTreeAsset.Instantiate();
             root.Add(labelFromUXML);
 
-            AddDataBindings();
-
             SetupWindowData();
+        }
+
+        private void LoadOrCreateDataSource()
+        {
+            string folderPath = "Assets/CreatorKitInstallerData";
+            string assetPath = $"{folderPath}/CreatorKitConfigurationWindowDataSource.asset";
+
+            if (!AssetDatabase.IsValidFolder(folderPath))
+            {
+                AssetDatabase.CreateFolder("Assets", "CreatorKitInstallerData");
+            }
+
+            dataSource = AssetDatabase.LoadAssetAtPath<CreatorKitConfigurationWindowDataSource>(assetPath);
+
+            if (dataSource == null)
+            {
+                dataSource = CreateInstance<CreatorKitConfigurationWindowDataSource>();
+                AssetDatabase.CreateAsset(dataSource, assetPath);
+                AssetDatabase.SaveAssets();
+            }
         }
 
         private void AddDataBindings()
         {
+            root.dataSource = dataSource;
+
             Label result = root.Q<Label>("GitVersionLabel");
-            result.SetBinding(result.text, new DataBinding() { dataSourcePath = new Unity.Properties.PropertyPath(nameof(gitVersion)) });
+            dataSource.gitVersion = result.text;
+            result.SetBinding("value", new DataBinding() { dataSourcePath = Unity.Properties.PropertyPath.FromName(nameof(CreatorKitConfigurationWindowDataSource.gitVersion)) });
+
+            Button gitDownloadButton = root.Q<Button>("git-download-button");
+            DataBinding buttonBinding = new() { dataSourcePath = Unity.Properties.PropertyPath.FromName(nameof(CreatorKitConfigurationWindowDataSource.isGitInstalled)) };
+            buttonBinding.sourceToUiConverters.AddConverter((ref bool value) => !value);
+            gitDownloadButton.SetBinding("visible", buttonBinding);
         }
 
         private async void SetupWindowData()
@@ -243,12 +244,12 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
                 if (process.ExitCode == 0)
                 {
-                    gitVersion = output;
-                    isGitInstalled = true;
+                    dataSource.gitVersion = string.Format(dataSource.gitVersion, output);
+                    dataSource.isGitInstalled = true;
                 }
                 else
                 {
-                    isGitInstalled = false;
+                    dataSource.isGitInstalled = false;
                 }
             }
             catch (Exception ex)
