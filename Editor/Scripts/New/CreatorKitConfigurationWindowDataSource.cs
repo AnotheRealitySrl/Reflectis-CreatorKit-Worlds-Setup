@@ -1,3 +1,5 @@
+using System;
+
 using UnityEngine;
 
 namespace Reflectis.CreatorKit.Worlds.Installer.Editor
@@ -9,17 +11,29 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         [HideInInspector] public string gitVersion;
 
 
-        //private bool UnityVersionIsMatching => InternalEditorUtility.GetFullUnityVersion().Split(' ')[0] == allVersionsPackageRegistries[displayedReflectisVersionIndex].RequiredUnityVersion;
-        //private bool AllEditorModulesInstalled => !installedModules.Values.Contains(false);
+        public bool unityVersionIsMatching;
+        public bool allEditorModulesInstalled;
 
         public bool renderPipelineURP;
         public bool playerSettings;
         public bool maxTextureSizeOverride;
 
 
+        public PackageRegistry[] allVersionsPackageRegistry;
         public PackageRegistry selectedVersionPackageRegistry;
 
+
+
+        public int displayedReflectisVersionIndex;
+        public string displayReflectisVersion;
+
+        public string currentInstallationVersion;
         public string displayedReflectisVersion;
 
+
+        public bool resolveBreakingChangesAutomatically;
+
+        // Not serializable
+        public DateTime lastRefreshDateTime;
     }
 }

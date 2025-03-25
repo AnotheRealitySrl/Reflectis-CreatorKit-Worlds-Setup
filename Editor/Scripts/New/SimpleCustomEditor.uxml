@@ -1,6 +1,6 @@
 <engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
     <Style src="project://database/Packages/com.anotherealitysrl.reflectis-creatorkit-worlds-installer/Editor/Scripts/New/styles.uss?fileID=7433441132597879392&amp;guid=ca7a0c867793b12469d64e21b6c3abe7&amp;type=3#styles" />
-    <engine:ScrollView name="ScrollView" style="height: 875px; width: 1008px;">
+    <engine:ScrollView name="ScrollView" style="height: 979px; width: 1008px;">
         <engine:Label text="Creator Kit Configuration Window" name="Header" style="-unity-text-align: upper-center; -unity-font-style: bold; font-size: 24px;" />
         <engine:VisualElement name="Separator" class="separator" style="flex-grow: 1;" />
         <engine:GroupBox name="Settings">
@@ -8,7 +8,7 @@
             <engine:GroupBox name="Git" style="flex-direction: row; align-items: stretch; justify-content: space-between;">
                 <engine:Foldout text="Git installation" name="SettingsItemFoldout" class="settings-item">
                     <engine:VisualElement name="GitInstance" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
-                        <engine:VisualElement name="SettingsItemIcon" class="settings-item-icon" />
+                        <engine:VisualElement name="SettingsItemIcon" class="settings-item-green-icon settings-item-red-icon" />
                         <engine:Label text="Installed Git instance: {0}" name="GitVersionLabel" />
                     </engine:VisualElement>
                 </engine:Foldout>
@@ -19,11 +19,11 @@
             <engine:GroupBox name="EditorConfiguration">
                 <engine:Foldout text="Editor configuration" name="SettingsItemFoldout">
                     <engine:VisualElement name="UnityVersion" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
-                        <engine:VisualElement name="SettingsItemIcon" class="settings-item-icon" />
+                        <engine:VisualElement name="SettingsItemIcon" class="settings-item-green-icon" />
                         <engine:Label text="Unity version: {0}" name="Label" />
                     </engine:VisualElement>
                     <engine:VisualElement name="EditorModules" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
-                        <engine:VisualElement name="SettingsItemIcon" class="settings-item-icon" />
+                        <engine:VisualElement name="SettingsItemIcon" class="settings-item-green-icon" />
                         <engine:Label text="All editor modules are installed properly" name="Label" />
                     </engine:VisualElement>
                 </engine:Foldout>
@@ -31,15 +31,15 @@
             <engine:GroupBox name="ProjectSettings" style="flex-direction: row; align-items: stretch; justify-content: space-between;">
                 <engine:Foldout text="Project settings" name="SettingsItemFoldout">
                     <engine:VisualElement name="URPSettings" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
-                        <engine:VisualElement name="SettingsItemIcon" class="settings-item-icon" />
+                        <engine:VisualElement name="project-settings-urp-check" class="settings-item-green-icon" />
                         <engine:Label text="Configure URP as render pipeline" name="Label" />
                     </engine:VisualElement>
                     <engine:VisualElement name="TextureSize" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
-                        <engine:VisualElement name="SettingsItemIcon" class="settings-item-icon" />
+                        <engine:VisualElement name="project-settings-configuration-check" class="settings-item-green-icon" />
                         <engine:Label text="Project settings configuration" name="Label" />
                     </engine:VisualElement>
-                    <engine:VisualElement style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
-                        <engine:VisualElement name="SettingsItemIcon" class="settings-item-icon" />
+                    <engine:VisualElement name="project-settings-max-texture-size-check" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
+                        <engine:VisualElement name="project-settings-max-texture-size-check" class="settings-item-green-icon" />
                         <engine:Label text="Configure mex texture size" name="Label" />
                     </engine:VisualElement>
                 </engine:Foldout>
@@ -53,13 +53,17 @@
             <engine:GroupBox name="Header" style="flex-direction: row; align-items: center; justify-content: space-between;">
                 <engine:Label text="Package manager" class="h1" style="-unity-font-style: bold; -unity-text-align: middle-left;" />
                 <engine:GroupBox style="flex-direction: row; align-items: stretch;">
-                    <engine:Label text="Last refresh: {0}" name="LastUpdateText" style="-unity-text-align: middle-left;" />
-                    <engine:Button name="LastUpdateButton" icon-image="project://database/Packages/com.unity.collab-proxy/Editor/Assets/Images/refresh.png?fileID=2800000&amp;guid=6f6a4c6bd7cdc654d9d91f7de72afcb6&amp;type=3#refresh" />
+                    <engine:Label text="Last refresh:" name="last-refresh-text" style="-unity-text-align: middle-left;" />
+                    <engine:Label text="&lt;DateTime&gt;" name="last-refresh-date-time" style="-unity-text-align: middle-left;" />
+                    <engine:Button name="refresh-packages-button" icon-image="project://database/Packages/com.unity.collab-proxy/Editor/Assets/Images/refresh.png?fileID=2800000&amp;guid=6f6a4c6bd7cdc654d9d91f7de72afcb6&amp;type=3#refresh" />
                 </engine:GroupBox>
             </engine:GroupBox>
             <engine:GroupBox name="Body" style="background-color: rgba(0, 0, 0, 0.1); border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px; border-top-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px; border-bottom-left-radius: 5px; justify-content: flex-start;">
                 <engine:GroupBox name="FirstLine" style="flex-direction: row; justify-content: space-between; align-items: stretch; align-self: stretch;">
-                    <engine:Label text="Current Reflectis version:" name="Label" />
+                    <engine:GroupBox name="current-reflectis-version" style="flex-direction: row;">
+                        <engine:Label text="Current Reflectis version:" name="current-reflectis-version-text" />
+                        <engine:Label text="&lt;version&gt;" name="current-reflectis-version-value" />
+                    </engine:GroupBox>
                     <engine:DropdownField label="Select another version" name="DropdownField" choices="Item 1,Item 2" index="0" style="justify-content: space-between;" />
                 </engine:GroupBox>
                 <engine:GroupBox name="PackagesList">
@@ -81,6 +85,10 @@
                 </engine:GroupBox>
                 <engine:Button text="Update packages to selected version" name="UpdatePackagesButton" style="align-self: flex-end;" />
             </engine:GroupBox>
+            <engine:Foldout text="Advanced settings" name="advanced-settings-foldout" style="align-items: flex-start; justify-content: flex-start;">
+                <engine:Toggle label="Resolve breaking changes automatically when updating version" name="resolve-breaking-changes-toggle" value="true" style="flex-direction: row-reverse; align-items: stretch; justify-content: space-around;" />
+                <engine:Toggle label="Show pre-releases" name="show-prereleases-toggle" style="flex-direction: row-reverse; align-items: stretch;" />
+            </engine:Foldout>
         </engine:GroupBox>
         <engine:VisualElement name="Separator" class="separator" style="flex-grow: 1; height: 1px; border-left-color: rgba(0, 0, 0, 0); border-right-color: rgba(0, 0, 0, 0); border-top-color: rgba(0, 0, 0, 0); border-bottom-color: rgba(0, 0, 0, 0); background-color: rgb(0, 0, 0);" />
     </engine:ScrollView>

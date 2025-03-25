@@ -6,12 +6,19 @@
     height: 1px;
 }
 
-.settings-item-icon {
+.settings-item {
+}
+
+.settings-item-green-icon {
     background-image: url("project://database/Packages/com.unity.multiplayer.center/Editor/MultiplayerCenterWindow/UI/Icons/Check.png?fileID=2800000&guid=4f78a544322c742b89e63fb68557b1d2&type=3#Check");
     width: 20px;
     height: 20px;
     align-self: center;
 }
 
-.settings-item {
+.settings-item-red-icon {
+    background-image: url("project://database/Packages/com.unity.collab-proxy/Editor/Assets/Images/d_iconconflicted.png?fileID=2800000&guid=881798b77426a8f47b533dcc4767e9e5&type=3#d_iconconflicted");
+    width: 20px;
+    height: 20px;
+    align-self: flex-end;
 }

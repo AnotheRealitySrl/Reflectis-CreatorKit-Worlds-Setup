@@ -36,17 +36,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         #region Project configuration
 
-        private bool UnityVersionIsMatching => InternalEditorUtility.GetFullUnityVersion().Split(' ')[0] == allVersionsPackageRegistries[displayedReflectisVersionIndex].RequiredUnityVersion;
-        private bool AllEditorModulesInstalled => !installedModules.Values.Contains(false);
-
-        private bool renderPipelineURP = false;
-        private bool playerSettings = false;
-        private bool maxTextureSizeOverride = false;
-
-        private bool allSettingsFixed = true;
-
-        private bool EditorConfigurationOk => UnityVersionIsMatching && AllEditorModulesInstalled;
-        private bool ProjectSettingsOk => renderPipelineURP && playerSettings && maxTextureSizeOverride;
+        private bool EditorConfigurationOk => dataSource.unityVersionIsMatching && dataSource.allEditorModulesInstalled;
+        private bool ProjectSettingsOk => dataSource.renderPipelineURP && dataSource.playerSettings && dataSource.maxTextureSizeOverride;
 
         public static Dictionary<string, bool> installedModules = new()
         {
@@ -62,7 +53,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         private readonly string packageRegistryPath = "https://spacsglobal.dfs.core.windows.net/reflectis2023-public/PackageManager/PackageRegistry.json";
         private readonly string breakingChangesSolverPath = "https://spacsglobal.dfs.core.windows.net/reflectis2023-public/PackageManager/BreakingChangesSolverIndex.json";
 
-        private static PackageRegistry[] allVersionsPackageRegistries;
         private static Dictionary<(string, string), string> breakingChangesSolverDictionary;
 
         private int displayedReflectisVersionIndex;
@@ -70,7 +60,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private List<string> availableVersions = new();
 
-        private string currentInstallationVersion;
         private string previousInstallationVersion;
 
         private static List<PackageDefinition> selectedVersionPackageList = new(); //the selected version packages
@@ -86,14 +75,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         private static Dictionary<string, bool> packagesDropdown;
         private static Dictionary<string, bool> dependenciesDropdown;
 
-        private bool packageManagerAdvancedSettings;
-        private bool resolveBreakingChangesAutomatically = true;
-        private bool showPrereleases = false;
-
         private readonly string currentInstallationKey = "SelectedReflectisVersion"; //string used to know which reflectis version is installed. Set The first time you press the setup button. 
         private readonly string installedPackagesKey = "InstalledPackages"; //string used to know which packages are installed.
-
-        private DateTime lastPackageManagerRefresh;
 
         #endregion
 
@@ -145,14 +128,55 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         {
             root.dataSource = dataSource;
 
-            Label result = root.Q<Label>("GitVersionLabel");
-            dataSource.gitVersion = result.text;
-            result.SetBinding("value", new DataBinding() { dataSourcePath = Unity.Properties.PropertyPath.FromName(nameof(CreatorKitConfigurationWindowDataSource.gitVersion)) });
+            Label gitVersionLabel = root.Q<Label>("GitVersionLabel");
+            dataSource.gitVersion = gitVersionLabel.text;
+            gitVersionLabel.SetBinding("text", new DataBinding() { dataSourcePath = Unity.Properties.PropertyPath.FromName(nameof(CreatorKitConfigurationWindowDataSource.gitVersion)) });
 
             Button gitDownloadButton = root.Q<Button>("git-download-button");
             DataBinding buttonBinding = new() { dataSourcePath = Unity.Properties.PropertyPath.FromName(nameof(CreatorKitConfigurationWindowDataSource.isGitInstalled)) };
             buttonBinding.sourceToUiConverters.AddConverter((ref bool value) => !value);
             gitDownloadButton.SetBinding("visible", buttonBinding);
+
+            Label currentReflectisVersionLabel = root.Q<Label>("current-reflectis-version-value");
+            currentReflectisVersionLabel.SetBinding("text", new DataBinding() { dataSourcePath = Unity.Properties.PropertyPath.FromName(nameof(CreatorKitConfigurationWindowDataSource.currentInstallationVersion)) });
+
+            //VisualElement projectSettingsURPCheck = root.Q<VisualElement>("project-settings-urp-check");
+            //projectSettingsURPCheck.SetBinding("visible", new DataBinding() { dataSourcePath = Unity.Properties.PropertyPath.FromName(nameof(CreatorKitConfigurationWindowDataSource.renderPipelineURP)) });
+
+            //VisualElement projectSettingsConfiguration = root.Q<VisualElement>("project-settings-configuration-check");
+            //projectSettingsConfiguration.SetBinding("visible", new DataBinding() { dataSourcePath = Unity.Properties.PropertyPath.FromName(nameof(CreatorKitConfigurationWindowDataSource.playerSettings)) });
+
+            //VisualElement projectSettingsMaxTextureSize = root.Q<VisualElement>("project-settings-max-texture-size-check");
+            //projectSettingsMaxTextureSize.SetBinding("visible", new DataBinding() { dataSourcePath = Unity.Properties.PropertyPath.FromName(nameof(CreatorKitConfigurationWindowDataSource.maxTextureSizeOverride)) });
+
+            VisualElement projectSettingsItemIcon = root.Q<VisualElement>("project-settings-configuration-check");
+            DataBinding styleBinding = new() { dataSourcePath = Unity.Properties.PropertyPath.FromName(nameof(CreatorKitConfigurationWindowDataSource.maxTextureSizeOverride)) };
+            styleBinding.sourceToUiConverters.AddConverter((ref bool value) =>
+            {
+                projectSettingsItemIcon.RemoveFromClassList("settings-item-green-icon");
+                projectSettingsItemIcon.RemoveFromClassList("settings-item-red-icon");
+                projectSettingsItemIcon.AddToClassList(value ? "settings-item-green-icon" : "settings-item-red-icon");
+                return true;
+            });
+            projectSettingsItemIcon.SetBinding("classList", styleBinding);
+
+
+
+
+            Label lastRefreshDateTimeLabel = root.Q<Label>("last-refresh-date-time");
+            DataBinding lastRefreshDateTimeDataBinding = new() { dataSourcePath = Unity.Properties.PropertyPath.FromName(nameof(CreatorKitConfigurationWindowDataSource.lastRefreshDateTime)) };
+            lastRefreshDateTimeDataBinding.sourceToUiConverters.AddConverter((ref string value) => $"{value}MMM dd, HH:mm");
+            lastRefreshDateTimeLabel.SetBinding("text", lastRefreshDateTimeDataBinding);
+
+            Button refreshPackagesButton = root.Q<Button>("refresh-packages-button");
+            refreshPackagesButton.clicked += SetupWindowData;
+
+            Toggle resolveBreakingChangesAutomatically = root.Q<Toggle>("resolve-breaking-changes-automatically");
+            currentReflectisVersionLabel.SetBinding("text", new DataBinding()
+            {
+                dataSourcePath = Unity.Properties.PropertyPath.FromName(nameof(CreatorKitConfigurationWindowDataSource.currentInstallationVersion)),
+                bindingMode = BindingMode.ToSource
+            });
         }
 
         private async void SetupWindowData()
@@ -163,7 +187,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             HttpResponseMessage response = await client.GetAsync(packageRegistryPath);
             response.EnsureSuccessStatusCode();
             string responseBody = await response.Content.ReadAsStringAsync();
-            allVersionsPackageRegistries = JsonConvert.DeserializeObject<PackageRegistry[]>(responseBody);
+            dataSource.allVersionsPackageRegistry = JsonConvert.DeserializeObject<PackageRegistry[]>(responseBody);
 
             HttpResponseMessage routineResponse = await client.GetAsync(breakingChangesSolverPath);
             routineResponse.EnsureSuccessStatusCode();
@@ -181,16 +205,16 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 breakingChangesSolverDictionary[tupleKey] = kvp.Value;
             }
 
-            availableVersions = allVersionsPackageRegistries.Select(x => x.ReflectisVersion).ToList();
+            availableVersions = dataSource.allVersionsPackageRegistry.Select(x => x.ReflectisVersion).ToList();
 
             //Get reflectis version and update list of packages
-            currentInstallationVersion = EditorPrefs.GetString(currentInstallationKey);
-            previousInstallationVersion = currentInstallationVersion;
-            displayedReflectisVersion = currentInstallationVersion;
+            dataSource.currentInstallationVersion = EditorPrefs.GetString(currentInstallationKey);
+            previousInstallationVersion = dataSource.currentInstallationVersion;
+            displayedReflectisVersion = dataSource.currentInstallationVersion;
             installedPackages = JsonConvert.DeserializeObject<HashSet<PackageDefinition>>(EditorPrefs.GetString(installedPackagesKey)) ?? new();
             if (string.IsNullOrEmpty(displayedReflectisVersion))
             {
-                displayedReflectisVersion = allVersionsPackageRegistries[^1].ReflectisVersion;
+                displayedReflectisVersion = dataSource.allVersionsPackageRegistry[^1].ReflectisVersion;
             }
             displayedReflectisVersionIndex = availableVersions.IndexOf(displayedReflectisVersion);
 
@@ -198,13 +222,17 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             packagesDropdown = selectedVersionPackageDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
             dependenciesDropdown = selectedVersionPackageDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
 
-            lastPackageManagerRefresh = DateTime.Now;
+            dataSource.unityVersionIsMatching = InternalEditorUtility.GetFullUnityVersion().Split(' ')[0] == dataSource.allVersionsPackageRegistry[displayedReflectisVersionIndex].RequiredUnityVersion;
+            dataSource.lastRefreshDateTime = DateTime.Now;
 
             UpdateDisplayedPacakgesAndDependencies();
 
             CheckGitInstallation();
             CheckEditorModulesInstallation();
             CheckProjectSettings();
+
+            EditorUtility.SetDirty(dataSource);
+            AssetDatabase.SaveAssetIfDirty(dataSource);
 
             setupCompleted = true;
             isSetupping = false;
@@ -260,30 +288,22 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private void CheckEditorModulesInstallation()
         {
-            //Check supported platform
+            //Check supported platforms
             BuildTargetGroup[] buildTargetGroups = (BuildTargetGroup[])Enum.GetValues(typeof(BuildTargetGroup));
             foreach (BuildTargetGroup group in buildTargetGroups)
             {
-                CheckBuildTarget(group, BuildTarget.Android, "Android");
-                CheckBuildTarget(group, BuildTarget.StandaloneWindows, "Windows");
-                CheckBuildTarget(group, BuildTarget.WebGL, "WebGL");
+                installedModules["Android"] = BuildPipeline.IsBuildTargetSupported(group, BuildTarget.Android);
+                installedModules["Windows"] = BuildPipeline.IsBuildTargetSupported(group, BuildTarget.StandaloneWindows);
+                installedModules["WebGL"] = BuildPipeline.IsBuildTargetSupported(group, BuildTarget.WebGL);
             }
+            dataSource.allEditorModulesInstalled = !installedModules.Values.Contains(false);
         }
 
         private void CheckProjectSettings()
         {
-            renderPipelineURP = GetURPConfigurationStatus();
-            playerSettings = GetProjectSettingsStatus();
-            maxTextureSizeOverride = GetMaxTextureSizeOverride();
-        }
-
-        private void CheckBuildTarget(BuildTargetGroup group, BuildTarget target, string platform)
-        {
-            bool value = BuildPipeline.IsBuildTargetSupported(group, target);
-            if (value)
-            {
-                installedModules[platform] = true;
-            }
+            dataSource.renderPipelineURP = GetURPConfigurationStatus();
+            dataSource.playerSettings = GetProjectSettingsStatus();
+            dataSource.maxTextureSizeOverride = GetMaxTextureSizeOverride();
         }
 
         private bool GetURPConfigurationStatus()
@@ -347,8 +367,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private void UpdateDisplayedPacakgesAndDependencies()
         {
-            selectedVersionPackageList = allVersionsPackageRegistries.FirstOrDefault(x => x.ReflectisVersion == displayedReflectisVersion).Packages;
-            selectedVersionDependencies = allVersionsPackageRegistries.FirstOrDefault(x => x.ReflectisVersion == displayedReflectisVersion).Dependencies;
+            selectedVersionPackageList = dataSource.allVersionsPackageRegistry.FirstOrDefault(x => x.ReflectisVersion == displayedReflectisVersion).Packages;
+            selectedVersionDependencies = dataSource.allVersionsPackageRegistry.FirstOrDefault(x => x.ReflectisVersion == displayedReflectisVersion).Dependencies;
 
             selectedVersionPackageDictionary = selectedVersionPackageList.ToDictionary(x => x.Name);
             selectedVersionDependenciesFull = selectedVersionDependencies.ToDictionary(
@@ -475,14 +495,14 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private void UpdatePackagesToSelectedVersion()
         {
-            if (currentInstallationVersion != displayedReflectisVersion)
+            if (dataSource.currentInstallationVersion != displayedReflectisVersion)
             {
-                previousInstallationVersion = currentInstallationVersion;
-                currentInstallationVersion = displayedReflectisVersion;
-                EditorPrefs.SetString(currentInstallationKey, currentInstallationVersion);
+                previousInstallationVersion = dataSource.currentInstallationVersion;
+                dataSource.currentInstallationVersion = displayedReflectisVersion;
+                EditorPrefs.SetString(currentInstallationKey, dataSource.currentInstallationVersion);
 
-                Dictionary<string, PackageDefinition> packages = allVersionsPackageRegistries
-                    .FirstOrDefault(x => x.ReflectisVersion == currentInstallationVersion).Packages
+                Dictionary<string, PackageDefinition> packages = dataSource.allVersionsPackageRegistry
+                    .FirstOrDefault(x => x.ReflectisVersion == dataSource.currentInstallationVersion).Packages
                     .ToDictionary(x => x.Name, y => y);
 
                 List<PackageDefinition> installedPackagesCopy = new(installedPackages);
@@ -500,7 +520,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
                 EditorPrefs.SetString(installedPackagesKey, JsonConvert.SerializeObject(installedPackages));
 
-                if (resolveBreakingChangesAutomatically)
+                if (dataSource.resolveBreakingChangesAutomatically)
                 {
                     ResolveBreakingChanges();
                 }
@@ -513,7 +533,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 AssetDatabase.CreateFolder("Assets", "CKBreakingChangesSolvers");
 
             string prev = FilterPatch(previousInstallationVersion);
-            string cur = FilterPatch(currentInstallationVersion);
+            string cur = FilterPatch(dataSource.currentInstallationVersion);
             (string, string) routineKey = (prev, cur);
 
             string routinePath = breakingChangesSolverDictionary[routineKey];
