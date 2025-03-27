@@ -17,8 +17,8 @@
 }
 
 .settings-item-red-icon {
-    background-image: url("project://database/Packages/com.unity.collab-proxy/Editor/Assets/Images/d_iconconflicted.png?fileID=2800000&guid=881798b77426a8f47b533dcc4767e9e5&type=3#d_iconconflicted");
+    background-image: url("project://database/Packages/com.unity.collab-proxy/Editor/Assets/Images/iconconflicted.png?fileID=2800000&guid=d1c88f142eee55b4eb2b2cfd7b3624ce&type=3#iconconflicted");
     width: 20px;
     height: 20px;
-    align-self: flex-end;
+    align-self: center;
 }

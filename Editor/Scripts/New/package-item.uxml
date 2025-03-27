@@ -1,0 +1,17 @@
+<engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <engine:GroupBox name="package-item" style="flex-direction: column; justify-content: space-between;">
+        <engine:GroupBox name="package-item-body" style="flex-direction: row;">
+            <engine:Foldout text="{0} - {1}" name="package-item" style="justify-content: flex-start; width: 100%;">
+                <engine:Label text="Package description" name="package-description" />
+                <engine:Label text="URL" name="package-url" />
+                <engine:Foldout text="Dependencies" name="PackageDependencies">
+                    <engine:Label text="Label" name="Dependency" />
+                </engine:Foldout>
+            </engine:Foldout>
+            <engine:GroupBox style="flex-direction: column;">
+                <engine:Button text="Install" name="package-install-button" />
+            </engine:GroupBox>
+        </engine:GroupBox>
+        <engine:VisualElement name="package-item-separator" class="separator" style="flex-grow: 1;" />
+    </engine:GroupBox>
+</engine:UXML>

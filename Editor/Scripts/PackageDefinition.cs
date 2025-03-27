@@ -1,5 +1,7 @@
 using System;
 
+using Unity.Properties;
+
 using UnityEngine;
 
 namespace Reflectis.CreatorKit.Worlds.Installer.Editor
@@ -22,10 +24,10 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         [SerializeField] private EPackageVisibility visibility;
 
         public string Name => name;
-        public string DisplayName => displayName;
-        public string Description => description;
-        public string Version => version;
-        public string Url => url;
+        [CreateProperty] public string DisplayName => displayName;
+        [CreateProperty] public string Description => description;
+        [CreateProperty] public string Version => version;
+        [CreateProperty] public string Url => url;
         public EPackageVisibility Visibility => visibility;
     }
 }
