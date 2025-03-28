@@ -13,6 +13,10 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
     {
         [CreateProperty] public List<PackageDefinition> SelectedVersionPackageList { get; set; }
 
+        [CreateProperty] public int DisplayedReflectisVersionIndex { get; set; }
+        [CreateProperty] public string DisplayedReflectisVersion { get; set; }
+        [CreateProperty] public string CurrentInstallationVersion { get; set; }
+
         [CreateProperty] public bool ResolveBreakingChangesAutomatically { get; set; }
         [CreateProperty] public bool ShowPrereleases { get; set; }
 
