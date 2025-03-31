@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using System.Threading.Tasks;
 
 using Unity.Properties;
 
@@ -100,12 +101,14 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
 
         [MenuItem("Reflectis/Creator Kit configuration window")]
-        public static void ShowWindow()
+        public static async void ShowWindow()
         {
             CreatorKitConfigurationWindow wnd = GetWindow<CreatorKitConfigurationWindow>();
             wnd.titleContent = new GUIContent("Creator Kit configuration window");
 
             wnd.LoadOrCreateDataSource();
+
+            await wnd.SetupWindowDataAsync();
 
             wnd.AddDataBindings();
         }
@@ -120,7 +123,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             VisualElement labelFromUXML = m_VisualTreeAsset.Instantiate();
             root.Add(labelFromUXML);
 
-            SetupWindowData();
         }
 
         private void LoadOrCreateDataSource()
@@ -187,6 +189,9 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             Button configureProjectSettingsButton = root.Q<Button>("configure-project-settings-button");
             configureProjectSettingsButton.clicked += ConfigureProjectSettings;
+            DataBinding configureProjectSettingsButtonBinding = new() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.ProjectSettingsOk)) };
+            configureProjectSettingsButtonBinding.sourceToUiConverters.AddConverter((ref bool value) => !value);
+            configureProjectSettingsButton.SetBinding("visible", configureProjectSettingsButtonBinding);
 
             #endregion
 
@@ -206,38 +211,21 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             Button refreshPackagesButton = root.Q<Button>("refresh-packages-button");
             refreshPackagesButton.clicked += SetupWindowData;
 
-            ScrollView packagesListScroll = root.Q<ListView>("packages-list-view").Q<ScrollView>();
-            for (int i = 0; i < packageManagerConfig.SelectedVersionPackageList.Where(x => x.Visibility == EPackageVisibility.Visible).Count(); i++)
-            {
-                VisualElement packageItem = packageItemAsset.Instantiate();
-                packagesListScroll.Add(packageItem);
-                packagesListScroll[i].dataSourcePath = PropertyPath.FromIndex(i);
-
-                Foldout packageName = packagesListScroll[i].Q<Foldout>("package-item");
-                packageName.SetBinding("text", new DataBinding()
-                {
-                    dataSourcePath = PropertyPath.FromName(nameof(PackageDefinition.Name)),
-                    bindingMode = BindingMode.ToTarget
-                });
-
-                Label packageDescription = packagesListScroll[i].Q<Label>("package-description");
-                packageDescription.SetBinding("text", new DataBinding()
-                {
-                    dataSourcePath = PropertyPath.FromName(nameof(PackageDefinition.Description)),
-                    bindingMode = BindingMode.ToTarget
-                });
-
-                Label packageVersion = packagesListScroll[i].Q<Label>("package-url");
-                packageVersion.SetBinding("text", new DataBinding()
-                {
-                    dataSourcePath = PropertyPath.FromName(nameof(PackageDefinition.Url)),
-                    bindingMode = BindingMode.ToTarget
-                });
-            }
+            InstantiatePackagesInPackageList();
 
 
             Button updatePackagesButton = root.Q<Button>("update-packages-button");
             updatePackagesButton.clicked += UpdatePackagesToSelectedVersion;
+
+            DropdownField dropdown = root.Q<DropdownField>("reflectis-version-dropdown");
+            dropdown.choices = availableVersions;
+            dropdown.value = packageManagerConfig.DisplayedReflectisVersion;
+            dropdown.RegisterValueChangedCallback(evt =>
+            {
+                packageManagerConfig.DisplayedReflectisVersion = evt.newValue;
+                packageManagerConfig.DisplayedReflectisVersionIndex = availableVersions.IndexOf(evt.newValue);
+                UpdateDisplayedPacakgesAndDependencies();
+            });
 
 
             Toggle resolveBreakingChangesAutomatically = root.Q<Toggle>("resolve-breaking-changes-toggle");
@@ -257,7 +245,32 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             #endregion
         }
 
-        private async void SetupWindowData()
+        private void InstantiatePackagesInPackageList()
+        {
+            ScrollView packagesListScroll = root.Q<ListView>("packages-list-view").Q<ScrollView>();
+
+            packagesListScroll.Clear();
+            for (int i = 0; i < packageManagerConfig.SelectedVersionPackageList.Where(x => x.Visibility == EPackageVisibility.Visible).Count(); i++)
+            {
+                VisualElement packageItem = packageItemAsset.Instantiate();
+                packagesListScroll.Add(packageItem);
+                packagesListScroll[i].dataSourcePath = PropertyPath.FromIndex(i);
+
+                Foldout packageName = packagesListScroll[i].Q<Foldout>("package-item");
+                packageName.text = $"<b>{packageManagerConfig.SelectedVersionPackageList[i].DisplayName}</b> - {packageManagerConfig.SelectedVersionPackageList[i].Version}";
+
+                Label packageDescription = packagesListScroll[i].Q<Label>("package-description");
+                packageDescription.text = packageManagerConfig.SelectedVersionPackageList[i].Description;
+
+                Label packageVersion = packagesListScroll[i].Q<Label>("package-url");
+                packageVersion.text = packageManagerConfig.SelectedVersionPackageList[i].Url;
+            }
+
+        }
+
+        private async void SetupWindowData() => await SetupWindowDataAsync();
+
+        private async Task SetupWindowDataAsync()
         {
             isSetupping = true;
 
@@ -286,9 +299,9 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             availableVersions = allVersionsPackageRegistry.Select(x => x.ReflectisVersion).ToList();
 
             //Get reflectis version and update list of packages
-            packageManagerConfig.CurrentInstallationVersion = EditorPrefs.GetString(currentInstallationKey);
+            //packageManagerConfig.CurrentInstallationVersion ??= EditorPrefs.GetString(currentInstallationKey);
             previousInstallationVersion = packageManagerConfig.CurrentInstallationVersion;
-            packageManagerConfig.DisplayedReflectisVersion = packageManagerConfig.CurrentInstallationVersion;
+            packageManagerConfig.DisplayedReflectisVersion = string.IsNullOrEmpty(packageManagerConfig.CurrentInstallationVersion) ? packageManagerConfig.CurrentInstallationVersion : availableVersions[^1];
             installedPackages = JsonConvert.DeserializeObject<HashSet<PackageDefinition>>(EditorPrefs.GetString(installedPackagesKey)) ?? new();
             if (string.IsNullOrEmpty(packageManagerConfig.DisplayedReflectisVersion))
             {
@@ -453,6 +466,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             packagesDropdown = selectedVersionPackageDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
             dependenciesDropdown = selectedVersionPackageDictionary.Where(x => x.Value.Visibility == EPackageVisibility.Visible).ToDictionary(x => x.Value.Name, x => false);
+
+            InstantiatePackagesInPackageList();
         }
 
         private void InstallPackageWithDependencies(PackageDefinition package)

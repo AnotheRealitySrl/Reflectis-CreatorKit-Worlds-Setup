@@ -5,7 +5,7 @@
         <engine:VisualElement name="separator" class="separator" style="flex-grow: 1;" />
         <engine:GroupBox name="project-settings">
             <engine:Label text="Project settings" name="Header" class="h1" style="-unity-font-style: bold;" />
-            <engine:GroupBox name="Git" style="flex-direction: row; align-items: stretch; justify-content: space-between;">
+            <engine:GroupBox name="Git" class="settings-group">
                 <engine:Foldout text="Git installation" name="SettingsItemFoldout" class="settings-item">
                     <engine:VisualElement name="GitInstance" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
                         <engine:VisualElement name="project-settings-git-version-check" class="settings-item-green-icon" />
@@ -17,9 +17,9 @@
                     <engine:Button text="Download" name="git-download-button" />
                 </engine:GroupBox>
             </engine:GroupBox>
-            <engine:GroupBox name="EditorConfiguration">
+            <engine:GroupBox name="editor-configuration" class="settings-group">
                 <engine:Foldout text="Editor configuration" name="SettingsItemFoldout">
-                    <engine:VisualElement name="UnityVersion" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
+                    <engine:VisualElement name="editor-settings-unity-version" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
                         <engine:VisualElement name="project-settings-unity-version-check" class="settings-item-green-icon" />
                         <engine:Label text="Unity version:" name="unity-version" />
                         <engine:Label text="&lt;value&gt;" name="Label" />
@@ -30,19 +30,19 @@
                     </engine:VisualElement>
                 </engine:Foldout>
             </engine:GroupBox>
-            <engine:GroupBox name="ProjectSettings" style="flex-direction: row; align-items: stretch; justify-content: space-between;">
+            <engine:GroupBox name="project-settings" class="settings-group">
                 <engine:Foldout text="Project settings" name="SettingsItemFoldout">
-                    <engine:VisualElement name="URPSettings" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
+                    <engine:VisualElement name="project-settings-configure-urp" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
                         <engine:VisualElement name="project-settings-urp-check" class="settings-item-green-icon" />
                         <engine:Label text="Configure URP as render pipeline" name="Label" />
                     </engine:VisualElement>
-                    <engine:VisualElement name="TextureSize" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
+                    <engine:VisualElement name="project-settings-player-settings" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
                         <engine:VisualElement name="project-settings-configuration-check" class="settings-item-green-icon" />
                         <engine:Label text="Project settings configuration" name="Label" />
                     </engine:VisualElement>
                     <engine:VisualElement name="project-settings-max-texture-size-check" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
                         <engine:VisualElement name="project-settings-max-texture-size-check" class="settings-item-green-icon" />
-                        <engine:Label text="Configure mex texture size" name="Label" />
+                        <engine:Label text="Configure max texture size" name="Label" />
                     </engine:VisualElement>
                 </engine:Foldout>
                 <engine:GroupBox name="ButtonContainer" style="justify-content: space-between; align-items: auto;">
@@ -66,7 +66,7 @@
                         <engine:Label text="Current Reflectis version:" name="current-reflectis-version-text" />
                         <engine:Label text="&lt;version&gt;" name="current-reflectis-version-value" />
                     </engine:GroupBox>
-                    <engine:DropdownField label="Select another version" name="DropdownField" choices="Item 1,Item 2" index="0" style="justify-content: space-between;" />
+                    <engine:DropdownField label="Select another version" name="reflectis-version-dropdown" choices="Item 1,Item 2" index="0" style="justify-content: space-between;" />
                 </engine:GroupBox>
                 <engine:ListView name="packages-list-view" data-source-path="SelectedVersionPackageList" />
                 <engine:Button text="Update packages to selected version" name="update-packages-button" style="align-self: flex-end;" />
