@@ -77,7 +77,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         private string currentInstallationVersion;
         private string previousInstallationVersion;
 
-        private static List<PackageDefinition> selectedVersionPackageList = new(); //the selected version packages
+        private static PackageDefinition[] selectedVersionPackageList; //the selected version packages
         private static Dictionary<string, PackageDefinition> selectedVersionPackageDictionary = new();
 
         private static Dictionary<string, string[]> selectedVersionDependencies = new();

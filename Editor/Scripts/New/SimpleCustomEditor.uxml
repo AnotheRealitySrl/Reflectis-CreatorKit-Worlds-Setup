@@ -68,7 +68,7 @@
                     </engine:GroupBox>
                     <engine:DropdownField label="Select another version" name="DropdownField" choices="Item 1,Item 2" index="0" style="justify-content: space-between;" />
                 </engine:GroupBox>
-                <engine:ListView name="packages-list-view" />
+                <engine:ListView name="packages-list-view" data-source-path="SelectedVersionPackageList" />
                 <engine:Button text="Update packages to selected version" name="update-packages-button" style="align-self: flex-end;" />
             </engine:GroupBox>
             <engine:Foldout text="Advanced settings" name="advanced-settings-foldout" style="align-items: flex-start; justify-content: flex-start;">

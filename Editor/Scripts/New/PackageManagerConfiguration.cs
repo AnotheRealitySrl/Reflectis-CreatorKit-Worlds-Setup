@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 using Unity.Properties;
 
@@ -11,7 +10,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
     [CreateAssetMenu(fileName = "CreatorKitConfigurationWindowDataSource", menuName = "Reflectis/Creator-Kit-Installer/CreatorKitConfigurationWindowDataSource")]
     public class PackageManagerConfiguration : ScriptableObject
     {
-        [CreateProperty] public List<PackageDefinition> SelectedVersionPackageList { get; set; }
+        [CreateProperty] public PackageDefinition[] SelectedVersionPackageList { get; set; }
 
         [CreateProperty] public int DisplayedReflectisVersionIndex { get; set; }
         [CreateProperty] public string DisplayedReflectisVersion { get; set; }

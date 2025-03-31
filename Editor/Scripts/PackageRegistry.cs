@@ -11,12 +11,12 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
     {
         [SerializeField] private string reflectisVersion;
         [SerializeField] private string requiredUnityVersion;
-        [SerializeField] private List<PackageDefinition> packages;
+        [SerializeField] private PackageDefinition[] packages;
         [SerializeField] private Dictionary<string, string[]> dependencies;
 
         public string ReflectisVersion => reflectisVersion;
         public string RequiredUnityVersion => requiredUnityVersion;
-        public List<PackageDefinition> Packages => packages;
+        public PackageDefinition[] Packages => packages;
         public Dictionary<string, string[]> Dependencies => dependencies;
     }
 }
