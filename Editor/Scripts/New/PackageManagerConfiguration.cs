@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 using Unity.Properties;
 
@@ -11,6 +12,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
     public class PackageManagerConfiguration : ScriptableObject
     {
         [CreateProperty] public PackageDefinition[] SelectedVersionPackageList { get; set; }
+        [CreateProperty] public HashSet<PackageDefinition> InstalledPackages { get; set; } = new();
 
         [CreateProperty] public int DisplayedReflectisVersionIndex { get; set; }
         [CreateProperty] public string DisplayedReflectisVersion { get; set; }

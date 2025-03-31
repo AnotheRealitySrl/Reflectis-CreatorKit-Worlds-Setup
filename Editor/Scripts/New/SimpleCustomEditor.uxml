@@ -24,7 +24,7 @@
                         <engine:Label text="Unity version:" name="unity-version" />
                         <engine:Label text="&lt;value&gt;" name="Label" />
                     </engine:VisualElement>
-                    <engine:VisualElement name="EditorModules" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
+                    <engine:VisualElement name="editor-settings-installed-modules" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
                         <engine:VisualElement name="project-settings-editor-modules-check" class="settings-item-green-icon" />
                         <engine:Label text="All editor modules are installed properly" name="Label" />
                     </engine:VisualElement>
@@ -66,7 +66,7 @@
                         <engine:Label text="Current Reflectis version:" name="current-reflectis-version-text" />
                         <engine:Label text="&lt;version&gt;" name="current-reflectis-version-value" />
                     </engine:GroupBox>
-                    <engine:DropdownField label="Select another version" name="reflectis-version-dropdown" choices="Item 1,Item 2" index="0" style="justify-content: space-between;" />
+                    <engine:DropdownField label="Select another version" name="reflectis-version-dropdown" choices="Item 1,Item 2" index="0" style="justify-content: space-between; -unity-text-align: middle-left;" />
                 </engine:GroupBox>
                 <engine:ListView name="packages-list-view" data-source-path="SelectedVersionPackageList" />
                 <engine:Button text="Update packages to selected version" name="update-packages-button" style="align-self: flex-end;" />

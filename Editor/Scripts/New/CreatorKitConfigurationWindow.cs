@@ -94,9 +94,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         private static Dictionary<string, bool> packagesDropdown;
         private static Dictionary<string, bool> dependenciesDropdown;
 
-        private readonly string currentInstallationKey = "SelectedReflectisVersion"; //string used to know which reflectis version is installed. Set The first time you press the setup button. 
-        private readonly string installedPackagesKey = "InstalledPackages"; //string used to know which packages are installed.
-
         #endregion
 
 
@@ -213,7 +210,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             InstantiatePackagesInPackageList();
 
-
             Button updatePackagesButton = root.Q<Button>("update-packages-button");
             updatePackagesButton.clicked += UpdatePackagesToSelectedVersion;
 
@@ -248,9 +244,10 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         private void InstantiatePackagesInPackageList()
         {
             ScrollView packagesListScroll = root.Q<ListView>("packages-list-view").Q<ScrollView>();
-
             packagesListScroll.Clear();
-            for (int i = 0; i < packageManagerConfig.SelectedVersionPackageList.Where(x => x.Visibility == EPackageVisibility.Visible).Count(); i++)
+
+            List<PackageDefinition> visiblePackages = packageManagerConfig.SelectedVersionPackageList.Where(x => x.Visibility == EPackageVisibility.Visible).ToList();
+            for (int i = 0; i < visiblePackages.Count(); i++)
             {
                 VisualElement packageItem = packageItemAsset.Instantiate();
                 packagesListScroll.Add(packageItem);
@@ -264,6 +261,18 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
                 Label packageVersion = packagesListScroll[i].Q<Label>("package-url");
                 packageVersion.text = packageManagerConfig.SelectedVersionPackageList[i].Url;
+
+                Button installPackageButton = packagesListScroll[i].Q<Button>("install-package-button");
+                DataBinding installPackageButtonBinding = new() { bindingMode = BindingMode.ToTarget };
+                installPackageButtonBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) => packageManagerConfig.InstalledPackages.Contains(package) ? "Uninstall" : "Install");
+                installPackageButton.SetBinding("text", installPackageButtonBinding);
+                installPackageButton.clicked += () =>
+                {
+                    if (packageManagerConfig.InstalledPackages.Contains(visiblePackages[i]))
+                        UninstallPackageWithDependencies(visiblePackages[i]);
+                    else
+                        InstallPackageWithDependencies(visiblePackages[i]);
+                };
             }
 
         }
@@ -299,10 +308,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             availableVersions = allVersionsPackageRegistry.Select(x => x.ReflectisVersion).ToList();
 
             //Get reflectis version and update list of packages
-            //packageManagerConfig.CurrentInstallationVersion ??= EditorPrefs.GetString(currentInstallationKey);
             previousInstallationVersion = packageManagerConfig.CurrentInstallationVersion;
             packageManagerConfig.DisplayedReflectisVersion = string.IsNullOrEmpty(packageManagerConfig.CurrentInstallationVersion) ? packageManagerConfig.CurrentInstallationVersion : availableVersions[^1];
-            installedPackages = JsonConvert.DeserializeObject<HashSet<PackageDefinition>>(EditorPrefs.GetString(installedPackagesKey)) ?? new();
             if (string.IsNullOrEmpty(packageManagerConfig.DisplayedReflectisVersion))
             {
                 packageManagerConfig.DisplayedReflectisVersion = allVersionsPackageRegistry[^1].ReflectisVersion;
@@ -427,7 +434,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             }
 
             // Project settings configuration
-            UnityEditor.PlayerSettings.SetApiCompatibilityLevel(NamedBuildTarget.Standalone, ApiCompatibilityLevel.NET_Unity_4_8);
+            PlayerSettings.SetApiCompatibilityLevel(NamedBuildTarget.Standalone, ApiCompatibilityLevel.NET_Unity_4_8);
 
             // Max texture size override
             EditorUserBuildSettings.overrideMaxTextureSize = 1024;
@@ -474,8 +481,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         {
             List<string> dependenciesToInstall = FindAllDependencies(package, new());
 
-            installedPackages.UnionWith(dependenciesToInstall.Select(x => selectedVersionPackageDictionary[x]).Append(package));
-            EditorPrefs.SetString(installedPackagesKey, JsonConvert.SerializeObject(installedPackages));
+            packageManagerConfig.InstalledPackages.UnionWith(dependenciesToInstall.Select(x => selectedVersionPackageDictionary[x]).Append(package));
 
             InstallPackages(dependenciesToInstall.Append(package.Name).Select(x => selectedVersionPackageDictionary[x]).ToList());
 
@@ -515,8 +521,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                     installedPackages.Remove(selectedVersionPackageDictionary[hiddenPackage.Name]);
                 }
             }
-
-            EditorPrefs.SetString(installedPackagesKey, JsonConvert.SerializeObject(installedPackages));
 
             UninstallPackages(packagesToRemove.Select(x => x.Name).ToList());
         }
@@ -588,7 +592,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             {
                 previousInstallationVersion = packageManagerConfig.CurrentInstallationVersion;
                 packageManagerConfig.CurrentInstallationVersion = packageManagerConfig.DisplayedReflectisVersion;
-                EditorPrefs.SetString(currentInstallationKey, packageManagerConfig.CurrentInstallationVersion);
 
                 Dictionary<string, PackageDefinition> packages = allVersionsPackageRegistry
                     .FirstOrDefault(x => x.ReflectisVersion == packageManagerConfig.CurrentInstallationVersion).Packages
@@ -606,8 +609,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                         InstallPackages(new() { selectedVersionPackageDictionary[package.Name] });
                     }
                 }
-
-                EditorPrefs.SetString(installedPackagesKey, JsonConvert.SerializeObject(installedPackages));
 
                 if (packageManagerConfig.ResolveBreakingChangesAutomatically)
                 {

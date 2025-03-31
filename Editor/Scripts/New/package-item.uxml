@@ -9,7 +9,7 @@
                 </engine:Foldout>
             </engine:Foldout>
             <engine:GroupBox style="flex-direction: column;">
-                <engine:Button text="Install" name="package-install-button" />
+                <engine:Button text="Install" name="install-package-button" />
             </engine:GroupBox>
         </engine:GroupBox>
         <engine:VisualElement name="package-item-separator" class="separator" style="flex-grow: 1;" />
