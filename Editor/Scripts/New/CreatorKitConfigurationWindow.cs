@@ -44,7 +44,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         [SerializeField] private VisualTreeAsset packageItemAsset = default;
 
         private VisualElement root;
-        //private CreatorKitConfigurationWindowDataSource dataSource;
 
         private readonly ProjectConfiguration projectConfig = new();
         private PackageManagerConfiguration packageManagerConfig;
@@ -75,11 +74,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         private readonly string packageRegistryPath = "https://spacsglobal.dfs.core.windows.net/reflectis2023-public/PackageManager/PackageRegistry.json";
         private readonly string breakingChangesSolverPath = "https://spacsglobal.dfs.core.windows.net/reflectis2023-public/PackageManager/BreakingChangesSolverIndex.json";
 
-        private PackageRegistry[] allVersionsPackageRegistry;
-
         private static Dictionary<(string, string), string> breakingChangesSolverDictionary;
-
-        private List<string> availableVersions = new();
 
         private string previousInstallationVersion;
 
@@ -219,27 +214,31 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             updatePackagesButton.clicked += UpdatePackagesToSelectedVersion;
 
             DropdownField dropdown = packageManagerSection.Q<DropdownField>("reflectis-version-dropdown");
-            dropdown.choices = availableVersions;
-            dropdown.value = packageManagerConfig.DisplayedReflectisVersion;
-            dropdown.RegisterValueChangedCallback(evt =>
+            dropdown.SetBinding(nameof(dropdown.choices), new DataBinding()
             {
-                packageManagerConfig.DisplayedReflectisVersion = evt.newValue;
-                UpdateDisplayedPacakgesAndDependencies();
+                dataSourcePath = PropertyPath.FromName(nameof(packageManagerConfig.AvailableVersions)),
+                bindingMode = BindingMode.TwoWay
             });
+            dropdown.SetBinding(nameof(dropdown.value), new DataBinding()
+            {
+                dataSourcePath = PropertyPath.FromName(nameof(packageManagerConfig.DisplayedReflectisVersion)),
+                bindingMode = BindingMode.TwoWay
+            });
+            dropdown.RegisterValueChangedCallback(evt => UpdateAvailableVersions());
 
 
             Toggle resolveBreakingChangesAutomatically = packageManagerSection.Q<Toggle>("resolve-breaking-changes-toggle");
             resolveBreakingChangesAutomatically.SetBinding("value", new DataBinding()
             {
                 dataSourcePath = PropertyPath.FromName(nameof(packageManagerConfig.ResolveBreakingChangesAutomatically)),
-                bindingMode = BindingMode.ToSource
+                bindingMode = BindingMode.TwoWay
             });
 
             Toggle showPrereleaseToggle = packageManagerSection.Q<Toggle>("show-prereleases-toggle");
             showPrereleaseToggle.SetBinding("value", new DataBinding()
             {
                 dataSourcePath = PropertyPath.FromName(nameof(packageManagerConfig.ShowPrereleases)),
-                bindingMode = BindingMode.ToSource
+                bindingMode = BindingMode.TwoWay
             });
 
             #endregion
@@ -257,7 +256,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 packagesListScroll[i].dataSourcePath = PropertyPath.FromIndex(i);
 
                 Foldout packageName = packagesListScroll[i].Q<Foldout>("package-item");
-                packageName.text = $"<b>{packageManagerConfig.SelectedVersionPackageListFiltered[i].DisplayName}</b> - {packageManagerConfig.SelectedVersionPackageList[i].Version}";
+                packageName.text = $"<b>{packageManagerConfig.SelectedVersionPackageListFiltered[i].DisplayName}</b> - {packageManagerConfig.SelectedVersionPackageListFiltered[i].Version}";
 
                 Label packageDescription = packagesListScroll[i].Q<Label>("package-description");
                 packageDescription.text = packageManagerConfig.SelectedVersionPackageListFiltered[i].Description;
@@ -265,10 +264,17 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 Label packageVersion = packagesListScroll[i].Q<Label>("package-url");
                 packageVersion.text = packageManagerConfig.SelectedVersionPackageListFiltered[i].Url;
 
+
                 Button installPackageButton = packagesListScroll[i].Q<Button>("install-package-button");
+
                 DataBinding installPackageButtonBinding = new() { bindingMode = BindingMode.ToTarget };
-                installPackageButtonBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) => packageManagerConfig.InstalledPackages.Contains(package) ? "Uninstall" : "Install");
-                installPackageButton.SetBinding("text", installPackageButtonBinding);
+                installPackageButtonBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) => packageManagerConfig.InstalledPackages.Select(x => x.Name).Contains(package.Name) ? "Uninstall" : "Install");
+                installPackageButton.SetBinding(nameof(installPackageButton.text), installPackageButtonBinding);
+
+                DataBinding installPackageButtonVisibilityBinding = new() { bindingMode = BindingMode.ToTarget };
+                installPackageButtonVisibilityBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) => !IsPackageInstalledAsDependency(package));
+                installPackageButton.SetBinding(nameof(installPackageButton.visible), installPackageButtonVisibilityBinding);
+
                 PackageDefinition package = packageManagerConfig.SelectedVersionPackageListFiltered[i];
                 installPackageButton.clicked += () =>
                 {
@@ -278,7 +284,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                         InstallPackageWithDependencies(package);
                 };
             }
-
         }
 
         private async void SetupWindowData() => await SetupWindowDataAsync();
@@ -291,7 +296,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             HttpResponseMessage response = await client.GetAsync(packageRegistryPath);
             response.EnsureSuccessStatusCode();
             string responseBody = await response.Content.ReadAsStringAsync();
-            allVersionsPackageRegistry = JsonConvert.DeserializeObject<PackageRegistry[]>(responseBody);
+            packageManagerConfig.AllVersionsPackageRegistry = JsonConvert.DeserializeObject<PackageRegistry[]>(responseBody);
 
             HttpResponseMessage routineResponse = await client.GetAsync(breakingChangesSolverPath);
             routineResponse.EnsureSuccessStatusCode();
@@ -309,22 +314,22 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 breakingChangesSolverDictionary[tupleKey] = kvp.Value;
             }
 
-            availableVersions = allVersionsPackageRegistry.Select(x => x.ReflectisVersion).ToList();
+            UpdateAvailableVersions();
 
             //Get reflectis version and update list of packages
 
             if (string.IsNullOrEmpty(packageManagerConfig.CurrentInstallationVersion))
             {
-                packageManagerConfig.CurrentInstallationVersion = availableVersions[^1];
+                packageManagerConfig.CurrentInstallationVersion = packageManagerConfig.AvailableVersions[^1];
             }
             if (string.IsNullOrEmpty(packageManagerConfig.DisplayedReflectisVersion))
             {
-                packageManagerConfig.DisplayedReflectisVersion = !string.IsNullOrEmpty(packageManagerConfig.CurrentInstallationVersion) ? packageManagerConfig.CurrentInstallationVersion : availableVersions[^1];
+                packageManagerConfig.DisplayedReflectisVersion = !string.IsNullOrEmpty(packageManagerConfig.CurrentInstallationVersion) ? packageManagerConfig.CurrentInstallationVersion : packageManagerConfig.AvailableVersions[^1];
             }
             previousInstallationVersion = packageManagerConfig.CurrentInstallationVersion;
 
 
-            projectConfig.UnityVersionIsMatching = UnityVersion == allVersionsPackageRegistry.FirstOrDefault(x => x.ReflectisVersion == packageManagerConfig.CurrentInstallationVersion).RequiredUnityVersion;
+            projectConfig.UnityVersionIsMatching = UnityVersion == packageManagerConfig.AllVersionsPackageRegistry.FirstOrDefault(x => x.ReflectisVersion == packageManagerConfig.CurrentInstallationVersion).RequiredUnityVersion;
             packageManagerConfig.LastRefreshTime = DateTime.Now;
 
             UpdateDisplayedPacakgesAndDependencies();
@@ -338,6 +343,20 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             setupCompleted = true;
             isSetupping = false;
+        }
+
+        private void UpdateAvailableVersions()
+        {
+            if (packageManagerConfig.DisplayedReflectisVersion == "develop" && !packageManagerConfig.ShowPrereleases)
+            {
+                packageManagerConfig.DisplayedReflectisVersion = packageManagerConfig.AvailableVersions[^1];
+                UpdateDisplayedPacakgesAndDependencies();
+            }
+
+            packageManagerConfig.AvailableVersions = packageManagerConfig.AllVersionsPackageRegistry
+                .Where(x => packageManagerConfig.ShowPrereleases || x.ReflectisVersion != "develop")
+                .Select(x => x.ReflectisVersion)
+                .ToList();
         }
 
         private void RefreshWindow()
@@ -465,8 +484,10 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private void UpdateDisplayedPacakgesAndDependencies()
         {
-            packageManagerConfig.SelectedVersionPackageList = allVersionsPackageRegistry.FirstOrDefault(x => x.ReflectisVersion == packageManagerConfig.DisplayedReflectisVersion).Packages;
-            selectedVersionDependencies = allVersionsPackageRegistry.FirstOrDefault(x => x.ReflectisVersion == packageManagerConfig.DisplayedReflectisVersion).Dependencies;
+            packageManagerConfig.SelectedVersionPackageList = packageManagerConfig.AllVersionsPackageRegistry
+                .FirstOrDefault(x => x.ReflectisVersion == packageManagerConfig.DisplayedReflectisVersion).Packages;
+            selectedVersionDependencies = packageManagerConfig.AllVersionsPackageRegistry
+                .FirstOrDefault(x => x.ReflectisVersion == packageManagerConfig.DisplayedReflectisVersion).Dependencies;
 
             selectedVersionPackageDictionary = packageManagerConfig.SelectedVersionPackageList.ToDictionary(x => x.Name);
             selectedVersionDependenciesFull = selectedVersionDependencies.ToDictionary(
@@ -482,7 +503,14 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         {
             List<string> dependenciesToInstall = FindAllDependencies(package, new());
 
-            packageManagerConfig.InstalledPackages.UnionWith(dependenciesToInstall.Select(x => selectedVersionPackageDictionary[x]).Append(package));
+            foreach (var dependency in dependenciesToInstall.Select(x => selectedVersionPackageDictionary[x]).Append(package))
+            {
+                if (!packageManagerConfig.InstalledPackages.Contains(dependency))
+                {
+                    packageManagerConfig.InstalledPackages.Add(dependency);
+                }
+            }
+
             EditorUtility.SetDirty(packageManagerConfig);
             AssetDatabase.SaveAssetIfDirty(packageManagerConfig);
 
@@ -596,7 +624,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 previousInstallationVersion = packageManagerConfig.CurrentInstallationVersion;
                 packageManagerConfig.CurrentInstallationVersion = packageManagerConfig.DisplayedReflectisVersion;
 
-                Dictionary<string, PackageDefinition> packages = allVersionsPackageRegistry
+                Dictionary<string, PackageDefinition> packages = packageManagerConfig.AllVersionsPackageRegistry
                     .FirstOrDefault(x => x.ReflectisVersion == packageManagerConfig.CurrentInstallationVersion).Packages
                     .ToDictionary(x => x.Name, y => y);
 

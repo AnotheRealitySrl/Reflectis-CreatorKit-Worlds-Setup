@@ -12,42 +12,28 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
     [CreateAssetMenu(fileName = "CreatorKitConfigurationWindowDataSource", menuName = "Reflectis/Creator-Kit-Installer/CreatorKitConfigurationWindowDataSource")]
     public class PackageManagerConfiguration : ScriptableObject
     {
-        [CreateProperty] public PackageDefinition[] SelectedVersionPackageList { get; set; }
+        public PackageRegistry[] AllVersionsPackageRegistry { get; set; }
+        public PackageDefinition[] SelectedVersionPackageList { get; set; }
+
         [CreateProperty] public PackageDefinition[] SelectedVersionPackageListFiltered => SelectedVersionPackageList.Where(x => x.Visibility == EPackageVisibility.Visible).ToArray();
+        [CreateProperty] public List<string> AvailableVersions { get; set; }
+
 
         [SerializeField] private List<PackageDefinition> installedPackages = new();
-        [CreateProperty]
-        public HashSet<PackageDefinition> InstalledPackages
-        {
-            get => installedPackages.ToHashSet();
-            set => installedPackages = value.ToList();
-        }
+        [CreateProperty] public List<PackageDefinition> InstalledPackages { get => installedPackages; set => installedPackages = value; }
 
-        [field: SerializeField] public string DisplayedReflectisVersion { get; set; }
+        [SerializeField] private string displayedReflectisVersion;
+        [CreateProperty] public string DisplayedReflectisVersion { get => displayedReflectisVersion; set => displayedReflectisVersion = value; }
 
         [SerializeField] private string currentInstallationVersion;
-        [CreateProperty]
-        public string CurrentInstallationVersion
-        {
-            get => currentInstallationVersion;
-            set => currentInstallationVersion = value;
-        }
+        [CreateProperty] public string CurrentInstallationVersion { get => currentInstallationVersion; set => currentInstallationVersion = value; }
+
 
         [SerializeField] private bool resolveBreakingChangesAutomatically;
-        [CreateProperty]
-        public bool ResolveBreakingChangesAutomatically
-        {
-            get => resolveBreakingChangesAutomatically;
-            set => resolveBreakingChangesAutomatically = value;
-        }
+        [CreateProperty] public bool ResolveBreakingChangesAutomatically { get => resolveBreakingChangesAutomatically; set => resolveBreakingChangesAutomatically = value; }
 
         [SerializeField] private bool showPrereleases;
-        [CreateProperty]
-        public bool ShowPrereleases
-        {
-            get => showPrereleases;
-            set => showPrereleases = value;
-        }
+        [CreateProperty] public bool ShowPrereleases { get => showPrereleases; set => showPrereleases = value; }
 
         [CreateProperty] public DateTime LastRefreshTime { get; set; }
     }
