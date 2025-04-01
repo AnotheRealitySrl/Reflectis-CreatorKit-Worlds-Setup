@@ -25,6 +25,9 @@
 
 .settings-group {
     flex-direction: row;
-    align-items: stretch;
     justify-content: space-between;
+}
+
+.advanced-settings-item {
+    align-self: flex-start;
 }

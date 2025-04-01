@@ -5,42 +5,42 @@
         <engine:VisualElement name="separator" class="separator" style="flex-grow: 1;" />
         <engine:GroupBox name="project-settings">
             <engine:Label text="Project settings" name="Header" class="h1" style="-unity-font-style: bold;" />
-            <engine:GroupBox name="Git" class="settings-group">
-                <engine:Foldout text="Git installation" name="SettingsItemFoldout" class="settings-item">
-                    <engine:VisualElement name="GitInstance" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
+            <engine:GroupBox name="git-installation" class="settings-group">
+                <engine:Foldout text="Git installation" name="SettingsItemFoldout" value="false">
+                    <engine:VisualElement name="project-settings-git-instance" class="settings-item" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
                         <engine:VisualElement name="project-settings-git-version-check" class="settings-item-green-icon" />
                         <engine:Label text="Installed Git instance:" name="git-version-label" />
                         <engine:Label text="&lt;value&gt;" name="git-version-label-value" />
                     </engine:VisualElement>
                 </engine:Foldout>
-                <engine:GroupBox name="ButtonContainer" style="justify-content: space-between; align-items: auto;">
+                <engine:GroupBox name="ButtonContainer">
                     <engine:Button text="Download" name="git-download-button" />
                 </engine:GroupBox>
             </engine:GroupBox>
             <engine:GroupBox name="editor-configuration" class="settings-group">
-                <engine:Foldout text="Editor configuration" name="SettingsItemFoldout">
-                    <engine:VisualElement name="editor-settings-unity-version" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
+                <engine:Foldout text="Editor configuration" name="SettingsItemFoldout" value="false">
+                    <engine:VisualElement name="editor-settings-unity-version" class="settings-item" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
                         <engine:VisualElement name="project-settings-unity-version-check" class="settings-item-green-icon" />
                         <engine:Label text="Unity version:" name="editor-settings-unity-version-text" />
                         <engine:Label text="&lt;value&gt;" name="editor-settings-unity-version-value" />
                     </engine:VisualElement>
-                    <engine:VisualElement name="editor-settings-installed-modules" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
+                    <engine:VisualElement name="editor-settings-installed-modules" class="settings-item" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
                         <engine:VisualElement name="project-settings-editor-modules-check" class="settings-item-green-icon" />
                         <engine:Label text="All editor modules are installed properly" name="Label" />
                     </engine:VisualElement>
                 </engine:Foldout>
             </engine:GroupBox>
             <engine:GroupBox name="project-settings" class="settings-group">
-                <engine:Foldout text="Project settings" name="SettingsItemFoldout">
-                    <engine:VisualElement name="project-settings-configure-urp" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
+                <engine:Foldout text="Project settings" name="SettingsItemFoldout" value="false">
+                    <engine:VisualElement name="project-settings-configure-urp" class="settings-item" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
                         <engine:VisualElement name="project-settings-urp-check" class="settings-item-green-icon" />
                         <engine:Label text="Configure URP as render pipeline" name="Label" />
                     </engine:VisualElement>
-                    <engine:VisualElement name="project-settings-player-settings" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
+                    <engine:VisualElement name="project-settings-player-settings" class="settings-item" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
                         <engine:VisualElement name="project-settings-configuration-check" class="settings-item-green-icon" />
                         <engine:Label text="Project settings configuration" name="Label" />
                     </engine:VisualElement>
-                    <engine:VisualElement name="project-settings-max-texture-size-check" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
+                    <engine:VisualElement name="project-settings-max-texture-size-check" class="settings-item" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
                         <engine:VisualElement name="project-settings-max-texture-size-check" class="settings-item-green-icon" />
                         <engine:Label text="Configure max texture size" name="Label" />
                     </engine:VisualElement>
@@ -71,9 +71,9 @@
                 <engine:ListView name="packages-list-view" data-source-path="SelectedVersionPackageListFiltered" />
                 <engine:Button text="Update packages to selected version" name="update-packages-button" style="align-self: flex-end;" />
             </engine:GroupBox>
-            <engine:Foldout text="Advanced settings" name="advanced-settings-foldout" style="align-items: flex-start; justify-content: flex-start;">
-                <engine:Toggle label="Resolve breaking changes automatically when updating version" name="resolve-breaking-changes-toggle" value="true" style="flex-direction: row-reverse; align-items: stretch; justify-content: space-around;" />
-                <engine:Toggle label="Show pre-releases" name="show-prereleases-toggle" style="flex-direction: row-reverse; align-items: stretch;" />
+            <engine:Foldout text="Advanced settings" name="advanced-settings-foldout" value="true" style="align-items: flex-start; justify-content: flex-start;">
+                <engine:Toggle label="Resolve breaking changes automatically when updating version" name="resolve-breaking-changes-toggle" value="true" class="advanced-settings-item" style="flex-direction: row-reverse; align-items: stretch; justify-content: space-around;" />
+                <engine:Toggle label="Show pre-releases" name="show-prereleases-toggle" class="advanced-settings-item" style="flex-direction: row-reverse; align-items: stretch;" />
             </engine:Foldout>
         </engine:GroupBox>
         <engine:VisualElement name="separator" class="separator" style="flex-grow: 1; height: 1px; border-left-color: rgba(0, 0, 0, 0); border-right-color: rgba(0, 0, 0, 0); border-top-color: rgba(0, 0, 0, 0); border-bottom-color: rgba(0, 0, 0, 0); background-color: rgb(0, 0, 0);" />
