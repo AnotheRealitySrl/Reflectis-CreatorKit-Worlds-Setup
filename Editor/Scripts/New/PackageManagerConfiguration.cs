@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 using Unity.Properties;
 
@@ -12,14 +13,41 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
     public class PackageManagerConfiguration : ScriptableObject
     {
         [CreateProperty] public PackageDefinition[] SelectedVersionPackageList { get; set; }
-        [CreateProperty] public HashSet<PackageDefinition> InstalledPackages { get; set; } = new();
+        [CreateProperty] public PackageDefinition[] SelectedVersionPackageListFiltered => SelectedVersionPackageList.Where(x => x.Visibility == EPackageVisibility.Visible).ToArray();
 
-        [CreateProperty] public int DisplayedReflectisVersionIndex { get; set; }
-        [CreateProperty] public string DisplayedReflectisVersion { get; set; }
-        [CreateProperty] public string CurrentInstallationVersion { get; set; }
+        [SerializeField] private List<PackageDefinition> installedPackages = new();
+        [CreateProperty]
+        public HashSet<PackageDefinition> InstalledPackages
+        {
+            get => installedPackages.ToHashSet();
+            set => installedPackages = value.ToList();
+        }
 
-        [CreateProperty] public bool ResolveBreakingChangesAutomatically { get; set; }
-        [CreateProperty] public bool ShowPrereleases { get; set; }
+        [field: SerializeField] public string DisplayedReflectisVersion { get; set; }
+
+        [SerializeField] private string currentInstallationVersion;
+        [CreateProperty]
+        public string CurrentInstallationVersion
+        {
+            get => currentInstallationVersion;
+            set => currentInstallationVersion = value;
+        }
+
+        [SerializeField] private bool resolveBreakingChangesAutomatically;
+        [CreateProperty]
+        public bool ResolveBreakingChangesAutomatically
+        {
+            get => resolveBreakingChangesAutomatically;
+            set => resolveBreakingChangesAutomatically = value;
+        }
+
+        [SerializeField] private bool showPrereleases;
+        [CreateProperty]
+        public bool ShowPrereleases
+        {
+            get => showPrereleases;
+            set => showPrereleases = value;
+        }
 
         [CreateProperty] public DateTime LastRefreshTime { get; set; }
     }

@@ -21,8 +21,8 @@
                 <engine:Foldout text="Editor configuration" name="SettingsItemFoldout">
                     <engine:VisualElement name="editor-settings-unity-version" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
                         <engine:VisualElement name="project-settings-unity-version-check" class="settings-item-green-icon" />
-                        <engine:Label text="Unity version:" name="unity-version" />
-                        <engine:Label text="&lt;value&gt;" name="Label" />
+                        <engine:Label text="Unity version:" name="editor-settings-unity-version-text" />
+                        <engine:Label text="&lt;value&gt;" name="editor-settings-unity-version-value" />
                     </engine:VisualElement>
                     <engine:VisualElement name="editor-settings-installed-modules" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
                         <engine:VisualElement name="project-settings-editor-modules-check" class="settings-item-green-icon" />
