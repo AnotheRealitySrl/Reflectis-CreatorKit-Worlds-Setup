@@ -13,7 +13,7 @@
                         <engine:Label text="&lt;value&gt;" name="git-version-label-value" />
                     </engine:VisualElement>
                 </engine:Foldout>
-                <engine:GroupBox name="ButtonContainer">
+                <engine:GroupBox name="git-download-button-container" class="settings-button-container" style="max-height: 30px; margin-top: 0; margin-bottom: 0;">
                     <engine:Button text="Download" name="git-download-button" />
                 </engine:GroupBox>
             </engine:GroupBox>
@@ -45,7 +45,7 @@
                         <engine:Label text="Configure max texture size" name="Label" />
                     </engine:VisualElement>
                 </engine:Foldout>
-                <engine:GroupBox name="ButtonContainer" style="justify-content: space-between; align-items: auto;">
+                <engine:GroupBox name="configure-project-settings-button-container" class="settings-button-container" style="justify-content: space-between; align-items: auto; margin-top: 0; margin-bottom: 0;">
                     <engine:Button text="Configure" name="configure-project-settings-button" />
                 </engine:GroupBox>
             </engine:GroupBox>

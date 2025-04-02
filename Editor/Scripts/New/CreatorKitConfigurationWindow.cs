@@ -159,17 +159,18 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                     projectSettingsItemIcon.AddToClassList(value ? "settings-item-green-icon" : "settings-item-red-icon");
                     return true;
                 });
+                // Find the binding that changes directly the class
                 projectSettingsItemIcon.SetBinding("visible", styleBinding);
             }
 
             Label gitVersionLabel = root.Q<Label>("git-version-label-value");
-            gitVersionLabel.SetBinding("text", new DataBinding() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.GitVersion)) });
+            gitVersionLabel.SetBinding(nameof(gitVersionLabel.text), new DataBinding() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.GitVersion)) });
 
             Button gitDownloadButton = root.Q<Button>("git-download-button");
             gitDownloadButton.clicked += () => Application.OpenURL("https://git-scm.com/downloads");
-            DataBinding buttonBinding = new() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.IsGitInstalled)) };
-            buttonBinding.sourceToUiConverters.AddConverter((ref bool value) => !value);
-            gitDownloadButton.SetBinding("visible", buttonBinding);
+            DataBinding gitDownloadBinding = new() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.IsGitInstalled)) };
+            gitDownloadBinding.sourceToUiConverters.AddConverter((ref bool value) => !value);
+            gitDownloadButton.SetBinding(nameof(gitDownloadButton.enabledSelf), gitDownloadBinding);
 
             Label currentUnityVersionValue = root.Q<Label>("editor-settings-unity-version-value");
             currentUnityVersionValue.text = UnityVersion;
@@ -178,7 +179,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             configureProjectSettingsButton.clicked += ConfigureProjectSettings;
             DataBinding configureProjectSettingsButtonBinding = new() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.ProjectSettingsOk)) };
             configureProjectSettingsButtonBinding.sourceToUiConverters.AddConverter((ref bool value) => !value);
-            configureProjectSettingsButton.SetBinding("visible", configureProjectSettingsButtonBinding);
+            configureProjectSettingsButton.SetBinding(nameof(gitDownloadButton.enabledSelf), configureProjectSettingsButtonBinding);
 
             #endregion
 
@@ -196,10 +197,10 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 bindingMode = BindingMode.ToTarget
             };
             lastRefreshDateTimeDataBinding.sourceToUiConverters.AddConverter((ref string value) => $"{value}MMM dd, HH:mm");
-            lastRefreshDateTimeLabel.SetBinding("text", lastRefreshDateTimeDataBinding);
+            lastRefreshDateTimeLabel.SetBinding(nameof(lastRefreshDateTimeLabel.text), lastRefreshDateTimeDataBinding);
 
             Label currentReflectisVersionValue = packageManagerSection.Q<Label>("current-reflectis-version-value");
-            currentReflectisVersionValue.SetBinding("text", new DataBinding()
+            currentReflectisVersionValue.SetBinding(nameof(currentReflectisVersionValue.text), new DataBinding()
             {
                 dataSourcePath = PropertyPath.FromName(nameof(packageManagerConfig.CurrentInstallationVersion)),
                 bindingMode = BindingMode.ToTarget
@@ -228,14 +229,14 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
 
             Toggle resolveBreakingChangesAutomatically = packageManagerSection.Q<Toggle>("resolve-breaking-changes-toggle");
-            resolveBreakingChangesAutomatically.SetBinding("value", new DataBinding()
+            resolveBreakingChangesAutomatically.SetBinding(nameof(resolveBreakingChangesAutomatically.value), new DataBinding()
             {
                 dataSourcePath = PropertyPath.FromName(nameof(packageManagerConfig.ResolveBreakingChangesAutomatically)),
                 bindingMode = BindingMode.TwoWay
             });
 
             Toggle showPrereleaseToggle = packageManagerSection.Q<Toggle>("show-prereleases-toggle");
-            showPrereleaseToggle.SetBinding("value", new DataBinding()
+            showPrereleaseToggle.SetBinding(nameof(showPrereleaseToggle.value), new DataBinding()
             {
                 dataSourcePath = PropertyPath.FromName(nameof(packageManagerConfig.ShowPrereleases)),
                 bindingMode = BindingMode.TwoWay
@@ -273,7 +274,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
                 DataBinding installPackageButtonVisibilityBinding = new() { bindingMode = BindingMode.ToTarget };
                 installPackageButtonVisibilityBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) => !IsPackageInstalledAsDependency(package));
-                installPackageButton.SetBinding(nameof(installPackageButton.visible), installPackageButtonVisibilityBinding);
+                installPackageButton.SetBinding(nameof(installPackageButton.enabledSelf), installPackageButtonVisibilityBinding);
 
                 PackageDefinition package = packageManagerConfig.SelectedVersionPackageListFiltered[i];
                 installPackageButton.clicked += () =>
