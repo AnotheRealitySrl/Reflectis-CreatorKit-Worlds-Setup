@@ -18,6 +18,7 @@ using UnityEditor.Build;
 using UnityEditorInternal;
 
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UIElements;
 
 namespace Reflectis.CreatorKit.Worlds.Installer.Editor
@@ -42,6 +43,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         [SerializeField] private VisualTreeAsset m_VisualTreeAsset = default;
         [SerializeField] private VisualTreeAsset packageItemAsset = default;
+        [SerializeField] private VisualTreeAsset dialogAsset = default;
 
         private VisualElement root;
 
@@ -212,7 +214,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             InstantiatePackagesInPackageList();
 
             Button updatePackagesButton = packageManagerSection.Q<Button>("update-packages-button");
-            updatePackagesButton.clicked += UpdatePackagesToSelectedVersion;
+            updatePackagesButton.clicked += () => ShowAlertDialog("Warning", "Packages will be updated to the desired version", UpdatePackagesToSelectedVersion);
 
             DropdownField dropdown = packageManagerSection.Q<DropdownField>("reflectis-version-dropdown");
             dropdown.SetBinding(nameof(dropdown.choices), new DataBinding()
@@ -225,7 +227,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 dataSourcePath = PropertyPath.FromName(nameof(packageManagerConfig.DisplayedReflectisVersion)),
                 bindingMode = BindingMode.TwoWay
             });
-            dropdown.RegisterValueChangedCallback(evt => UpdateAvailableVersions());
+            dropdown.RegisterValueChangedCallback(evt => UpdateDisplayedPacakgesAndDependencies());
 
 
             Toggle resolveBreakingChangesAutomatically = packageManagerSection.Q<Toggle>("resolve-breaking-changes-toggle");
@@ -241,6 +243,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 dataSourcePath = PropertyPath.FromName(nameof(packageManagerConfig.ShowPrereleases)),
                 bindingMode = BindingMode.TwoWay
             });
+            showPrereleaseToggle.RegisterValueChangedCallback(evt => UpdateAvailableVersions());
 
             #endregion
         }
@@ -737,6 +740,34 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             {
                 outgoingEdges[node] = Array.Empty<string>();
             }
+        }
+
+        private void ShowAlertDialog(string title, string message, UnityAction callback)
+        {
+            var dialog = dialogAsset.CloneTree();
+
+            var titleLabel = dialog.Q<Label>("dialog-title");
+            titleLabel.text = title;
+
+            var messageLabel = dialog.Q<Label>("dialog-message");
+            messageLabel.text = message;
+
+            var confirmButton = dialog.Q<Button>("dialog-confirm-button");
+            confirmButton.clicked += () =>
+            {
+                root.Remove(dialog);
+                callback?.Invoke();
+            };
+
+            var backButton = dialog.Q<Button>("dialog-back-button");
+            backButton.clicked += () => root.Remove(dialog);
+
+            //// Set dialog position to absolute and center it
+            dialog.style.position = Position.Absolute;
+            //dialog.style.left = Length.Percent(50);
+            //dialog.style.top = Length.Percent(50);
+
+            root.Add(dialog);
         }
     }
 
