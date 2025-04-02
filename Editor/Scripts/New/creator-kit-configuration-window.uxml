@@ -69,7 +69,7 @@
                     <engine:DropdownField label="Select another version" name="reflectis-version-dropdown" choices="Item 1,Item 2" index="0" style="justify-content: space-between; -unity-text-align: middle-left;" />
                 </engine:GroupBox>
                 <engine:ListView name="packages-list-view" data-source-path="SelectedVersionPackageListFiltered" />
-                <engine:Button text="Update packages to selected version" name="update-packages-button" style="align-self: flex-end;" />
+                <engine:Button text="Update packages to selected version" name="update-packages-button" style="align-self: flex-end; margin-right: 8px;" />
             </engine:GroupBox>
             <engine:Foldout text="Advanced settings" name="advanced-settings-foldout" value="true" style="align-items: flex-start; justify-content: flex-start;">
                 <engine:Toggle label="Resolve breaking changes automatically when updating version" name="resolve-breaking-changes-toggle" value="true" class="advanced-settings-item" style="flex-direction: row-reverse; align-items: stretch; justify-content: space-around;" />
