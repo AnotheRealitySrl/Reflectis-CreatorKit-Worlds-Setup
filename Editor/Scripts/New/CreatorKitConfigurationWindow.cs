@@ -19,6 +19,7 @@ using UnityEditorInternal;
 
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 
 namespace Reflectis.CreatorKit.Worlds.Installer.Editor
@@ -44,6 +45,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         [SerializeField] private VisualTreeAsset m_VisualTreeAsset = default;
         [SerializeField] private VisualTreeAsset packageItemAsset = default;
         [SerializeField] private VisualTreeAsset dialogAsset = default;
+
+        [SerializeField] private RenderPipelineGlobalSettings renderPipelineGlobalSettings;
 
         private VisualElement root;
 
@@ -266,7 +269,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 packageDescription.text = packageManagerConfig.SelectedVersionPackageListFiltered[i].Description;
 
                 Label packageVersion = packagesListScroll[i].Q<Label>("package-url");
-                packageVersion.text = packageManagerConfig.SelectedVersionPackageListFiltered[i].Url;
+                packageVersion.text = $"<i><a href=\"{packageManagerConfig.SelectedVersionPackageListFiltered[i].Url}\">{packageManagerConfig.SelectedVersionPackageListFiltered[i].Url}</a></i>";
+                packageVersion.RegisterCallback<ClickEvent>(evt => Application.OpenURL(packageManagerConfig.SelectedVersionPackageListFiltered[i].Url));
 
 
                 Button installPackageButton = packagesListScroll[i].Q<Button>("install-package-button");
@@ -433,8 +437,17 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private bool GetURPConfigurationStatus()
         {
-            string[] guids = AssetDatabase.FindAssets("t:UniversalRenderPipelineGlobalSettings");
-            return guids.Length == 1 && guids[0] == "edf6e41e487713f45862ce6ae2f5dffd";
+            string[] guids = AssetDatabase.FindAssets($"t:{nameof(RenderPipelineGlobalSettings)}");
+
+            if (guids.Length != 1)
+            {
+                return false;
+            }
+
+            string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+            RenderPipelineGlobalSettings renderPipelineGlobalSettings = AssetDatabase.LoadAssetAtPath<RenderPipelineGlobalSettings>(path);
+
+            return renderPipelineGlobalSettings == this.renderPipelineGlobalSettings;
         }
 
         private bool GetProjectSettingsStatus()
@@ -450,13 +463,18 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         private void ConfigureProjectSettings()
         {
             // URP configuration
-            string[] guids = AssetDatabase.FindAssets("t:UniversalRenderPipelineGlobalSettings");
+            string[] guids = AssetDatabase.FindAssets($"t:{nameof(RenderPipelineGlobalSettings)}");
             if (guids.Length > 1)
             {
-                foreach (string guid in guids.Where(x => x != "edf6e41e487713f45862ce6ae2f5dffd"))
+                foreach (string guid in guids)
                 {
-                    var path = AssetDatabase.GUIDToAssetPath(guid);
-                    AssetDatabase.DeleteAsset(path);
+                    string path = AssetDatabase.GUIDToAssetPath(guid);
+                    RenderPipelineGlobalSettings renderPipelineGlobalSettings = AssetDatabase.LoadAssetAtPath<RenderPipelineGlobalSettings>(path);
+
+                    if (renderPipelineGlobalSettings != this.renderPipelineGlobalSettings)
+                    {
+                        AssetDatabase.DeleteAsset(path);
+                    }
                 }
             }
 
@@ -466,6 +484,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             // Max texture size override
             EditorUserBuildSettings.overrideMaxTextureSize = 1024;
             AssetDatabase.Refresh();
+
+            CheckProjectSettings();
         }
 
         #endregion
