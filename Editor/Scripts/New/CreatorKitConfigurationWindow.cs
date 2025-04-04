@@ -273,6 +273,15 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 packageVersion.RegisterCallback<ClickEvent>(evt => Application.OpenURL(packageManagerConfig.SelectedVersionPackageListFiltered[i].Url));
 
 
+                ListView dependenciesList = packagesListScroll[i].Q<ListView>("package-dependencies");
+                dependenciesList.dataSource = PropertyPath.FromName(nameof(packageManagerConfig.SelectedVersionDependenciesFull));
+
+                dependenciesList.SetBinding(nameof(dependenciesList.itemsSource), new DataBinding()
+                {
+                    dataSourcePath = PropertyPath.FromIndex(i),
+                    bindingMode = BindingMode.ToTarget
+                });
+
                 Button installPackageButton = packagesListScroll[i].Q<Button>("install-package-button");
 
                 DataBinding installPackageButtonBinding = new() { bindingMode = BindingMode.ToTarget };

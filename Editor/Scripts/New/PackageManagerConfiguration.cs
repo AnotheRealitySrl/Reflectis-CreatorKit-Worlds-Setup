@@ -12,11 +12,16 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
     [CreateAssetMenu(fileName = "CreatorKitConfigurationWindowDataSource", menuName = "Reflectis/Creator-Kit-Installer/CreatorKitConfigurationWindowDataSource")]
     public class PackageManagerConfiguration : ScriptableObject
     {
+        // TODO: needed here?
         public PackageRegistry[] AllVersionsPackageRegistry { get; set; }
         public PackageDefinition[] SelectedVersionPackageList { get; set; }
 
         [CreateProperty] public PackageDefinition[] SelectedVersionPackageListFiltered => SelectedVersionPackageList.Where(x => x.Visibility == EPackageVisibility.Visible).ToArray();
         [CreateProperty] public List<string> AvailableVersions { get; set; }
+
+        public List<string[]> SelectedVersionDependenciesFullOrdered => SelectedVersionPackageList.Select(x => SelectedVersionDependenciesFull[x.Name]).ToList();
+
+        public Dictionary<string, string[]> SelectedVersionDependenciesFull { get; set; }
 
 
         [SerializeField] private List<PackageDefinition> installedPackages = new();
