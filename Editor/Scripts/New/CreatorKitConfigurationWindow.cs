@@ -36,6 +36,15 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             [CreateProperty] public bool UnityVersionIsMatching { get; set; }
             [CreateProperty] public bool AllEditorModulesInstalled { get; set; }
 
+            [CreateProperty]
+            public Dictionary<string, bool> InstalledModules = new()
+            {
+                { "Android", true },
+                { "WebGL", true },
+                { "Windows", true }
+            };
+
+
             [CreateProperty] public bool ProjectSettingsOk => RenderPipelineURP && PlayerSettings && MaxTextureSizeOverride;
             [CreateProperty] public bool RenderPipelineURP { get; set; }
             [CreateProperty] public bool PlayerSettings { get; set; }
@@ -63,13 +72,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         #region Project configuration
 
-
-        public static Dictionary<string, bool> installedModules = new()
-        {
-            { "Android", true },
-            { "WebGL", true },
-            { "Windows", true }
-        };
 
         private string UnityVersion => InternalEditorUtility.GetFullUnityVersion().Split(' ')[0];
 
@@ -180,6 +182,11 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             Label currentUnityVersionValue = root.Q<Label>("editor-settings-unity-version-value");
             currentUnityVersionValue.text = UnityVersion;
+
+            Label installedModules = root.Q<Label>("installed-modules-label");
+            DataBinding installedModulesBinding = new() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.InstalledModules)) };
+            installedModulesBinding.sourceToUiConverters.AddConverter((ref Dictionary<string, bool> value) => string.Join(", ", value.Where(x => !x.Value).Select(x => x.Key)));
+            installedModules.SetBinding(nameof(installedModules.text), installedModulesBinding);
 
             Button configureProjectSettingsButton = root.Q<Button>("configure-project-settings-button");
             configureProjectSettingsButton.clicked += ConfigureProjectSettings;
@@ -431,11 +438,11 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             BuildTargetGroup[] buildTargetGroups = (BuildTargetGroup[])Enum.GetValues(typeof(BuildTargetGroup));
             foreach (BuildTargetGroup group in buildTargetGroups)
             {
-                installedModules["Android"] = BuildPipeline.IsBuildTargetSupported(group, BuildTarget.Android);
-                installedModules["Windows"] = BuildPipeline.IsBuildTargetSupported(group, BuildTarget.StandaloneWindows);
-                installedModules["WebGL"] = BuildPipeline.IsBuildTargetSupported(group, BuildTarget.WebGL);
+                projectConfig.InstalledModules["Android"] = BuildPipeline.IsBuildTargetSupported(group, BuildTarget.Android);
+                projectConfig.InstalledModules["Windows"] = BuildPipeline.IsBuildTargetSupported(group, BuildTarget.StandaloneWindows);
+                projectConfig.InstalledModules["WebGL"] = BuildPipeline.IsBuildTargetSupported(group, BuildTarget.WebGL);
             }
-            projectConfig.AllEditorModulesInstalled = !installedModules.Values.Contains(false);
+            projectConfig.AllEditorModulesInstalled = !projectConfig.InstalledModules.Values.Contains(false);
         }
 
         private void CheckProjectSettings()
