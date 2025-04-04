@@ -171,8 +171,13 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 projectSettingsItemIcon.SetBinding("visible", styleBinding);
             }
 
-            Label gitVersionLabel = root.Q<Label>("git-version-label-value");
-            gitVersionLabel.SetBinding(nameof(gitVersionLabel.text), new DataBinding() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.GitVersion)) });
+            Label gitVersionLabel = root.Q<Label>("git-version-label");
+            DataBinding gitVersionLabelBinding = new() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.IsGitInstalled)), bindingMode = BindingMode.ToTarget };
+            gitVersionLabelBinding.sourceToUiConverters.AddConverter((ref bool value) => value ? "Git version: " : "Git is not installed");
+            gitVersionLabel.SetBinding(nameof(gitVersionLabel.text), gitVersionLabelBinding);
+
+            Label gitVersionLabelValue = root.Q<Label>("git-version-label-value");
+            gitVersionLabelValue.SetBinding(nameof(gitVersionLabelValue.text), new DataBinding() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.GitVersion)) });
 
             Button gitDownloadButton = root.Q<Button>("git-download-button");
             gitDownloadButton.clicked += () => Application.OpenURL("https://git-scm.com/downloads");
