@@ -47,6 +47,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         [SerializeField] private VisualTreeAsset dialogAsset = default;
 
         [SerializeField] private RenderPipelineGlobalSettings renderPipelineGlobalSettings;
+        [SerializeField] private RenderPipelineAsset renderPipelineAsset;
 
         private VisualElement root;
 
@@ -456,7 +457,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             string path = AssetDatabase.GUIDToAssetPath(guids[0]);
             RenderPipelineGlobalSettings renderPipelineGlobalSettings = AssetDatabase.LoadAssetAtPath<RenderPipelineGlobalSettings>(path);
 
-            return renderPipelineGlobalSettings == this.renderPipelineGlobalSettings;
+            return renderPipelineGlobalSettings == this.renderPipelineGlobalSettings && GraphicsSettings.defaultRenderPipeline == renderPipelineAsset;
+
         }
 
         private bool GetProjectSettingsStatus()
@@ -486,6 +488,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                     }
                 }
             }
+            GraphicsSettings.defaultRenderPipeline = renderPipelineAsset;
 
             // Project settings configuration
             PlayerSettings.SetApiCompatibilityLevel(NamedBuildTarget.Standalone, ApiCompatibilityLevel.NET_Unity_4_8);
