@@ -170,7 +170,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                     return true;
                 });
                 // Find the binding that changes directly the class
-                projectSettingsItemIcon.SetBinding("visible", styleBinding);
+                projectSettingsItemIcon.SetBinding(nameof(projectSettingsItemIcon.visible), styleBinding);
             }
 
             Label gitVersionLabel = root.Q<Label>("git-version-label");
@@ -239,6 +239,11 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             InstantiatePackagesInPackageList();
 
             Button updatePackagesButton = packageManagerSection.Q<Button>("update-packages-button");
+            updatePackagesButton.SetBinding(nameof(updatePackagesButton.enabledSelf), new DataBinding()
+            {
+                dataSourcePath = PropertyPath.FromName(nameof(packageManagerConfig.DisplayedAndInstalledVersionsAreDifferent)),
+                bindingMode = BindingMode.TwoWay
+            });
             updatePackagesButton.clicked += () => ShowAlertDialog("Warning", "Packages will be updated to the desired version", UpdatePackagesToSelectedVersion);
 
             DropdownField dropdown = packageManagerSection.Q<DropdownField>("reflectis-version-dropdown");
@@ -252,7 +257,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 dataSourcePath = PropertyPath.FromName(nameof(packageManagerConfig.DisplayedReflectisVersion)),
                 bindingMode = BindingMode.TwoWay
             });
-            dropdown.RegisterValueChangedCallback(evt => UpdateDisplayedPacakgesAndDependencies());
+            dropdown.RegisterValueChangedCallback(evt => UpdateDisplayedPacakgesAndDependencies(evt.newValue));
 
 
             Toggle resolveBreakingChangesAutomatically = packageManagerSection.Q<Toggle>("resolve-breaking-changes-toggle");
@@ -311,7 +316,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 installPackageButton.SetBinding(nameof(installPackageButton.text), installPackageButtonBinding);
 
                 DataBinding installPackageButtonVisibilityBinding = new() { bindingMode = BindingMode.ToTarget };
-                installPackageButtonVisibilityBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) => !IsPackageInstalledAsDependency(package));
+                installPackageButtonVisibilityBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) => !IsPackageInstalledAsDependency(package) && !packageManagerConfig.DisplayedAndInstalledVersionsAreDifferent);
                 installPackageButton.SetBinding(nameof(installPackageButton.enabledSelf), installPackageButtonVisibilityBinding);
 
                 PackageDefinition package = packageManagerConfig.SelectedVersionPackageListFiltered[i];
@@ -371,7 +376,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             projectConfig.UnityVersionIsMatching = UnityVersion == packageManagerConfig.AllVersionsPackageRegistry.FirstOrDefault(x => x.ReflectisVersion == packageManagerConfig.CurrentInstallationVersion).RequiredUnityVersion;
             packageManagerConfig.LastRefreshTime = DateTime.Now;
 
-            UpdateDisplayedPacakgesAndDependencies();
+            UpdateDisplayedPacakgesAndDependencies(packageManagerConfig.DisplayedReflectisVersion);
 
             CheckGitInstallation();
             CheckEditorModulesInstallation();
@@ -389,7 +394,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             if (packageManagerConfig.DisplayedReflectisVersion == "develop" && !packageManagerConfig.ShowPrereleases)
             {
                 packageManagerConfig.DisplayedReflectisVersion = packageManagerConfig.AvailableVersions[^1];
-                UpdateDisplayedPacakgesAndDependencies();
+                UpdateDisplayedPacakgesAndDependencies(packageManagerConfig.DisplayedReflectisVersion);
             }
 
             packageManagerConfig.AvailableVersions = packageManagerConfig.AllVersionsPackageRegistry
@@ -528,12 +533,12 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             return dependencies;
         }
 
-        private void UpdateDisplayedPacakgesAndDependencies()
+        private void UpdateDisplayedPacakgesAndDependencies(string newVersion)
         {
             packageManagerConfig.SelectedVersionPackageList = packageManagerConfig.AllVersionsPackageRegistry
-                .FirstOrDefault(x => x.ReflectisVersion == packageManagerConfig.DisplayedReflectisVersion).Packages;
+                .FirstOrDefault(x => x.ReflectisVersion == newVersion).Packages;
             selectedVersionDependencies = packageManagerConfig.AllVersionsPackageRegistry
-                .FirstOrDefault(x => x.ReflectisVersion == packageManagerConfig.DisplayedReflectisVersion).Dependencies;
+                .FirstOrDefault(x => x.ReflectisVersion == newVersion).Dependencies;
 
             selectedVersionPackageDictionary = packageManagerConfig.SelectedVersionPackageList.ToDictionary(x => x.Name);
             selectedVersionDependenciesFull = selectedVersionDependencies.ToDictionary(

@@ -27,11 +27,11 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         [SerializeField] private List<PackageDefinition> installedPackages = new();
         [CreateProperty] public List<PackageDefinition> InstalledPackages { get => installedPackages; set => installedPackages = value; }
 
-        [SerializeField] private string displayedReflectisVersion;
-        [CreateProperty] public string DisplayedReflectisVersion { get => displayedReflectisVersion; set => displayedReflectisVersion = value; }
 
         [SerializeField] private string currentInstallationVersion;
         [CreateProperty] public string CurrentInstallationVersion { get => currentInstallationVersion; set => currentInstallationVersion = value; }
+        [CreateProperty] public string DisplayedReflectisVersion { get; set; }
+        [CreateProperty] public bool DisplayedAndInstalledVersionsAreDifferent => CurrentInstallationVersion != DisplayedReflectisVersion;
 
 
         [SerializeField] private bool resolveBreakingChangesAutomatically;
