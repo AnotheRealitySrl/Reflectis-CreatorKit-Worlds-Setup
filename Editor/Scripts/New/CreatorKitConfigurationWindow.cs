@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -14,6 +15,7 @@ using Unity.Properties;
 
 using UnityEditor;
 using UnityEditor.Build;
+using UnityEditor.PackageManager;
 
 using UnityEditorInternal;
 
@@ -173,7 +175,10 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             Label gitVersionLabel = root.Q<Label>("git-version-label");
             DataBinding gitVersionLabelBinding = new() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.IsGitInstalled)), bindingMode = BindingMode.ToTarget };
-            gitVersionLabelBinding.sourceToUiConverters.AddConverter((ref bool value) => value ? "Git version: " : "Git is not installed");
+            gitVersionLabelBinding.sourceToUiConverters.AddConverter((ref bool value) =>
+                value ?
+                    "Installed Git version: " :
+                    "Git is not installed! Click \"Download\" button to download it from the official website.");
             gitVersionLabel.SetBinding(nameof(gitVersionLabel.text), gitVersionLabelBinding);
 
             Label gitVersionLabelValue = root.Q<Label>("git-version-label-value");
@@ -190,7 +195,11 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
             Label installedModules = root.Q<Label>("installed-modules-label");
             DataBinding installedModulesBinding = new() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.InstalledModules)) };
-            installedModulesBinding.sourceToUiConverters.AddConverter((ref Dictionary<string, bool> value) => string.Join(", ", value.Where(x => !x.Value).Select(x => x.Key)));
+            installedModulesBinding.sourceToUiConverters.AddConverter((ref Dictionary<string, bool> value) =>
+                !value.Values.Contains(false) ?
+                    "All editor modules are installed properly" :
+                    $"The following modules are missing: {string.Join(", ", value.Where(x => !x.Value).Select(x => x.Key))}. Install them from Unity Hub."
+            );
             installedModules.SetBinding(nameof(installedModules.text), installedModulesBinding);
 
             Button configureProjectSettingsButton = root.Q<Button>("configure-project-settings-button");
@@ -214,7 +223,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 dataSourcePath = PropertyPath.FromName(nameof(packageManagerConfig.LastRefreshTime)),
                 bindingMode = BindingMode.ToTarget
             };
-            lastRefreshDateTimeDataBinding.sourceToUiConverters.AddConverter((ref string value) => $"{value}MMM dd, HH:mm");
+            lastRefreshDateTimeDataBinding.sourceToUiConverters.AddConverter((ref DateTime value) => value.ToString("MMM dd, HH:mm", CultureInfo.InvariantCulture));
             lastRefreshDateTimeLabel.SetBinding(nameof(lastRefreshDateTimeLabel.text), lastRefreshDateTimeDataBinding);
 
             Label currentReflectisVersionValue = packageManagerSection.Q<Label>("current-reflectis-version-value");
@@ -286,14 +295,14 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 packageVersion.RegisterCallback<ClickEvent>(evt => Application.OpenURL(packageManagerConfig.SelectedVersionPackageListFiltered[i].Url));
 
 
-                ListView dependenciesList = packagesListScroll[i].Q<ListView>("package-dependencies");
-                dependenciesList.dataSource = PropertyPath.FromName(nameof(packageManagerConfig.SelectedVersionDependenciesFull));
+                //ListView dependenciesList = packagesListScroll[i].Q<ListView>("package-dependencies");
+                //dependenciesList.dataSource = PropertyPath.FromName(nameof(packageManagerConfig.SelectedVersionDependenciesFull));
 
-                dependenciesList.SetBinding(nameof(dependenciesList.itemsSource), new DataBinding()
-                {
-                    dataSourcePath = PropertyPath.FromIndex(i),
-                    bindingMode = BindingMode.ToTarget
-                });
+                //dependenciesList.SetBinding(nameof(dependenciesList.itemsSource), new DataBinding()
+                //{
+                //    dataSourcePath = PropertyPath.FromIndex(i),
+                //    bindingMode = BindingMode.ToTarget
+                //});
 
                 Button installPackageButton = packagesListScroll[i].Q<Button>("install-package-button");
 
@@ -308,7 +317,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 PackageDefinition package = packageManagerConfig.SelectedVersionPackageListFiltered[i];
                 installPackageButton.clicked += () =>
                 {
-                    if (packageManagerConfig.InstalledPackages.Contains(package))
+                    if (packageManagerConfig.InstalledPackages.Select(x => x.Name).Contains(package.Name))
                         UninstallPackageWithDependencies(package);
                     else
                         InstallPackageWithDependencies(package);
@@ -387,17 +396,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 .Where(x => packageManagerConfig.ShowPrereleases || x.ReflectisVersion != "develop")
                 .Select(x => x.ReflectisVersion)
                 .ToList();
-        }
-
-        private void RefreshWindow()
-        {
-            Repaint(); // Request Unity to redraw the window
-
-            UpdateDisplayedPacakgesAndDependencies();
-
-            CheckGitInstallation();
-            CheckEditorModulesInstallation();
-            CheckProjectSettings();
         }
 
         #region Project settings
@@ -563,6 +561,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             AssetDatabase.SaveAssetIfDirty(packageManagerConfig);
 
             InstallPackages(dependenciesToInstall.Append(package.Name).Select(x => selectedVersionPackageDictionary[x]).ToList());
+
+            Client.Resolve();
         }
 
         private void InstallPackages(List<PackageDefinition> toInstall)
@@ -578,10 +578,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             }
 
             File.WriteAllText(manifestFilePath, manifestObj.ToString());
-
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-            RefreshWindow();
         }
 
         private void UninstallPackageWithDependencies(PackageDefinition toUninstall)
@@ -602,6 +598,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             }
 
             UninstallPackages(packagesToRemove.Select(x => x.Name).ToList());
+
+            Client.Resolve();
         }
 
         private void UninstallPackages(List<string> toRemove)
@@ -617,10 +615,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             }
 
             File.WriteAllText(manifestFilePath, manifestObj.ToString());
-
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-            RefreshWindow();
         }
 
         public static Dictionary<string, List<string>> InvertDictionary(Dictionary<string, string[]> dictionary)

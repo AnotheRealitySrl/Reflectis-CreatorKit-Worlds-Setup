@@ -26,7 +26,7 @@
                     </engine:VisualElement>
                     <engine:VisualElement name="editor-settings-installed-modules" class="settings-item" style="flex-grow: 1; align-items: flex-start; justify-content: flex-start; align-self: stretch; flex-direction: row;">
                         <engine:VisualElement name="project-settings-editor-modules-check" class="settings-item-green-icon" />
-                        <engine:Label text="All editor modules are installed properly" name="Label" />
+                        <engine:Label text="All editor modules are installed properly" name="installed-modules-label" />
                     </engine:VisualElement>
                 </engine:Foldout>
             </engine:GroupBox>
