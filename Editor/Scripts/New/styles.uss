@@ -13,6 +13,8 @@
     margin-bottom: 2px;
     padding-right: 0;
     padding-left: 0;
+    align-items: center;
+    flex-direction: row;
 }
 
 .settings-item-green-icon {

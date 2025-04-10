@@ -65,6 +65,10 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         private readonly ProjectConfiguration projectConfig = new();
         private PackageManagerConfiguration packageManagerConfig;
 
+        private const string utilities_folder_path = "Assets/CreatorKit/Editor/Scripts";
+        private const string settings_folder_path = "Assets/CreatorKit/Editor/Settings";
+        private const string installer_configuration_file = "CreatorKitConfigurationWindowDataSource.asset";
+
         #region editor window setup
 
         private static bool isSetupping = false;
@@ -74,15 +78,14 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         #region Project configuration
 
-
         private string UnityVersion => InternalEditorUtility.GetFullUnityVersion().Split(' ')[0];
 
         #endregion
 
         #region Package manager
 
-        private readonly string packageRegistryPath = "https://spacsglobal.dfs.core.windows.net/reflectis2023-public/PackageManager/PackageRegistry.json";
-        private readonly string breakingChangesSolverPath = "https://spacsglobal.dfs.core.windows.net/reflectis2023-public/PackageManager/BreakingChangesSolverIndex.json";
+        private const string package_registry_path = "https://spacsglobal.dfs.core.windows.net/reflectis2023-public/PackageManager/PackageRegistry.json";
+        private const string breaking_changes_solver_path = "https://spacsglobal.dfs.core.windows.net/reflectis2023-public/PackageManager/BreakingChangesSolverIndex.json";
 
         private static Dictionary<(string, string), string> breakingChangesSolverDictionary;
 
@@ -115,6 +118,16 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             InitializeWindow();
         }
 
+        private void OnApplicationQuit()
+        {
+            SaveAsset(packageManagerConfig);
+        }
+
+        private void OnDestroy()
+        {
+            SaveAsset(packageManagerConfig);
+        }
+
         private async void InitializeWindow()
         {
             await LoadData();
@@ -125,30 +138,26 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         {
             isSetupping = true;
 
-            string folderPath = "Assets/CreatorKitInstallerData";
-            string assetPath = $"{folderPath}/CreatorKitConfigurationWindowDataSource.asset";
-
-            if (!AssetDatabase.IsValidFolder(folderPath))
-            {
-                AssetDatabase.CreateFolder("Assets", "CreatorKitInstallerData");
-            }
-
-            packageManagerConfig = AssetDatabase.LoadAssetAtPath<PackageManagerConfiguration>(assetPath);
+            string packageManagerAssetGuid = AssetDatabase.FindAssets("t:" + typeof(PackageManagerConfiguration).Name).ToList().FirstOrDefault();
+            packageManagerConfig = AssetDatabase.LoadAssetAtPath<PackageManagerConfiguration>(AssetDatabase.GUIDToAssetPath(packageManagerAssetGuid));
 
             if (packageManagerConfig == null)
             {
+                EnsureFolderExists(settings_folder_path);
+
                 packageManagerConfig = CreateInstance<PackageManagerConfiguration>();
-                AssetDatabase.CreateAsset(packageManagerConfig, assetPath);
+                string settingsAssetPath = $"{settings_folder_path}/{installer_configuration_file}";
+                AssetDatabase.CreateAsset(packageManagerConfig, settingsAssetPath);
                 AssetDatabase.SaveAssets();
             }
 
             using HttpClient client = new();
-            HttpResponseMessage response = await client.GetAsync(packageRegistryPath);
+            HttpResponseMessage response = await client.GetAsync(package_registry_path);
             response.EnsureSuccessStatusCode();
             string responseBody = await response.Content.ReadAsStringAsync();
             packageManagerConfig.AllVersionsPackageRegistry = JsonConvert.DeserializeObject<PackageRegistry[]>(responseBody);
 
-            HttpResponseMessage routineResponse = await client.GetAsync(breakingChangesSolverPath);
+            HttpResponseMessage routineResponse = await client.GetAsync(breaking_changes_solver_path);
             routineResponse.EnsureSuccessStatusCode();
             string routineResponseBody = await routineResponse.Content.ReadAsStringAsync();
 
@@ -188,8 +197,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             CheckEditorModulesInstallation();
             CheckProjectSettings();
 
-            EditorUtility.SetDirty(packageManagerConfig);
-            AssetDatabase.SaveAssetIfDirty(packageManagerConfig);
+            SaveAsset(packageManagerConfig);
 
             setupCompleted = true;
             isSetupping = false;
@@ -473,7 +481,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private bool GetProjectSettingsStatus()
         {
-            return UnityEditor.PlayerSettings.GetApiCompatibilityLevel(NamedBuildTarget.Standalone) == ApiCompatibilityLevel.NET_Unity_4_8;
+            return PlayerSettings.GetApiCompatibilityLevel(NamedBuildTarget.Standalone) == ApiCompatibilityLevel.NET_Unity_4_8;
         }
 
         private bool GetMaxTextureSizeOverride()
@@ -742,6 +750,12 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             return input;
         }
 
+        private void SaveAsset(UnityEngine.Object asset)
+        {
+            EditorUtility.SetDirty(asset);
+            AssetDatabase.SaveAssetIfDirty(asset);
+        }
+
         #endregion
 
         private Dictionary<string, string[]> TraverseGraph(Dictionary<string, PackageDefinition> graph)
@@ -810,6 +824,21 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             //dialog.style.top = Length.Percent(50);
 
             root.Add(dialog);
+        }
+
+        private void EnsureFolderExists(string folderPath)
+        {
+            string[] folders = folderPath.Split('/');
+            string currentPath = "";
+
+            foreach (string folder in folders)
+            {
+                currentPath = Path.Combine(currentPath, folder);
+                if (!AssetDatabase.IsValidFolder(currentPath))
+                {
+                    AssetDatabase.CreateFolder(Path.GetDirectoryName(currentPath), Path.GetFileName(currentPath));
+                }
+            }
         }
     }
 
