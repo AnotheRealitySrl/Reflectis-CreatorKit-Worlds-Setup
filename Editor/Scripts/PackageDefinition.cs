@@ -14,7 +14,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
     [Serializable]
     [Newtonsoft.Json.JsonObject(Newtonsoft.Json.MemberSerialization.Fields)]
-    public class PackageDefinition
+    public class PackageDefinition : IEquatable<PackageDefinition>
     {
         [SerializeField] private string name;
         [SerializeField] private string displayName;
@@ -29,5 +29,25 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         [CreateProperty] public string Version => version;
         [CreateProperty] public string Url => url;
         public EPackageVisibility Visibility => visibility;
+
+        public bool Equals(PackageDefinition other)
+        {
+            if (other == null) return false;
+            return name == other.name && version == other.version;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is PackageDefinition other)
+            {
+                return Equals(other);
+            }
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(name, version);
+        }
     }
 }

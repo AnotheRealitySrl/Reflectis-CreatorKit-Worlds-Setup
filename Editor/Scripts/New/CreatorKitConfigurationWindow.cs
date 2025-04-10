@@ -96,20 +96,12 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         #endregion
 
-
         [MenuItem("Reflectis/Creator Kit configuration window")]
-        public static async void ShowWindow()
+        public static void ShowWindow()
         {
             CreatorKitConfigurationWindow wnd = GetWindow<CreatorKitConfigurationWindow>();
             wnd.titleContent = new GUIContent("Creator Kit configuration window");
-
-            wnd.LoadOrCreateDataSource();
-
-            await wnd.SetupWindowDataAsync();
-
-            wnd.AddDataBindings();
         }
-
 
         public void CreateGUI()
         {
@@ -120,10 +112,19 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             VisualElement labelFromUXML = m_VisualTreeAsset.Instantiate();
             root.Add(labelFromUXML);
 
+            InitializeWindow();
         }
 
-        private void LoadOrCreateDataSource()
+        private async void InitializeWindow()
         {
+            await LoadData();
+            AddDataBindings();
+        }
+
+        private async Task LoadData()
+        {
+            isSetupping = true;
+
             string folderPath = "Assets/CreatorKitInstallerData";
             string assetPath = $"{folderPath}/CreatorKitConfigurationWindowDataSource.asset";
 
@@ -140,7 +141,60 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 AssetDatabase.CreateAsset(packageManagerConfig, assetPath);
                 AssetDatabase.SaveAssets();
             }
+
+            using HttpClient client = new();
+            HttpResponseMessage response = await client.GetAsync(packageRegistryPath);
+            response.EnsureSuccessStatusCode();
+            string responseBody = await response.Content.ReadAsStringAsync();
+            packageManagerConfig.AllVersionsPackageRegistry = JsonConvert.DeserializeObject<PackageRegistry[]>(responseBody);
+
+            HttpResponseMessage routineResponse = await client.GetAsync(breakingChangesSolverPath);
+            routineResponse.EnsureSuccessStatusCode();
+            string routineResponseBody = await routineResponse.Content.ReadAsStringAsync();
+
+            // Deserialize into a Dictionary<string, string>
+            var dictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(routineResponseBody);
+            // Convert the keys into tuples
+            breakingChangesSolverDictionary = new Dictionary<(string, string), string>();
+            foreach (var kvp in dictionary)
+            {
+                // Parse the key into a tuple
+                var key = kvp.Key.Trim('(', ')').Split(", ");
+                var tupleKey = (key[0].Trim('"'), key[1].Trim('"'));
+                breakingChangesSolverDictionary[tupleKey] = kvp.Value;
+            }
+
+            UpdateAvailableVersions();
+
+            //Get reflectis version and update list of packages
+
+            if (string.IsNullOrEmpty(packageManagerConfig.CurrentInstallationVersion))
+            {
+                packageManagerConfig.CurrentInstallationVersion = packageManagerConfig.AvailableVersions[^1];
+            }
+            if (string.IsNullOrEmpty(packageManagerConfig.DisplayedReflectisVersion))
+            {
+                packageManagerConfig.DisplayedReflectisVersion = !string.IsNullOrEmpty(packageManagerConfig.CurrentInstallationVersion) ? packageManagerConfig.CurrentInstallationVersion : packageManagerConfig.AvailableVersions[^1];
+            }
+            previousInstallationVersion = packageManagerConfig.CurrentInstallationVersion;
+
+
+            projectConfig.UnityVersionIsMatching = UnityVersion == packageManagerConfig.AllVersionsPackageRegistry.FirstOrDefault(x => x.ReflectisVersion == packageManagerConfig.CurrentInstallationVersion).RequiredUnityVersion;
+            packageManagerConfig.LastRefreshTime = DateTime.Now;
+
+            UpdateDisplayedPacakgesAndDependencies(packageManagerConfig.DisplayedReflectisVersion);
+
+            CheckGitInstallation();
+            CheckEditorModulesInstallation();
+            CheckProjectSettings();
+
+            EditorUtility.SetDirty(packageManagerConfig);
+            AssetDatabase.SaveAssetIfDirty(packageManagerConfig);
+
+            setupCompleted = true;
+            isSetupping = false;
         }
+
 
         private void AddDataBindings()
         {
@@ -211,8 +265,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             #endregion
 
             #region Package manager section
-
-            LoadOrCreateDataSource();
 
             VisualElement packageManagerSection = root.Q<VisualElement>("package-manager");
             packageManagerSection.dataSource = packageManagerConfig;
@@ -330,64 +382,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             }
         }
 
-        private async void SetupWindowData() => await SetupWindowDataAsync();
-
-        private async Task SetupWindowDataAsync()
-        {
-            isSetupping = true;
-
-            using HttpClient client = new();
-            HttpResponseMessage response = await client.GetAsync(packageRegistryPath);
-            response.EnsureSuccessStatusCode();
-            string responseBody = await response.Content.ReadAsStringAsync();
-            packageManagerConfig.AllVersionsPackageRegistry = JsonConvert.DeserializeObject<PackageRegistry[]>(responseBody);
-
-            HttpResponseMessage routineResponse = await client.GetAsync(breakingChangesSolverPath);
-            routineResponse.EnsureSuccessStatusCode();
-            string routineResponseBody = await routineResponse.Content.ReadAsStringAsync();
-
-            // Deserialize into a Dictionary<string, string>
-            var dictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(routineResponseBody);
-            // Convert the keys into tuples
-            breakingChangesSolverDictionary = new Dictionary<(string, string), string>();
-            foreach (var kvp in dictionary)
-            {
-                // Parse the key into a tuple
-                var key = kvp.Key.Trim('(', ')').Split(", ");
-                var tupleKey = (key[0].Trim('"'), key[1].Trim('"'));
-                breakingChangesSolverDictionary[tupleKey] = kvp.Value;
-            }
-
-            UpdateAvailableVersions();
-
-            //Get reflectis version and update list of packages
-
-            if (string.IsNullOrEmpty(packageManagerConfig.CurrentInstallationVersion))
-            {
-                packageManagerConfig.CurrentInstallationVersion = packageManagerConfig.AvailableVersions[^1];
-            }
-            if (string.IsNullOrEmpty(packageManagerConfig.DisplayedReflectisVersion))
-            {
-                packageManagerConfig.DisplayedReflectisVersion = !string.IsNullOrEmpty(packageManagerConfig.CurrentInstallationVersion) ? packageManagerConfig.CurrentInstallationVersion : packageManagerConfig.AvailableVersions[^1];
-            }
-            previousInstallationVersion = packageManagerConfig.CurrentInstallationVersion;
-
-
-            projectConfig.UnityVersionIsMatching = UnityVersion == packageManagerConfig.AllVersionsPackageRegistry.FirstOrDefault(x => x.ReflectisVersion == packageManagerConfig.CurrentInstallationVersion).RequiredUnityVersion;
-            packageManagerConfig.LastRefreshTime = DateTime.Now;
-
-            UpdateDisplayedPacakgesAndDependencies(packageManagerConfig.DisplayedReflectisVersion);
-
-            CheckGitInstallation();
-            CheckEditorModulesInstallation();
-            CheckProjectSettings();
-
-            EditorUtility.SetDirty(packageManagerConfig);
-            AssetDatabase.SaveAssetIfDirty(packageManagerConfig);
-
-            setupCompleted = true;
-            isSetupping = false;
-        }
+        private async void SetupWindowData() => await LoadData();
 
         private void UpdateAvailableVersions()
         {
@@ -598,8 +593,12 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 if (reverseDependencies[hiddenPackage.Name].Intersect(packageManagerConfig.InstalledPackages.Select(x => x.Name)).Count() == 0)
                 {
                     packagesToRemove.Add(selectedVersionPackageDictionary[hiddenPackage.Name]);
-                    packageManagerConfig.InstalledPackages.Remove(selectedVersionPackageDictionary[hiddenPackage.Name]);
                 }
+            }
+
+            foreach (PackageDefinition package in packagesToRemove)
+            {
+                packageManagerConfig.InstalledPackages.Remove(package);
             }
 
             UninstallPackages(packagesToRemove.Select(x => x.Name).ToList());
