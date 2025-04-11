@@ -472,18 +472,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private bool GetURPConfigurationStatus()
         {
-            string[] guids = AssetDatabase.FindAssets($"t:{nameof(RenderPipelineGlobalSettings)}");
-
-            if (guids.Length != 1)
-            {
-                return false;
-            }
-
-            string path = AssetDatabase.GUIDToAssetPath(guids[0]);
-            RenderPipelineGlobalSettings renderPipelineGlobalSettings = AssetDatabase.LoadAssetAtPath<RenderPipelineGlobalSettings>(path);
-
-            return renderPipelineGlobalSettings == this.renderPipelineGlobalSettings && GraphicsSettings.defaultRenderPipeline == renderPipelineAsset;
-
+            return GraphicsSettings.defaultRenderPipeline == renderPipelineAsset && QualitySettings.renderPipeline == renderPipelineAsset;
         }
 
         private bool GetProjectSettingsStatus()
@@ -499,27 +488,16 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         private void ConfigureProjectSettings()
         {
             // URP configuration
-            string[] guids = AssetDatabase.FindAssets($"t:{nameof(RenderPipelineGlobalSettings)}");
-            if (guids.Length > 1)
-            {
-                foreach (string guid in guids)
-                {
-                    string path = AssetDatabase.GUIDToAssetPath(guid);
-                    RenderPipelineGlobalSettings renderPipelineGlobalSettings = AssetDatabase.LoadAssetAtPath<RenderPipelineGlobalSettings>(path);
-
-                    if (renderPipelineGlobalSettings != this.renderPipelineGlobalSettings)
-                    {
-                        AssetDatabase.DeleteAsset(path);
-                    }
-                }
-            }
             GraphicsSettings.defaultRenderPipeline = renderPipelineAsset;
+            QualitySettings.renderPipeline = renderPipelineAsset;
 
             // Project settings configuration
             PlayerSettings.SetApiCompatibilityLevel(NamedBuildTarget.Standalone, ApiCompatibilityLevel.NET_Unity_4_8);
 
             // Max texture size override
             EditorUserBuildSettings.overrideMaxTextureSize = 1024;
+
+            AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
             CheckProjectSettings();
@@ -846,6 +824,17 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                     AssetDatabase.CreateFolder(Path.GetDirectoryName(currentPath), Path.GetFileName(currentPath));
                 }
             }
+        }
+        private void SwitchRenderPipeline(RenderPipelineAsset newPipelineAsset)
+        {
+            // Set the new render pipeline asset
+            GraphicsSettings.renderPipelineAsset = newPipelineAsset;
+
+            // Update the current render pipeline settings
+            QualitySettings.renderPipeline = newPipelineAsset;
+
+            // Refresh the AssetDatabase to apply changes
+            AssetDatabase.Refresh();
         }
     }
 
