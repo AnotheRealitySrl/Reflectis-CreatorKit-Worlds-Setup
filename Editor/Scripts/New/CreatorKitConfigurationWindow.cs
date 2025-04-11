@@ -320,13 +320,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             dropdown.RegisterValueChangedCallback(evt => UpdateDisplayedPacakgesAndDependencies(evt.newValue));
 
 
-            Toggle resolveBreakingChangesAutomatically = packageManagerSection.Q<Toggle>("resolve-breaking-changes-toggle");
-            resolveBreakingChangesAutomatically.SetBinding(nameof(resolveBreakingChangesAutomatically.value), new DataBinding()
-            {
-                dataSourcePath = PropertyPath.FromName(nameof(packageManagerConfig.ResolveBreakingChangesAutomatically)),
-                bindingMode = BindingMode.TwoWay
-            });
-
             Toggle showPrereleaseToggle = packageManagerSection.Q<Toggle>("show-prereleases-toggle");
             showPrereleaseToggle.SetBinding(nameof(showPrereleaseToggle.value), new DataBinding()
             {
@@ -334,6 +327,20 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 bindingMode = BindingMode.TwoWay
             });
             showPrereleaseToggle.RegisterValueChangedCallback(evt => UpdateAvailableVersions());
+
+            Toggle resolveBreakingChangesAutomatically = packageManagerSection.Q<Toggle>("resolve-breaking-changes-toggle");
+            resolveBreakingChangesAutomatically.SetBinding(nameof(resolveBreakingChangesAutomatically.value), new DataBinding()
+            {
+                dataSourcePath = PropertyPath.FromName(nameof(packageManagerConfig.ResolveBreakingChangesAutomatically)),
+                bindingMode = BindingMode.TwoWay
+            });
+
+            VisualElement resolveBreakingChangesAutomaticallyWarning = packageManagerSection.Q<VisualElement>("resolve-breaking-changes-warning");
+            resolveBreakingChangesAutomaticallyWarning.SetBinding(nameof(resolveBreakingChangesAutomaticallyWarning.visible), new DataBinding()
+            {
+                dataSourcePath = PropertyPath.FromName(nameof(packageManagerConfig.ResolveBreakingChangesAutomatically)),
+                bindingMode = BindingMode.ToTarget
+            });
 
             #endregion
         }

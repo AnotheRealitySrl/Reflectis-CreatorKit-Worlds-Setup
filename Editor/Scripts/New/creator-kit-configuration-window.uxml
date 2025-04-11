@@ -72,8 +72,12 @@
                 <engine:Button text="Update packages to selected version" name="update-packages-button" style="align-self: flex-end; margin-right: 8px; margin-top: 8px; margin-bottom: 8px;" />
             </engine:GroupBox>
             <engine:Foldout text="Advanced settings" name="advanced-settings-foldout" value="false" style="align-items: flex-start; justify-content: flex-start;">
-                <engine:Toggle label="Resolve breaking changes automatically when updating version" name="resolve-breaking-changes-toggle" value="true" class="advanced-settings-item" style="flex-direction: row-reverse; align-items: stretch; justify-content: space-around;" />
                 <engine:Toggle label="Show pre-releases" name="show-prereleases-toggle" class="advanced-settings-item" style="flex-direction: row-reverse; align-items: stretch;" />
+                <engine:Toggle label="Resolve breaking changes automatically when updating version" name="resolve-breaking-changes-toggle" class="advanced-settings-item" style="flex-direction: row-reverse; align-items: stretch; justify-content: space-around;" />
+                <engine:VisualElement name="resolve-breaking-changes-warning" class="build-error-item warning-item">
+                    <engine:VisualElement name="resolve-breaking-changes-warning-icon" class="build-error-item-icon warning-item-icon" />
+                    <engine:Label text="Warning: automatically resolving breaking changes can be destructive to your project. It is recommended to make a backup before proceeding. N.B. This feature only works if you update the version from one minor to another, e.g.: 2025.2 -&gt; 2025.3. It is not recommended to use this feature to change version more than one minor, as the breaking changes may not be detected." name="resolve-breaking-changes-warning-text" class="build-error-item-text warning-item-text" />
+                </engine:VisualElement>
             </engine:Foldout>
         </engine:GroupBox>
         <engine:VisualElement name="separator" class="separator" style="flex-grow: 1; height: 1px; border-left-color: rgba(0, 0, 0, 0); border-right-color: rgba(0, 0, 0, 0); border-top-color: rgba(0, 0, 0, 0); border-bottom-color: rgba(0, 0, 0, 0); background-color: rgb(0, 0, 0);" />
