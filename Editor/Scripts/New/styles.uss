@@ -1,0 +1,93 @@
+.h1 {
+}
+
+.separator {
+    background-color: rgb(0, 0, 0);
+    height: 1px;
+}
+
+.settings-item {
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    padding-right: 0;
+    padding-left: 0;
+    align-items: center;
+    flex-direction: row;
+}
+
+.settings-item-green-icon {
+    background-image: url("project://database/Packages/com.unity.multiplayer.center/Editor/MultiplayerCenterWindow/UI/Icons/Check.png?fileID=2800000&guid=4f78a544322c742b89e63fb68557b1d2&type=3#Check");
+    width: 20px;
+    height: 20px;
+    align-self: center;
+}
+
+.settings-item-red-icon {
+    background-image: url("project://database/Packages/com.unity.collab-proxy/Editor/Assets/Images/iconconflicted.png?fileID=2800000&guid=d1c88f142eee55b4eb2b2cfd7b3624ce&type=3#iconconflicted");
+    width: 20px;
+    height: 20px;
+    align-self: center;
+}
+
+.settings-group {
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.advanced-settings-item {
+    align-self: flex-start;
+}
+
+.settings-button-container {
+    max-height: 20px;
+    margin-right: 4px;
+    margin-left: 4px;
+    padding-top: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+}
+
+.warning-item {
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-left-color: rgba(0, 0, 0, 0.5);
+    border-right-color: rgba(0, 0, 0, 0.5);
+    border-top-color: rgba(0, 0, 0, 0.5);
+    border-bottom-color: rgba(0, 0, 0, 0.5);
+    margin-top: 4px;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    margin-left: 4px;
+    padding-top: 8px;
+    padding-right: 8px;
+    padding-bottom: 8px;
+    padding-left: 8px;
+    align-items: center;
+    justify-content: flex-start;
+    flex-direction: row;
+}
+
+.warning-item-icon {
+    background-size: 20px 20px;
+    background-image: url("project://database/Packages/com.unity.timeline/Editor/StyleSheets/Images/Shared/TimelineWarning.png?fileID=2800000&guid=1732e542f535d374bbfa7565fc78414e&type=3#TimelineWarning");
+    width: 20px;
+    height: 20px;
+    margin-top: 5px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+    margin-left: 5px;
+}
+
+.warning-item-text {
+    white-space: normal;
+    max-width: 95%;
+}
