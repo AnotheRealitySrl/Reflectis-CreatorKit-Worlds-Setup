@@ -67,7 +67,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
         private const string utilities_folder_path = "Assets/CreatorKit/Editor/Scripts";
         private const string settings_folder_path = "Assets/CreatorKit/Editor/Settings";
-        private const string installer_configuration_file = "CreatorKitConfigurationWindowDataSource.asset";
+        private const string setup_configuration_path = "CreatorKitSetupConfiguration.asset";
 
         #region Editor window setup
 
@@ -146,7 +146,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                 EnsureFolderExists(settings_folder_path);
 
                 packageManagerConfig = CreateInstance<PackageManagerConfiguration>();
-                string settingsAssetPath = $"{settings_folder_path}/{installer_configuration_file}";
+                string settingsAssetPath = $"{settings_folder_path}/{setup_configuration_path}";
                 AssetDatabase.CreateAsset(packageManagerConfig, settingsAssetPath);
                 AssetDatabase.SaveAssets();
             }
@@ -176,7 +176,6 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             UpdateAvailableVersions();
 
             //Get reflectis version and update list of packages
-
             if (string.IsNullOrEmpty(packageManagerConfig.CurrentInstallationVersion))
             {
                 packageManagerConfig.CurrentInstallationVersion = packageManagerConfig.AvailableVersions[^1];
@@ -703,8 +702,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
         private async void ResolveBreakingChanges()
         {
-            if (!AssetDatabase.IsValidFolder("Assets/CKBreakingChangesSolvers"))
-                AssetDatabase.CreateFolder("Assets", "CKBreakingChangesSolvers");
+            EnsureFolderExists(utilities_folder_path);
 
             string prev = FilterPatch(previousInstallationVersion);
             string cur = FilterPatch(packageManagerConfig.CurrentInstallationVersion);
@@ -717,7 +715,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             response.EnsureSuccessStatusCode();
             string responseBody = await response.Content.ReadAsStringAsync();
 
-            string assetPath = $"Assets/CKBreakingChangesSolvers/{routinePath.Split('/').Last()}";
+            string assetPath = $"{utilities_folder_path}/{routinePath.Split('/').Last()}";
             StreamWriter writer = new(assetPath, false);
             writer.WriteLine(responseBody);
             writer.Close();

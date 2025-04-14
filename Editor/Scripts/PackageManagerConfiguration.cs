@@ -8,8 +8,7 @@ using UnityEngine;
 
 namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 {
-
-    [CreateAssetMenu(fileName = "CreatorKitConfigurationWindowDataSource", menuName = "Reflectis/Creator-Kit-Setup/CreatorKitConfigurationWindowDataSource")]
+    [CreateAssetMenu(fileName = "CreatorKitSetupConfiguration", menuName = "Reflectis Worlds/Creator-Kit/Setup/CreatorKitSetupConfiguration")]
     public class PackageManagerConfiguration : ScriptableObject
     {
         // TODO: needed here?
