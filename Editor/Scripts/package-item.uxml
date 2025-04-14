@@ -5,7 +5,7 @@
                 <engine:Label text="Package description" name="package-description" style="margin-top: 6px;" />
                 <engine:Label text="URL" name="package-url" style="margin-bottom: 4px; margin-top: 6px;" />
                 <engine:Foldout text="Dependencies" name="package-dependencies-foldout" value="false">
-                    <engine:ListView name="package-dependencies" binding-source-selection-mode="AutoAssign" item-template="project://database/Packages/com.anotherealitysrl.reflectis-creatorkit-worlds-installer/Editor/Scripts/New/package-dependency.uxml?fileID=9197481963319205126&amp;guid=c8dbc09d245ac2f45a6bd33b8b5af702&amp;type=3#package-dependency" />
+                    <engine:GroupBox name="package-dependencies" style="padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; margin-top: 0; margin-right: 2px; margin-bottom: 0; margin-left: 2px; flex-direction: column;" />
                 </engine:Foldout>
             </engine:Foldout>
             <engine:GroupBox style="flex-direction: column; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; max-height: 30px;">

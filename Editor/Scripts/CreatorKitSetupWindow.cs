@@ -26,7 +26,7 @@ using UnityEngine.UIElements;
 
 namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 {
-    public class CreatorKitConfigurationWindow : EditorWindow
+    public class CreatorKitSetupWindow : EditorWindow
     {
         [Serializable]
         public class ProjectConfiguration
@@ -55,6 +55,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
         [SerializeField] private VisualTreeAsset m_VisualTreeAsset = default;
         [SerializeField] private VisualTreeAsset packageItemAsset = default;
+        [SerializeField] private VisualTreeAsset packageDependencyAsset = default;
         [SerializeField] private VisualTreeAsset dialogAsset = default;
 
         [SerializeField] private RenderPipelineGlobalSettings renderPipelineGlobalSettings;
@@ -91,18 +92,12 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
         private string previousInstallationVersion;
 
-        private static Dictionary<string, PackageDefinition> selectedVersionPackageDictionary = new();
-
-        private static Dictionary<string, string[]> selectedVersionDependencies = new();
-        private static Dictionary<string, string[]> selectedVersionDependenciesFull = new();
-        private static Dictionary<string, List<string>> reverseDependencies = new();
-
         #endregion
 
         [MenuItem("Reflectis Worlds/Creator Kit/Setup/Setup project")]
         public static void ShowWindow()
         {
-            CreatorKitConfigurationWindow wnd = GetWindow<CreatorKitConfigurationWindow>();
+            CreatorKitSetupWindow wnd = GetWindow<CreatorKitSetupWindow>();
             wnd.titleContent = new GUIContent("Setup project");
         }
 
@@ -173,6 +168,8 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                 breakingChangesSolverDictionary[tupleKey] = kvp.Value;
             }
 
+            packageManagerConfig.OnDisplayedVersionChanged.AddListener(InstantiatePackagesInPackageList);
+
             UpdateAvailableVersions();
 
             //Get reflectis version and update list of packages
@@ -189,8 +186,6 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
             projectConfig.UnityVersionIsMatching = UnityVersion == packageManagerConfig.AllVersionsPackageRegistry.FirstOrDefault(x => x.ReflectisVersion == packageManagerConfig.CurrentInstallationVersion).RequiredUnityVersion;
             packageManagerConfig.LastRefreshTime = DateTime.Now;
-
-            UpdateDisplayedPacakgesAndDependencies(packageManagerConfig.DisplayedReflectisVersion);
 
             CheckGitInstallation();
             CheckEditorModulesInstallation();
@@ -335,8 +330,6 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                 dataSourcePath = PropertyPath.FromName(nameof(packageManagerConfig.DisplayedReflectisVersion)),
                 bindingMode = BindingMode.TwoWay
             });
-            dropdown.RegisterValueChangedCallback(evt => UpdateDisplayedPacakgesAndDependencies(evt.newValue));
-
 
             Toggle showPrereleaseToggle = packageManagerSection.Q<Toggle>("show-prereleases-toggle");
             showPrereleaseToggle.SetBinding(nameof(showPrereleaseToggle.value), new DataBinding()
@@ -385,14 +378,29 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                 packageVersion.RegisterCallback<ClickEvent>(evt => Application.OpenURL(packageManagerConfig.SelectedVersionPackageListFiltered[i].Url));
 
 
-                //ListView dependenciesList = packagesListScroll[i].Q<ListView>("package-dependencies");
-                //dependenciesList.dataSource = PropertyPath.FromName(nameof(packageManagerConfig.SelectedVersionDependenciesFull));
+                VisualElement dependenciesList = packagesListScroll[i].Q<VisualElement>("package-dependencies");
+                dependenciesList.dataSource = packageManagerConfig.SelectedVersionDependenciesFullOrdered[i];
 
-                //dependenciesList.SetBinding(nameof(dependenciesList.itemsSource), new DataBinding()
-                //{
-                //    dataSourcePath = PropertyPath.FromIndex(i),
-                //    bindingMode = BindingMode.ToTarget
-                //});
+                for (int j = 0; j < packageManagerConfig.SelectedVersionDependenciesFullOrdered[i].Count(); j++)
+                {
+                    VisualElement packageDependency = packageDependencyAsset.Instantiate();
+                    dependenciesList.Add(packageDependency);
+                    packageDependency.dataSourcePath = PropertyPath.FromIndex(j);
+
+                    Label dependencyText = packageDependency.Q<Label>("package-dependency-label");
+                    dependencyText.SetBinding(nameof(dependencyText.text), new DataBinding()
+                    {
+                        dataSourcePath = PropertyPath.FromName(nameof(PackageDefinition.DisplayName)),
+                        bindingMode = BindingMode.ToTarget
+                    });
+
+                    Label dependencyVersion = packageDependency.Q<Label>("package-dependency-version");
+                    dependencyVersion.SetBinding(nameof(dependencyVersion.text), new DataBinding()
+                    {
+                        dataSourcePath = PropertyPath.FromName(nameof(PackageDefinition.Version)),
+                        bindingMode = BindingMode.ToTarget
+                    });
+                }
 
                 Button installPackageButton = packagesListScroll[i].Q<Button>("install-package-button");
 
@@ -422,7 +430,6 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             if (packageManagerConfig.DisplayedReflectisVersion == "develop" && !packageManagerConfig.ShowPrereleases)
             {
                 packageManagerConfig.DisplayedReflectisVersion = packageManagerConfig.AvailableVersions[^1];
-                UpdateDisplayedPacakgesAndDependencies(packageManagerConfig.DisplayedReflectisVersion);
             }
         }
 
@@ -520,42 +527,11 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
         #region Package management
 
-        private List<string> FindAllDependencies(PackageDefinition package, List<string> dependencies)
-        {
-            if (selectedVersionDependencies.TryGetValue(package.Name, out string[] packageDependencies))
-            {
-                foreach (string dependency in packageDependencies)
-                {
-                    FindAllDependencies(selectedVersionPackageDictionary[dependency], dependencies);
-                }
-                dependencies.AddRange(packageDependencies);
-            }
-
-            return dependencies;
-        }
-
-        private void UpdateDisplayedPacakgesAndDependencies(string newVersion)
-        {
-            packageManagerConfig.SelectedVersionPackageList = packageManagerConfig.AllVersionsPackageRegistry
-                .FirstOrDefault(x => x.ReflectisVersion == newVersion).Packages;
-            selectedVersionDependencies = packageManagerConfig.AllVersionsPackageRegistry
-                .FirstOrDefault(x => x.ReflectisVersion == newVersion).Dependencies;
-
-            selectedVersionPackageDictionary = packageManagerConfig.SelectedVersionPackageList.ToDictionary(x => x.Name);
-            selectedVersionDependenciesFull = selectedVersionDependencies.ToDictionary(
-                kvp => kvp.Key,
-                kvp => FindAllDependencies(selectedVersionPackageDictionary[kvp.Key], new List<string>()).ToArray()
-            );
-            reverseDependencies = InvertDictionary(selectedVersionDependenciesFull);
-
-            InstantiatePackagesInPackageList();
-        }
-
         private void InstallPackageWithDependencies(PackageDefinition package)
         {
-            List<string> dependenciesToInstall = FindAllDependencies(package, new());
+            string[] dependenciesToInstall = packageManagerConfig.SelectedVersionDependenciesFull[package.Name];
 
-            foreach (var dependency in dependenciesToInstall.Select(x => selectedVersionPackageDictionary[x]).Append(package))
+            foreach (var dependency in dependenciesToInstall.Select(x => packageManagerConfig.SelectedVersionPackageDictionary[x]).Append(package))
             {
                 if (!packageManagerConfig.InstalledPackages.Contains(dependency))
                 {
@@ -566,7 +542,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             EditorUtility.SetDirty(packageManagerConfig);
             AssetDatabase.SaveAssetIfDirty(packageManagerConfig);
 
-            InstallPackages(dependenciesToInstall.Append(package.Name).Select(x => selectedVersionPackageDictionary[x]).ToList());
+            InstallPackages(dependenciesToInstall.Append(package.Name).Select(x => packageManagerConfig.SelectedVersionPackageDictionary[x]).ToList());
 
             Client.Resolve();
         }
@@ -596,9 +572,9 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
             foreach (var hiddenPackage in packageManagerConfig.InstalledPackages.Where(x => x.Visibility == EPackageVisibility.Hidden))
             {
-                if (reverseDependencies[hiddenPackage.Name].Intersect(packageManagerConfig.InstalledPackages.Select(x => x.Name)).Count() == 0)
+                if (packageManagerConfig.ReverseDependencies[hiddenPackage.Name].Intersect(packageManagerConfig.InstalledPackages.Select(x => x.Name)).Count() == 0)
                 {
-                    packagesToRemove.Add(selectedVersionPackageDictionary[hiddenPackage.Name]);
+                    packagesToRemove.Add(packageManagerConfig.SelectedVersionPackageDictionary[hiddenPackage.Name]);
                 }
             }
 
@@ -627,30 +603,11 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             File.WriteAllText(manifestFilePath, manifestObj.ToString());
         }
 
-        public static Dictionary<string, List<string>> InvertDictionary(Dictionary<string, string[]> dictionary)
-        {
-            var invertedDictionary = new Dictionary<string, List<string>>();
-
-            foreach (var kvp in dictionary)
-            {
-                foreach (var value in kvp.Value)
-                {
-                    if (!invertedDictionary.ContainsKey(value))
-                    {
-                        invertedDictionary[value] = new List<string>();
-                    }
-                    invertedDictionary[value].Add(kvp.Key);
-                }
-            }
-
-            return invertedDictionary;
-        }
-
         private bool IsPackageInstalledAsDependency(PackageDefinition package)
         {
             bool isDependency = false;
 
-            if (reverseDependencies.TryGetValue(package.Name, out List<string> deps))
+            if (packageManagerConfig.ReverseDependencies.TryGetValue(package.Name, out List<string> deps))
             {
                 foreach (string dep in deps)
                 {
@@ -683,13 +640,13 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                 List<PackageDefinition> installedPackagesCopy = new(packageManagerConfig.InstalledPackages);
                 foreach (PackageDefinition package in installedPackagesCopy)
                 {
-                    if (package.Version != selectedVersionPackageDictionary[package.Name].Version)
+                    if (package.Version != packageManagerConfig.SelectedVersionPackageDictionary[package.Name].Version)
                     {
                         packageManagerConfig.InstalledPackages.Remove(package);
                         UninstallPackages(new() { package.Name });
 
-                        packageManagerConfig.InstalledPackages.Add(selectedVersionPackageDictionary[package.Name]);
-                        InstallPackages(new() { selectedVersionPackageDictionary[package.Name] });
+                        packageManagerConfig.InstalledPackages.Add(packageManagerConfig.SelectedVersionPackageDictionary[package.Name]);
+                        InstallPackages(new() { packageManagerConfig.SelectedVersionPackageDictionary[package.Name] });
                     }
                 }
 

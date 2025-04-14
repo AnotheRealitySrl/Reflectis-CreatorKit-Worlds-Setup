@@ -5,11 +5,18 @@ MonoImporter:
   serializedVersion: 2
   defaultReferences:
   - m_ViewDataDictionary: {instanceID: 0}
-  - m_VisualTreeAsset: {fileID: 9197481963319205126, guid: 6f631bde339b9e841af8089bc5f10c98, type: 3}
-  - packageItemAsset: {fileID: 9197481963319205126, guid: 954a8f797166c9942b81d6e7b4ebcf06, type: 3}
-  - dialogAsset: {fileID: 9197481963319205126, guid: 90d71d38f6813bd4d946172bba795668, type: 3}
-  - renderPipelineGlobalSettings: {fileID: 11400000, guid: edf6e41e487713f45862ce6ae2f5dffd, type: 2}
-  - renderPipelineAsset: {fileID: 11400000, guid: a5c68f2b48f576544bba74d7a79c8d3c, type: 2}
+  - m_VisualTreeAsset: {fileID: 9197481963319205126, guid: 6f631bde339b9e841af8089bc5f10c98,
+      type: 3}
+  - packageItemAsset: {fileID: 9197481963319205126, guid: 954a8f797166c9942b81d6e7b4ebcf06,
+      type: 3}
+  - packageDependencyAsset: {fileID: 9197481963319205126, guid: c8dbc09d245ac2f45a6bd33b8b5af702,
+      type: 3}
+  - dialogAsset: {fileID: 9197481963319205126, guid: 90d71d38f6813bd4d946172bba795668,
+      type: 3}
+  - renderPipelineGlobalSettings: {fileID: 11400000, guid: edf6e41e487713f45862ce6ae2f5dffd,
+      type: 2}
+  - renderPipelineAsset: {fileID: 11400000, guid: a5c68f2b48f576544bba74d7a79c8d3c,
+      type: 2}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 
