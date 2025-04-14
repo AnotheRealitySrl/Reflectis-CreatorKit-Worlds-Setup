@@ -1,50 +1,59 @@
 <engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <Style src="project://database/Packages/com.anotherealitysrl.reflectis-creatorkit-worlds-installer/Editor/Scripts/New/styles.uss?fileID=7433441132597879392&amp;guid=ca7a0c867793b12469d64e21b6c3abe7&amp;type=3#styles" />
+    <Style src="project://database/Packages/com.anotherealitysrl.reflectis-creatorkit-worlds-installer/Editor/Scripts/styles.uss?fileID=7433441132597879392&amp;guid=ca7a0c867793b12469d64e21b6c3abe7&amp;type=3#styles" />
     <engine:ScrollView name="ScrollView">
         <engine:Label text="Creator Kit Configuration Window" name="Header" style="-unity-text-align: upper-center; -unity-font-style: bold; font-size: 24px;" />
         <engine:VisualElement name="separator" class="separator" style="flex-grow: 1;" />
         <engine:GroupBox name="project-settings">
             <engine:Label text="Project settings" name="Header" class="h1" style="-unity-font-style: bold;" />
             <engine:GroupBox name="git-installation" class="settings-group">
-                <engine:Foldout text="Git installation" name="SettingsItemFoldout" value="false">
-                    <engine:VisualElement name="project-settings-git-instance" class="settings-item">
-                        <engine:VisualElement name="project-settings-git-version-check" class="settings-item-green-icon" />
-                        <engine:Label text="Installed Git instance:" name="git-version-label" />
-                        <engine:Label text="&lt;value&gt;" name="git-version-label-value" />
-                    </engine:VisualElement>
-                </engine:Foldout>
+                <engine:GroupBox name="git-installation-content" class="settings-group-content">
+                    <engine:Foldout text="Git installation" name="git-installation-foldout" value="false">
+                        <engine:VisualElement name="project-settings-git-instance" class="settings-item">
+                            <engine:VisualElement name="project-settings-git-version-check" class="settings-item-green-icon" />
+                            <engine:Label text="Installed Git instance:" name="git-version-label" />
+                            <engine:Label text="&lt;value&gt;" name="git-version-label-value" />
+                        </engine:VisualElement>
+                    </engine:Foldout>
+                    <engine:VisualElement name="git-installation-warning" class="settings-group-warning" />
+                </engine:GroupBox>
                 <engine:GroupBox name="git-download-button-container" class="settings-button-container" style="max-height: 30px; margin-top: 0; margin-bottom: 0;">
                     <engine:Button text="Download" name="git-download-button" />
                 </engine:GroupBox>
             </engine:GroupBox>
             <engine:GroupBox name="editor-configuration" class="settings-group">
-                <engine:Foldout text="Editor configuration" name="SettingsItemFoldout" value="false">
-                    <engine:VisualElement name="editor-settings-unity-version" class="settings-item">
-                        <engine:VisualElement name="project-settings-unity-version-check" class="settings-item-green-icon" />
-                        <engine:Label text="Unity version:" name="editor-settings-unity-version-text" />
-                        <engine:Label text="&lt;value&gt;" name="editor-settings-unity-version-value" />
-                    </engine:VisualElement>
-                    <engine:VisualElement name="editor-settings-installed-modules" class="settings-item">
-                        <engine:VisualElement name="project-settings-editor-modules-check" class="settings-item-green-icon" />
-                        <engine:Label text="All editor modules are installed properly" name="installed-modules-label" />
-                    </engine:VisualElement>
-                </engine:Foldout>
+                <engine:GroupBox name="editor-configuration-content" class="settings-group-content">
+                    <engine:Foldout text="Editor configuration" name="editor-configuration-foldout" value="false">
+                        <engine:VisualElement name="editor-settings-unity-version" class="settings-item">
+                            <engine:VisualElement name="project-settings-unity-version-check" class="settings-item-green-icon" />
+                            <engine:Label text="Unity version:" name="editor-settings-unity-version-text" />
+                            <engine:Label text="&lt;value&gt;" name="editor-settings-unity-version-value" />
+                        </engine:VisualElement>
+                        <engine:VisualElement name="editor-settings-installed-modules" class="settings-item">
+                            <engine:VisualElement name="project-settings-editor-modules-check" class="settings-item-green-icon" />
+                            <engine:Label text="All editor modules are installed properly" name="installed-modules-label" />
+                        </engine:VisualElement>
+                    </engine:Foldout>
+                    <engine:VisualElement name="editor-configuration-warning" class="settings-group-warning" />
+                </engine:GroupBox>
             </engine:GroupBox>
             <engine:GroupBox name="project-settings" class="settings-group">
-                <engine:Foldout text="Project settings" name="SettingsItemFoldout" value="false">
-                    <engine:VisualElement name="project-settings-configure-urp" class="settings-item">
-                        <engine:VisualElement name="project-settings-urp-check" class="settings-item-green-icon" />
-                        <engine:Label text="Configure URP as render pipeline" name="Label" />
-                    </engine:VisualElement>
-                    <engine:VisualElement name="project-settings-player-settings" class="settings-item">
-                        <engine:VisualElement name="project-settings-configuration-check" class="settings-item-green-icon" />
-                        <engine:Label text="Project settings configuration" name="Label" />
-                    </engine:VisualElement>
-                    <engine:VisualElement name="project-settings-max-texture-size-check" class="settings-item">
-                        <engine:VisualElement name="project-settings-max-texture-size-check" class="settings-item-green-icon" />
-                        <engine:Label text="Configure max texture size" name="Label" />
-                    </engine:VisualElement>
-                </engine:Foldout>
+                <engine:GroupBox name="project-settings-content" class="settings-group-content">
+                    <engine:Foldout text="Project settings" name="project-settings-foldout" value="false">
+                        <engine:VisualElement name="project-settings-configure-urp" class="settings-item">
+                            <engine:VisualElement name="project-settings-urp-check" class="settings-item-green-icon" />
+                            <engine:Label text="Configure URP as render pipeline" name="Label" />
+                        </engine:VisualElement>
+                        <engine:VisualElement name="project-settings-player-settings" class="settings-item">
+                            <engine:VisualElement name="project-settings-configuration-check" class="settings-item-green-icon" />
+                            <engine:Label text="Project settings configuration" name="Label" />
+                        </engine:VisualElement>
+                        <engine:VisualElement name="project-settings-max-texture-size-check" class="settings-item">
+                            <engine:VisualElement name="project-settings-max-texture-size-check" class="settings-item-green-icon" />
+                            <engine:Label text="Configure max texture size" name="Label" />
+                        </engine:VisualElement>
+                    </engine:Foldout>
+                    <engine:VisualElement name="project-settings-warning" class="settings-group-warning" />
+                </engine:GroupBox>
                 <engine:GroupBox name="configure-project-settings-button-container" class="settings-button-container" style="justify-content: space-between; align-items: auto; margin-top: 0; margin-bottom: 0;">
                     <engine:Button text="Configure" name="configure-project-settings-button" />
                 </engine:GroupBox>

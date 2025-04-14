@@ -222,7 +222,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             };
             foreach (var entry in settingIcons)
             {
-                VisualElement projectSettingsItemIcon = root.Q<VisualElement>(entry.Item1);
+                VisualElement projectSettingsItemIcon = projectSettingsSection.Q<VisualElement>(entry.Item1);
                 DataBinding styleBinding = new() { dataSourcePath = PropertyPath.FromName(entry.Item2) };
                 styleBinding.sourceToUiConverters.AddConverter((ref bool value) =>
                 {
@@ -235,7 +235,26 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 projectSettingsItemIcon.SetBinding(nameof(projectSettingsItemIcon.visible), styleBinding);
             }
 
-            Label gitVersionLabel = root.Q<Label>("git-version-label");
+            List<(string, string)> warningIcons = new()
+            {
+                { ("git-installation-warning", nameof(projectConfig.IsGitInstalled)) },
+                { ("editor-configuration-warning", nameof(projectConfig.EditorConfigurationOk)) },
+                { ("project-settings-warning", nameof(projectConfig.ProjectSettingsOk)) }
+            };
+            foreach (var entry in warningIcons)
+            {
+                VisualElement warningIcon = projectSettingsSection.Q<VisualElement>(entry.Item1);
+                DataBinding warningIconVisibilityBinding = new()
+                {
+                    dataSourcePath = PropertyPath.FromName(entry.Item2),
+                    bindingMode = BindingMode.ToTarget
+                };
+                warningIconVisibilityBinding.sourceToUiConverters.AddConverter((ref bool value) => true);
+                warningIcon.SetBinding(nameof(warningIcon.visible), warningIconVisibilityBinding);
+            }
+
+
+            Label gitVersionLabel = projectSettingsSection.Q<Label>("git-version-label");
             DataBinding gitVersionLabelBinding = new() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.IsGitInstalled)), bindingMode = BindingMode.ToTarget };
             gitVersionLabelBinding.sourceToUiConverters.AddConverter((ref bool value) =>
                 value ?
@@ -243,19 +262,19 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                     "Git is not installed! Click \"Download\" button to download it from the official website.");
             gitVersionLabel.SetBinding(nameof(gitVersionLabel.text), gitVersionLabelBinding);
 
-            Label gitVersionLabelValue = root.Q<Label>("git-version-label-value");
+            Label gitVersionLabelValue = projectSettingsSection.Q<Label>("git-version-label-value");
             gitVersionLabelValue.SetBinding(nameof(gitVersionLabelValue.text), new DataBinding() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.GitVersion)) });
 
-            Button gitDownloadButton = root.Q<Button>("git-download-button");
+            Button gitDownloadButton = projectSettingsSection.Q<Button>("git-download-button");
             gitDownloadButton.clicked += () => Application.OpenURL("https://git-scm.com/downloads");
             DataBinding gitDownloadBinding = new() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.IsGitInstalled)) };
             gitDownloadBinding.sourceToUiConverters.AddConverter((ref bool value) => !value);
             gitDownloadButton.SetBinding(nameof(gitDownloadButton.enabledSelf), gitDownloadBinding);
 
-            Label currentUnityVersionValue = root.Q<Label>("editor-settings-unity-version-value");
+            Label currentUnityVersionValue = projectSettingsSection.Q<Label>("editor-settings-unity-version-value");
             currentUnityVersionValue.text = UnityVersion;
 
-            Label installedModules = root.Q<Label>("installed-modules-label");
+            Label installedModules = projectSettingsSection.Q<Label>("installed-modules-label");
             DataBinding installedModulesBinding = new() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.InstalledModules)) };
             installedModulesBinding.sourceToUiConverters.AddConverter((ref Dictionary<string, bool> value) =>
                 !value.Values.Contains(false) ?
@@ -264,7 +283,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             );
             installedModules.SetBinding(nameof(installedModules.text), installedModulesBinding);
 
-            Button configureProjectSettingsButton = root.Q<Button>("configure-project-settings-button");
+            Button configureProjectSettingsButton = projectSettingsSection.Q<Button>("configure-project-settings-button");
             configureProjectSettingsButton.clicked += ConfigureProjectSettings;
             DataBinding configureProjectSettingsButtonBinding = new() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.ProjectSettingsOk)) };
             configureProjectSettingsButtonBinding.sourceToUiConverters.AddConverter((ref bool value) => !value);
@@ -406,11 +425,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 packageManagerConfig.DisplayedReflectisVersion = packageManagerConfig.AvailableVersions[^1];
                 UpdateDisplayedPacakgesAndDependencies(packageManagerConfig.DisplayedReflectisVersion);
             }
-
-            packageManagerConfig.AvailableVersions = packageManagerConfig.AllVersionsPackageRegistry
-                .Where(x => packageManagerConfig.ShowPrereleases || x.ReflectisVersion != "develop")
-                .Select(x => x.ReflectisVersion)
-                .ToList();
         }
 
         #region Project settings
@@ -743,46 +757,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         #endregion
 
-        private Dictionary<string, string[]> TraverseGraph(Dictionary<string, PackageDefinition> graph)
-        {
-            HashSet<string> visited = new();
-            Dictionary<string, string[]> outgoingEdges = new();
-
-            foreach (var node in graph.Keys)
-            {
-                if (!visited.Contains(node))
-                {
-                    TraverseNode(node, graph, visited, outgoingEdges);
-                }
-            }
-
-            return outgoingEdges;
-        }
-
-        private void TraverseNode(string node, Dictionary<string, PackageDefinition> graph, HashSet<string> visited, Dictionary<string, string[]> outgoingEdges)
-        {
-            if (visited.Contains(node))
-            {
-                return;
-            }
-
-            visited.Add(node);
-            UnityEngine.Debug.Log($"Visiting node: {node}");
-
-            if (selectedVersionDependencies.TryGetValue(node, out string[] dependencies))
-            {
-                outgoingEdges[node] = dependencies;
-                foreach (var dependency in dependencies)
-                {
-                    TraverseNode(dependency, graph, visited, outgoingEdges);
-                }
-            }
-            else
-            {
-                outgoingEdges[node] = Array.Empty<string>();
-            }
-        }
-
         private void ShowAlertDialog(string title, string message, UnityAction callback)
         {
             var dialog = dialogAsset.CloneTree();
@@ -825,39 +799,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 }
             }
         }
-        private void SwitchRenderPipeline(RenderPipelineAsset newPipelineAsset)
-        {
-            // Set the new render pipeline asset
-            GraphicsSettings.renderPipelineAsset = newPipelineAsset;
-
-            // Update the current render pipeline settings
-            QualitySettings.renderPipeline = newPipelineAsset;
-
-            // Refresh the AssetDatabase to apply changes
-            AssetDatabase.Refresh();
-        }
     }
 
-    public class CustomAssetPostprocessor : AssetPostprocessor
-    {
-        // This method is called when importing any number of assets is completed
-        static void OnPostprocessAllAssets(
-            string[] importedAssets,
-            string[] deletedAssets,
-            string[] movedAssets,
-            string[] movedFromAssetPaths)
-        {
-            foreach (var importedAsset in importedAssets)
-            {
-                if (!importedAsset.Contains("CKBreakingChangesSolvers"))
-                    return;
-
-                UnityEngine.Object obj = AssetDatabase.LoadAssetAtPath(importedAsset, typeof(MonoScript));
-                if (obj != null)
-                {
-                    SetupReflectisWindow.ResolveBreakingChangesCallback(importedAsset.Split('/').Last()[..^3]);
-                }
-            }
-        }
-    }
 }

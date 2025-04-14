@@ -91,3 +91,27 @@
     white-space: normal;
     max-width: 95%;
 }
+
+.settings-group-content {
+    flex-direction: row;
+    margin-top: 0;
+    margin-right: 0;
+    margin-bottom: 0;
+    margin-left: 0;
+    padding-top: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    align-items: flex-start;
+}
+
+.settings-group-warning {
+    flex-grow: 1;
+    background-image: url("project://database/Packages/com.unity.timeline/Editor/StyleSheets/Images/Shared/TimelineWarning.png?fileID=2800000&guid=1732e542f535d374bbfa7565fc78414e&type=3#TimelineWarning");
+    width: 20px;
+    height: 20px;
+    margin-top: 3px;
+    margin-right: 3px;
+    margin-bottom: 3px;
+    margin-left: 3px;
+}

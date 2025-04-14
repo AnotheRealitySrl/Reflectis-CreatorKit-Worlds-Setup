@@ -17,7 +17,12 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         public PackageDefinition[] SelectedVersionPackageList { get; set; }
 
         [CreateProperty] public PackageDefinition[] SelectedVersionPackageListFiltered => SelectedVersionPackageList.Where(x => x.Visibility == EPackageVisibility.Visible).ToArray();
-        [CreateProperty] public List<string> AvailableVersions { get; set; }
+
+        [CreateProperty]
+        public List<string> AvailableVersions => AllVersionsPackageRegistry
+                .Where(x => ShowPrereleases || x.ReflectisVersion != "develop")
+                .Select(x => x.ReflectisVersion)
+                .ToList();
 
         public List<string[]> SelectedVersionDependenciesFullOrdered => SelectedVersionPackageList.Select(x => SelectedVersionDependenciesFull[x.Name]).ToList();
 
