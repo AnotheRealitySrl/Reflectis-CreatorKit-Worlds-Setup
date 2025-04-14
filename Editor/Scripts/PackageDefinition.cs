@@ -4,7 +4,7 @@ using Unity.Properties;
 
 using UnityEngine;
 
-namespace Reflectis.CreatorKit.Worlds.Installer.Editor
+namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 {
     public enum EPackageVisibility
     {

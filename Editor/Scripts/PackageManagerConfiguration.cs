@@ -6,10 +6,10 @@ using Unity.Properties;
 
 using UnityEngine;
 
-namespace Reflectis.CreatorKit.Worlds.Installer.Editor
+namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 {
 
-    [CreateAssetMenu(fileName = "CreatorKitConfigurationWindowDataSource", menuName = "Reflectis/Creator-Kit-Installer/CreatorKitConfigurationWindowDataSource")]
+    [CreateAssetMenu(fileName = "CreatorKitConfigurationWindowDataSource", menuName = "Reflectis/Creator-Kit-Setup/CreatorKitConfigurationWindowDataSource")]
     public class PackageManagerConfiguration : ScriptableObject
     {
         // TODO: needed here?

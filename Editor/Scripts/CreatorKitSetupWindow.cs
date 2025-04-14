@@ -24,7 +24,7 @@ using UnityEngine.Events;
 using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 
-namespace Reflectis.CreatorKit.Worlds.Installer.Editor
+namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 {
     public class CreatorKitConfigurationWindow : EditorWindow
     {
@@ -69,7 +69,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
         private const string settings_folder_path = "Assets/CreatorKit/Editor/Settings";
         private const string installer_configuration_file = "CreatorKitConfigurationWindowDataSource.asset";
 
-        #region editor window setup
+        #region Editor window setup
 
         private static bool isSetupping = false;
         private static bool setupCompleted = false;
@@ -99,11 +99,11 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         #endregion
 
-        [MenuItem("Reflectis/Creator Kit configuration window")]
+        [MenuItem("Reflectis Worlds/Creator Kit/Setup/Setup project")]
         public static void ShowWindow()
         {
             CreatorKitConfigurationWindow wnd = GetWindow<CreatorKitConfigurationWindow>();
-            wnd.titleContent = new GUIContent("Creator Kit configuration window");
+            wnd.titleContent = new GUIContent("Setup project");
         }
 
         public void CreateGUI()
@@ -249,7 +249,7 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                     dataSourcePath = PropertyPath.FromName(entry.Item2),
                     bindingMode = BindingMode.ToTarget
                 };
-                warningIconVisibilityBinding.sourceToUiConverters.AddConverter((ref bool value) => true);
+                warningIconVisibilityBinding.sourceToUiConverters.AddConverter((ref bool value) => false);
                 warningIcon.SetBinding(nameof(warningIcon.visible), warningIconVisibilityBinding);
             }
 

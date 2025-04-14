@@ -1,6 +1,6 @@
 {
-    "name": "Reflectis.CreatorKit.Worlds.Installer.Editor",
-    "rootNamespace": "Reflectis.CreatorKit.Worlds.Installer.Editor",
+    "name": "Reflectis.CreatorKit.Worlds.Setup.Editor",
+    "rootNamespace": "Reflectis.CreatorKit.Worlds.Setup.Editor",
     "references": [],
     "includePlatforms": [
         "Editor"

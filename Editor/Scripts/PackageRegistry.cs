@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
-namespace Reflectis.CreatorKit.Worlds.Installer.Editor
+namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 {
     [Serializable]
     [Newtonsoft.Json.JsonObject(Newtonsoft.Json.MemberSerialization.Fields)]

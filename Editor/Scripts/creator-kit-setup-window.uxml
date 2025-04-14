@@ -1,7 +1,7 @@
 <engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <Style src="project://database/Packages/com.anotherealitysrl.reflectis-creatorkit-worlds-installer/Editor/Scripts/styles.uss?fileID=7433441132597879392&amp;guid=ca7a0c867793b12469d64e21b6c3abe7&amp;type=3#styles" />
+    <Style src="project://database/Packages/com.anotherealitysrl.reflectis-creatorkit-worlds-setup/Editor/Scripts/styles.uss?fileID=7433441132597879392&amp;guid=ca7a0c867793b12469d64e21b6c3abe7&amp;type=3#styles" />
     <engine:ScrollView name="ScrollView">
-        <engine:Label text="Creator Kit Configuration Window" name="Header" style="-unity-text-align: upper-center; -unity-font-style: bold; font-size: 24px;" />
+        <engine:Label text="Creator Kit setup window" name="Header" style="-unity-text-align: upper-center; -unity-font-style: bold; font-size: 24px;" />
         <engine:VisualElement name="separator" class="separator" style="flex-grow: 1;" />
         <engine:GroupBox name="project-settings">
             <engine:Label text="Project settings" name="Header" class="h1" style="-unity-font-style: bold;" />
@@ -66,10 +66,10 @@
                 <engine:GroupBox style="flex-direction: row; align-items: center;">
                     <engine:Label text="Last refresh:" name="last-refresh-text" style="-unity-text-align: middle-left; -unity-font-style: italic;" />
                     <engine:Label text="&lt;DateTime&gt;" name="last-refresh-date-time" style="-unity-text-align: middle-left; -unity-font-style: italic;" />
-                    <engine:Button name="refresh-packages-button" icon-image="project://database/Packages/com.unity.collab-proxy/Editor/Assets/Images/refresh.png?fileID=2800000&amp;guid=6f6a4c6bd7cdc654d9d91f7de72afcb6&amp;type=3#refresh" style="padding-top: 2px; padding-right: 2px; padding-bottom: 2px; padding-left: 2px; width: 25px; height: 25px;" />
+                    <engine:Button name="refresh-packages-button" style="padding-top: 2px; padding-right: 2px; padding-bottom: 2px; padding-left: 2px; width: 25px; height: 25px; background-color: rgba(188, 188, 188, 0.2); background-image: url(&quot;project://database/Packages/com.unity.collab-proxy/Editor/Assets/Images/d_refresh@2x.png?fileID=2800000&amp;guid=602b72d4617c3694aa94419fc1b68e04&amp;type=3#d_refresh@2x&quot;); background-size: 75% 75%;" />
                 </engine:GroupBox>
             </engine:GroupBox>
-            <engine:GroupBox name="Body" style="background-color: rgba(0, 0, 0, 0.1); border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px; border-top-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px; border-bottom-left-radius: 5px; justify-content: flex-start;">
+            <engine:GroupBox name="Body" style="background-color: rgba(0, 0, 0, 0.1); border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px; border-top-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px; border-bottom-left-radius: 5px; justify-content: flex-start; margin-bottom: 6px;">
                 <engine:GroupBox name="FirstLine" style="flex-direction: row; justify-content: space-between; align-items: stretch; align-self: stretch;">
                     <engine:GroupBox name="current-reflectis-version" style="flex-direction: row;">
                         <engine:Label text="Current Reflectis version:" name="current-reflectis-version-text" />
