@@ -229,11 +229,11 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                 projectSettingsItemIcon.SetBinding(nameof(projectSettingsItemIcon.visible), styleBinding);
             }
 
-            List<(string, string)> warningIcons = new()
+            List<(string, string, Foldout)> warningIcons = new()
             {
-                { ("git-installation-warning", nameof(projectConfig.IsGitInstalled)) },
-                { ("editor-configuration-warning", nameof(projectConfig.EditorConfigurationOk)) },
-                { ("project-settings-warning", nameof(projectConfig.ProjectSettingsOk)) }
+                { ("git-installation-warning", nameof(projectConfig.IsGitInstalled), projectSettingsSection.Q<Foldout>("git-installation-foldout")) },
+                { ("editor-configuration-warning", nameof(projectConfig.EditorConfigurationOk), projectSettingsSection.Q<Foldout>("editor-configuration-foldout")) },
+                { ("project-settings-warning", nameof(projectConfig.ProjectSettingsOk), projectSettingsSection.Q<Foldout>("project-settings-foldout")) }
             };
             foreach (var entry in warningIcons)
             {
@@ -243,10 +243,9 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                     dataSourcePath = PropertyPath.FromName(entry.Item2),
                     bindingMode = BindingMode.ToTarget
                 };
-                warningIconVisibilityBinding.sourceToUiConverters.AddConverter((ref bool value) => false);
+                warningIconVisibilityBinding.sourceToUiConverters.AddConverter((ref bool value) => !value && !entry.Item3.value);
                 warningIcon.SetBinding(nameof(warningIcon.visible), warningIconVisibilityBinding);
             }
-
 
             Label gitVersionLabel = projectSettingsSection.Q<Label>("git-version-label");
             DataBinding gitVersionLabelBinding = new() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.IsGitInstalled)), bindingMode = BindingMode.ToTarget };
