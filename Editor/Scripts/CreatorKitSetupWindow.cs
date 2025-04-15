@@ -412,7 +412,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                 installPackageButton.SetBinding(nameof(installPackageButton.text), installPackageButtonBinding);
 
                 DataBinding installPackageButtonVisibilityBinding = new() { bindingMode = BindingMode.ToTarget };
-                installPackageButtonVisibilityBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) => !(!string.IsNullOrEmpty(package.Version) || IsPackageInstalledAsDependency(package) || packageManagerConfig.DisplayedAndInstalledVersionsAreDifferent));
+                installPackageButtonVisibilityBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) => !(string.IsNullOrEmpty(package.Version) || IsPackageInstalledAsDependency(package) || packageManagerConfig.DisplayedAndInstalledVersionsAreDifferent));
                 installPackageButton.SetBinding(nameof(installPackageButton.enabledSelf), installPackageButtonVisibilityBinding);
 
                 PackageDefinition package = packageManagerConfig.SelectedVersionPackageListFiltered[i];
