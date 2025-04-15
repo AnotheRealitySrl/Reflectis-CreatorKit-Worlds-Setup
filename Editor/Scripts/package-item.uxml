@@ -8,7 +8,7 @@
                     <engine:GroupBox name="package-dependencies" style="padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; margin-top: 0; margin-right: 2px; margin-bottom: 0; margin-left: 2px; flex-direction: column;" />
                 </engine:Foldout>
             </engine:Foldout>
-            <engine:GroupBox style="flex-direction: column; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; max-height: 30px;">
+            <engine:GroupBox tooltip="If the button is not clickable, then the package is installed as a dependency of another package. If the button reads “Embedded,” it means that the package has been imported as a submodule and therefore you cannot perform operations on it through this window." style="flex-direction: column; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; max-height: 30px;">
                 <engine:Button text="Install" name="install-package-button" />
             </engine:GroupBox>
         </engine:GroupBox>
