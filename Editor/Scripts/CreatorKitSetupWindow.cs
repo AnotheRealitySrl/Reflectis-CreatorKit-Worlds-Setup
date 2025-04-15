@@ -173,11 +173,11 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             UpdateAvailableVersions();
 
             //Get reflectis version and update list of packages
-            if (string.IsNullOrEmpty(packageManagerConfig.CurrentInstallationVersion))
+            if (string.IsNullOrEmpty(packageManagerConfig.CurrentInstallationVersion) || !packageManagerConfig.AvailableVersions.Contains(packageManagerConfig.CurrentInstallationVersion))
             {
                 packageManagerConfig.CurrentInstallationVersion = packageManagerConfig.AvailableVersions[^1];
             }
-            if (string.IsNullOrEmpty(packageManagerConfig.DisplayedReflectisVersion))
+            if (string.IsNullOrEmpty(packageManagerConfig.DisplayedReflectisVersion) || !packageManagerConfig.AvailableVersions.Contains(packageManagerConfig.DisplayedReflectisVersion))
             {
                 packageManagerConfig.DisplayedReflectisVersion = !string.IsNullOrEmpty(packageManagerConfig.CurrentInstallationVersion) ? packageManagerConfig.CurrentInstallationVersion : packageManagerConfig.AvailableVersions[^1];
             }
