@@ -408,7 +408,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                 Button installPackageButton = packagesListScroll[i].Q<Button>("install-package-button");
 
                 DataBinding installPackageButtonBinding = new() { bindingMode = BindingMode.ToTarget };
-                installPackageButtonBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) => string.IsNullOrEmpty(package.Version) ? (packageManagerConfig.InstalledPackages.Select(x => x.Name).Contains(package.Name) ? "Uninstall" : "Install") : "Embedded");
+                installPackageButtonBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) => !string.IsNullOrEmpty(package.Version) ? (packageManagerConfig.InstalledPackages.Select(x => x.Name).Contains(package.Name) ? "Uninstall" : "Install") : "Embedded");
                 installPackageButton.SetBinding(nameof(installPackageButton.text), installPackageButtonBinding);
 
                 DataBinding installPackageButtonVisibilityBinding = new() { bindingMode = BindingMode.ToTarget };
