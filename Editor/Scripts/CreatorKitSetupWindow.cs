@@ -70,6 +70,9 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
         private const string settings_folder_path = "Assets/CreatorKit/Editor/Settings";
         private const string setup_configuration_path = "CreatorKitSetupConfiguration.asset";
 
+        private const string package_prefix = "com.anotherealitysrl.reflectis";
+        private readonly List<string> packages_to_exclude = new() { "com.anotherealitysrl.reflectis-creatorkit-worlds-setup" };
+
         #region Editor window setup
 
         private static bool isSetupping = false;
@@ -191,6 +194,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             CheckEditorModulesInstallation();
             CheckProjectSettings();
 
+            GetInstalledPackages(true);
             SaveAsset(packageManagerConfig);
 
             setupCompleted = true;
@@ -404,11 +408,11 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                 Button installPackageButton = packagesListScroll[i].Q<Button>("install-package-button");
 
                 DataBinding installPackageButtonBinding = new() { bindingMode = BindingMode.ToTarget };
-                installPackageButtonBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) => packageManagerConfig.InstalledPackages.Select(x => x.Name).Contains(package.Name) ? "Uninstall" : "Install");
+                installPackageButtonBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) => string.IsNullOrEmpty(package.Version) ? (packageManagerConfig.InstalledPackages.Select(x => x.Name).Contains(package.Name) ? "Uninstall" : "Install") : "Embedded");
                 installPackageButton.SetBinding(nameof(installPackageButton.text), installPackageButtonBinding);
 
                 DataBinding installPackageButtonVisibilityBinding = new() { bindingMode = BindingMode.ToTarget };
-                installPackageButtonVisibilityBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) => !IsPackageInstalledAsDependency(package) && !packageManagerConfig.DisplayedAndInstalledVersionsAreDifferent);
+                installPackageButtonVisibilityBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) => !(!string.IsNullOrEmpty(package.Version) || IsPackageInstalledAsDependency(package) || packageManagerConfig.DisplayedAndInstalledVersionsAreDifferent));
                 installPackageButton.SetBinding(nameof(installPackageButton.enabledSelf), installPackageButtonVisibilityBinding);
 
                 PackageDefinition package = packageManagerConfig.SelectedVersionPackageListFiltered[i];
@@ -594,12 +598,81 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             JObject manifestObj = JObject.Parse(manifestJson);
 
             JObject dependencies = (JObject)manifestObj["dependencies"];
+
             foreach (string pName in toRemove)
             {
                 dependencies.Remove(pName);
             }
 
             File.WriteAllText(manifestFilePath, manifestObj.ToString());
+        }
+
+        private void GetInstalledPackages(bool includeLocalPackages = false)
+        {
+            List<PackageDefinition> installedPackages = new();
+
+            JObject dependencies = ReadPackagesFromFile("../Packages/manifest.json");
+
+            foreach (var dependency in dependencies)
+            {
+                string packageName = dependency.Key;
+                string packageVersion = dependency.Value.ToString();
+
+                if (packageName.StartsWith(package_prefix) && !packages_to_exclude.Contains(packageName))
+                {
+                    PackageDefinition package = new()
+                    {
+                        Name = packageName,
+                        Version = packageVersion,
+                    };
+                    installedPackages.Add(package);
+                }
+            }
+
+            if (includeLocalPackages)
+            {
+                JObject packagesLockDependencies = ReadPackagesFromFile("../Packages/packages-lock.json");
+
+                foreach (var dependency in packagesLockDependencies)
+                {
+                    string packageName = dependency.Key;
+
+                    if (packageName.StartsWith(package_prefix) && !packages_to_exclude.Contains(packageName))
+                    {
+                        PackageDefinition package = new()
+                        {
+                            Name = packageName,
+                        };
+                        installedPackages.Add(package);
+                    }
+                }
+            }
+
+            foreach (var package in installedPackages)
+            {
+                if (!packageManagerConfig.InstalledPackages.Contains(package))
+                {
+                    packageManagerConfig.InstalledPackages.Add(package);
+                }
+
+                if (packageManagerConfig.SelectedVersionPackageDictionary.TryGetValue(package.Name, out PackageDefinition packageInfo))
+                {
+                    package.DisplayName = packageInfo.DisplayName;
+                    package.Description = packageInfo.Description;
+                    package.Url = packageInfo.Url;
+                    package.Visibility = packageInfo.Visibility;
+                }
+            }
+        }
+
+        private JObject ReadPackagesFromFile(string path)
+        {
+            string filePath = Path.Combine(Application.dataPath, path);
+            string packagesJson = File.ReadAllText(filePath);
+            JObject packagesObj = JObject.Parse(packagesJson);
+
+            JObject packagesDependencies = (JObject)packagesObj["dependencies"];
+            return packagesDependencies;
         }
 
         private bool IsPackageInstalledAsDependency(PackageDefinition package)

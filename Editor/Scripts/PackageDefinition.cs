@@ -23,17 +23,21 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
         [SerializeField] private string url;
         [SerializeField] private EPackageVisibility visibility;
 
-        public string Name => name;
-        [CreateProperty] public string DisplayName => displayName;
-        [CreateProperty] public string Description => description;
-        [CreateProperty] public string Version => version;
-        [CreateProperty] public string Url => url;
-        public EPackageVisibility Visibility => visibility;
+        public string Name { get => name; set => name = value; }
+        [CreateProperty] public string DisplayName { get => displayName; set => displayName = value; }
+        [CreateProperty] public string Description { get => description; set => description = value; }
+        [CreateProperty] public string Version { get => version; set => name = value; }
+        [CreateProperty] public string Url { get => url; set => url = value; }
+        public EPackageVisibility Visibility { get => visibility; set => visibility = value; }
 
         public bool Equals(PackageDefinition other)
         {
             if (other == null) return false;
-            return name == other.name && version == other.version;
+
+            bool namesEqual = string.IsNullOrEmpty(name) ? string.IsNullOrEmpty(other.name) : name.Equals(other.name, StringComparison.Ordinal);
+            bool versionsEqual = string.IsNullOrEmpty(version) ? string.IsNullOrEmpty(other.version) : version.Equals(other.version, StringComparison.Ordinal);
+
+            return namesEqual && versionsEqual;
         }
 
         public override bool Equals(object obj)
