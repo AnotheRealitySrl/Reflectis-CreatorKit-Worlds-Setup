@@ -41,6 +41,8 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
         [SerializeField] private List<PackageDefinition> installedPackages = new();
         [CreateProperty] public List<PackageDefinition> InstalledPackages { get => installedPackages; set => installedPackages = value; }
 
+        public Dictionary<string, PackageDefinition> InstalledPackagesDictionary => InstalledPackages.ToDictionary(x => x.Name);
+
 
         [SerializeField] private string currentInstallationVersion;
         [CreateProperty] public string CurrentInstallationVersion { get => currentInstallationVersion; set => currentInstallationVersion = value; }

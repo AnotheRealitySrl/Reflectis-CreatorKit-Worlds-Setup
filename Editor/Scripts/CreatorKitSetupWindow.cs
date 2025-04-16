@@ -56,7 +56,6 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
         [SerializeField] private VisualTreeAsset m_VisualTreeAsset = default;
         [SerializeField] private VisualTreeAsset packageItemAsset = default;
         [SerializeField] private VisualTreeAsset packageDependencyAsset = default;
-        [SerializeField] private VisualTreeAsset dialogAsset = default;
 
         [SerializeField] private RenderPipelineGlobalSettings renderPipelineGlobalSettings;
         [SerializeField] private RenderPipelineAsset renderPipelineAsset;
@@ -408,11 +407,21 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                 Button installPackageButton = packagesListScroll[i].Q<Button>("install-package-button");
 
                 DataBinding installPackageButtonBinding = new() { bindingMode = BindingMode.ToTarget };
-                installPackageButtonBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) => !string.IsNullOrEmpty(package.Version) ? (packageManagerConfig.InstalledPackages.Select(x => x.Name).Contains(package.Name) ? "Uninstall" : "Install") : "Embedded");
+                installPackageButtonBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) =>
+                {
+                    string name = package.Name;
+                    PackageDefinition installedPackage = packageManagerConfig.InstalledPackages.FirstOrDefault(x => x.Name == name);
+                    return installedPackage != null ? (!string.IsNullOrEmpty(installedPackage.Version) ? "Uninstall" : "Embedded") : "Install";
+                });
                 installPackageButton.SetBinding(nameof(installPackageButton.text), installPackageButtonBinding);
 
                 DataBinding installPackageButtonVisibilityBinding = new() { bindingMode = BindingMode.ToTarget };
-                installPackageButtonVisibilityBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) => !(string.IsNullOrEmpty(package.Version) || IsPackageInstalledAsDependency(package) || packageManagerConfig.DisplayedAndInstalledVersionsAreDifferent));
+                installPackageButtonVisibilityBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) =>
+                {
+                    string name = package.Name;
+                    PackageDefinition installedPackage = packageManagerConfig.InstalledPackages.FirstOrDefault(x => x.Name == name);
+                    return !((installedPackage != null && string.IsNullOrEmpty(installedPackage.Version)) || IsPackageInstalledAsDependency(package) || packageManagerConfig.DisplayedAndInstalledVersionsAreDifferent);
+                });
                 installPackageButton.SetBinding(nameof(installPackageButton.enabledSelf), installPackageButtonVisibilityBinding);
 
                 PackageDefinition package = packageManagerConfig.SelectedVersionPackageListFiltered[i];
@@ -786,7 +795,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
         private void ShowAlertDialog(string title, string message, UnityAction callback)
         {
-            var dialog = dialogAsset.CloneTree();
+            var dialog = root.Q<VisualElement>("popup-dialog-container");
 
             var titleLabel = dialog.Q<Label>("dialog-title");
             titleLabel.text = title;
@@ -802,14 +811,9 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             };
 
             var backButton = dialog.Q<Button>("dialog-back-button");
-            backButton.clicked += () => root.Remove(dialog);
+            backButton.clicked += () => dialog.style.display = DisplayStyle.None;
 
-            //// Set dialog position to absolute and center it
-            dialog.style.position = Position.Absolute;
-            //dialog.style.left = Length.Percent(50);
-            //dialog.style.top = Length.Percent(50);
-
-            root.Add(dialog);
+            dialog.style.display = DisplayStyle.Flex;
         }
 
         private void EnsureFolderExists(string folderPath)
