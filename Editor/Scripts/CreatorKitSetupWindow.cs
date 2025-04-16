@@ -16,6 +16,7 @@ using Unity.Properties;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.PackageManager;
+using UnityEditor.PackageManager.Requests;
 
 using UnityEditorInternal;
 
@@ -193,7 +194,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             CheckEditorModulesInstallation();
             CheckProjectSettings();
 
-            GetInstalledPackages(true);
+            GetInstalledPackages();
             SaveAsset(packageManagerConfig);
 
             setupCompleted = true;
@@ -407,11 +408,12 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                 Button installPackageButton = packagesListScroll[i].Q<Button>("install-package-button");
 
                 DataBinding installPackageButtonBinding = new() { bindingMode = BindingMode.ToTarget };
+
                 installPackageButtonBinding.sourceToUiConverters.AddConverter((ref PackageDefinition package) =>
                 {
                     string name = package.Name;
                     PackageDefinition installedPackage = packageManagerConfig.InstalledPackages.FirstOrDefault(x => x.Name == name);
-                    return installedPackage != null ? (!string.IsNullOrEmpty(installedPackage.Version) ? "Uninstall" : "Embedded") : "Install";
+                    return installedPackage != null ? (package.InstallationSource == EInstallationSource.Submodule ? "Embedded" : "Uninstall") : "Install";
                 });
                 installPackageButton.SetBinding(nameof(installPackageButton.text), installPackageButtonBinding);
 
@@ -420,7 +422,8 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                 {
                     string name = package.Name;
                     PackageDefinition installedPackage = packageManagerConfig.InstalledPackages.FirstOrDefault(x => x.Name == name);
-                    return !((installedPackage != null && string.IsNullOrEmpty(installedPackage.Version)) || IsPackageInstalledAsDependency(package) || packageManagerConfig.DisplayedAndInstalledVersionsAreDifferent);
+                    return !((installedPackage != null && installedPackage.InstallationSource == EInstallationSource.Submodule)
+                            || IsPackageInstalledAsDependency(package) || packageManagerConfig.DisplayedAndInstalledVersionsAreDifferent);
                 });
                 installPackageButton.SetBinding(nameof(installPackageButton.enabledSelf), installPackageButtonVisibilityBinding);
 
@@ -616,45 +619,25 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             File.WriteAllText(manifestFilePath, manifestObj.ToString());
         }
 
-        private void GetInstalledPackages(bool includeLocalPackages = false)
+        private async void GetInstalledPackages()
         {
+            ListRequest listRequest = Client.List();
+            while (!listRequest.IsCompleted)
+                await Task.Yield();
+
             List<PackageDefinition> installedPackages = new();
 
-            JObject dependencies = ReadPackagesFromFile("../Packages/manifest.json");
-
-            foreach (var dependency in dependencies)
+            foreach (var package in listRequest.Result)
             {
-                string packageName = dependency.Key;
-                string[] valuesTokenized = dependency.Value.ToString().Split('#');
-                string packageVersion = valuesTokenized.Length > 1 ? valuesTokenized[1] : string.Empty;
-
-                if (packageName.StartsWith(package_prefix) && !packages_to_exclude.Contains(packageName))
+                if (package.name.StartsWith(package_prefix) && !packages_to_exclude.Contains(package.name))
                 {
-                    PackageDefinition package = new()
+                    PackageDefinition installedPackage = new()
                     {
-                        Name = packageName,
-                        Version = packageVersion,
+                        Name = package.name,
+                        Version = package.version,
+                        InstallationSource = package.source == PackageSource.Git ? EInstallationSource.Git : EInstallationSource.Submodule
                     };
-                    installedPackages.Add(package);
-                }
-            }
-
-            if (includeLocalPackages)
-            {
-                JObject packagesLockDependencies = ReadPackagesFromFile("../Packages/packages-lock.json");
-
-                foreach (var dependency in packagesLockDependencies)
-                {
-                    string packageName = dependency.Key;
-
-                    if (packageName.StartsWith(package_prefix) && !packages_to_exclude.Contains(packageName))
-                    {
-                        PackageDefinition package = new()
-                        {
-                            Name = packageName,
-                        };
-                        installedPackages.Add(package);
-                    }
+                    installedPackages.Add(installedPackage);
                 }
             }
 

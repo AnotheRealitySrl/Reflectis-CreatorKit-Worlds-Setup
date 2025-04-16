@@ -12,6 +12,12 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
         Hidden
     }
 
+    public enum EInstallationSource
+    {
+        Git,
+        Submodule
+    }
+
     [Serializable]
     [Newtonsoft.Json.JsonObject(Newtonsoft.Json.MemberSerialization.Fields)]
     public class PackageDefinition : IEquatable<PackageDefinition>
@@ -22,6 +28,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
         [SerializeField] private string version;
         [SerializeField] private string url;
         [SerializeField] private EPackageVisibility visibility;
+        [SerializeField] private EInstallationSource installationSource = EInstallationSource.Git;
 
         public string Name { get => name; set => name = value; }
         [CreateProperty] public string DisplayName { get => displayName; set => displayName = value; }
@@ -29,6 +36,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
         [CreateProperty] public string Version { get => version; set => version = value; }
         [CreateProperty] public string Url { get => url; set => url = value; }
         public EPackageVisibility Visibility { get => visibility; set => visibility = value; }
+        public EInstallationSource InstallationSource { get => installationSource; set => installationSource = value; }
 
         public bool Equals(PackageDefinition other)
         {
