@@ -26,7 +26,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
         public string Name { get => name; set => name = value; }
         [CreateProperty] public string DisplayName { get => displayName; set => displayName = value; }
         [CreateProperty] public string Description { get => description; set => description = value; }
-        [CreateProperty] public string Version { get => version; set => name = value; }
+        [CreateProperty] public string Version { get => version; set => version = value; }
         [CreateProperty] public string Url { get => url; set => url = value; }
         public EPackageVisibility Visibility { get => visibility; set => visibility = value; }
 

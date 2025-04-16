@@ -660,17 +660,17 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
             foreach (var package in installedPackages)
             {
-                if (!packageManagerConfig.InstalledPackages.Contains(package))
+                if (!packageManagerConfig.InstalledPackages.Select(x => x.Name).Contains(package.Name))
                 {
                     packageManagerConfig.InstalledPackages.Add(package);
-                }
 
-                if (packageManagerConfig.SelectedVersionPackageDictionary.TryGetValue(package.Name, out PackageDefinition packageInfo))
-                {
-                    package.DisplayName = packageInfo.DisplayName;
-                    package.Description = packageInfo.Description;
-                    package.Url = packageInfo.Url;
-                    package.Visibility = packageInfo.Visibility;
+                    if (packageManagerConfig.SelectedVersionPackageDictionary.TryGetValue(package.Name, out PackageDefinition packageInfo))
+                    {
+                        package.DisplayName = packageInfo.DisplayName;
+                        package.Description = packageInfo.Description;
+                        package.Url = packageInfo.Url;
+                        package.Visibility = packageInfo.Visibility;
+                    }
                 }
             }
         }
