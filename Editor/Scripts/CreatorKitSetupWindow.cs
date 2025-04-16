@@ -625,7 +625,8 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             foreach (var dependency in dependencies)
             {
                 string packageName = dependency.Key;
-                string packageVersion = dependency.Value.ToString();
+                string[] valuesTokenized = dependency.Value.ToString().Split('#');
+                string packageVersion = valuesTokenized.Length > 1 ? valuesTokenized[1] : string.Empty;
 
                 if (packageName.StartsWith(package_prefix) && !packages_to_exclude.Contains(packageName))
                 {
@@ -806,7 +807,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             var confirmButton = dialog.Q<Button>("dialog-confirm-button");
             confirmButton.clicked += () =>
             {
-                root.Remove(dialog);
+                dialog.style.display = DisplayStyle.None;
                 callback?.Invoke();
             };
 
