@@ -1,6 +1,12 @@
+#if REFLECTIS_CREATOR_KIT_WORLDS_PLACEHOLDERS
 using Reflectis.CreatorKit.Worlds.Placeholders;
+#endif
+#if REFLECTIS_CREATOR_KIT_WORLDS_TASKS
 using Reflectis.CreatorKit.Worlds.Tasks;
+#endif
+#if REFLECTIS_CREATOR_KIT_WORLDS_VISUAL_SCRIPTING
 using Reflectis.CreatorKit.Worlds.VisualScripting;
+#endif
 using Reflectis.SDK.Core.Utilities;
 using UnityEditor;
 
