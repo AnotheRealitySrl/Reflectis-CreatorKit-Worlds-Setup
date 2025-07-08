@@ -32,7 +32,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             foreach (string prefabPathGuid in prefabPaths)
             {
                 string prefabPath = AssetDatabase.GUIDToAssetPath(prefabPathGuid);
-                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+                GameObject prefab = PrefabUtility.LoadPrefabContents(prefabPath);
+
                 if (ReplaceComponentsInPrefab(prefab))
                 {
                     PrefabUtility.SaveAsPrefabAsset(prefab, prefabPath);
@@ -165,6 +166,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             bool modified = false;
             foreach (GameObject gameObject in gameObjects)
             {
+                RemoveMissingScripts(gameObject);
+
                 var isModified = ReplaceComponentRecursive(gameObject);
                 modified = modified || isModified;
             }
@@ -173,6 +176,8 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private static bool ReplaceComponentsInPrefab(GameObject prefab)
         {
+            RemoveMissingScripts(prefab);
+
             var replaced = ReplaceComponentRecursive(prefab);
 
             return replaced;
@@ -311,5 +316,33 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             return modified;
         }
 
+        /// <summary>
+        /// Removes all "Missing Script" components from a GameObject and its children.
+        /// This method must be called from an Editor context (e.g., a custom Editor window or menu item).
+        /// </summary>
+        /// <param name="targetGameObject">The GameObject to clean.</param>
+
+        public static void RemoveMissingScripts(GameObject targetGameObject)
+        {
+            if (targetGameObject == null)
+            {
+                Debug.LogWarning("Target GameObject is null. Cannot remove missing scripts.");
+                return;
+            }
+
+            foreach (var component in targetGameObject.GetComponentsInChildren<Transform>(true))
+            {
+                var missingCount = GameObjectUtility.RemoveMonoBehavioursWithMissingScript(component.gameObject);
+
+                if (missingCount > 0)
+                {
+                    Debug.Log($"Removed {missingCount} missing scripts from {component.name} in {targetGameObject.name}", component);
+                }
+            }
+
+        }
+
     }
+
 }
+
