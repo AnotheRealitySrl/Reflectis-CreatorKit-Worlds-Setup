@@ -186,18 +186,35 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private static bool ReplaceComponentRecursive(GameObject gameObject)
         {
-            if (gameObject.IsPrefabInstance())
-            {
-                return false; // Do not modify prefab instances directly
-            }
+
             InteractablePlaceholderObsolete[] interactables = gameObject.GetComponents<InteractablePlaceholderObsolete>();
             bool modified = false;
             foreach (var interactable in interactables)
             {
                 if (interactable != null)
                 {
-                    ReplaceInteractablePlaceholder(interactable);
+                    //If it is part of a prefab we first modify the sorce prefab and then replace the overrides in the instance.
+                    if (PrefabUtility.IsPartOfPrefabInstance(interactable.gameObject))
+                    {
+                        Debug.LogError("Found prefab instance with obsolete component in " + interactable.gameObject.name + " in scene " + interactable.gameObject.scene.name, interactable.gameObject);
+                        GameObject sourcePrefabAsset = PrefabUtility.GetCorrespondingObjectFromSource(gameObject);
+                        if (sourcePrefabAsset != null)
+                        {
+                            string sourcePrefabPath = AssetDatabase.GetAssetPath(sourcePrefabAsset);
+                            GameObject loadedSourcePrefab = PrefabUtility.LoadPrefabContents(sourcePrefabPath);
+                            Debug.LogError("Loading prefab " + sourcePrefabPath + " in scene " + loadedSourcePrefab.gameObject.scene.name, loadedSourcePrefab);
+                            // Recursively process the loaded source prefab to ensure its components are replaced
+                            bool sourceModified = ReplaceComponentRecursive(loadedSourcePrefab);
+                            if (sourceModified)
+                            {
+                                PrefabUtility.SaveAsPrefabAsset(loadedSourcePrefab, sourcePrefabPath);
+                                modified = true;
+                            }
+                            PrefabUtility.UnloadPrefabContents(loadedSourcePrefab);
+                        }
+                    }
                 }
+                ReplaceInteractablePlaceholder(interactable);
                 modified = true;
             }
             foreach (Transform child in gameObject.transform)
@@ -207,7 +224,6 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             }
             return modified;
         }
-
         private static void ReplaceInteractablePlaceholder(InteractablePlaceholderObsolete interactable)
         {
             Debug.Log($"Replacing component in {interactable.gameObject.name} in scene {interactable.gameObject.scene.name}", interactable.gameObject);
