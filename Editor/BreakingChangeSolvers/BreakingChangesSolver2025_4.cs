@@ -103,12 +103,14 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                     if (DestroyOldComponentInScene())
                     {
                         UnityEditor.SceneManagement.EditorSceneManager.SaveScene(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+                        Debug.LogWarning("Removed old components in scene: " + scenePath);
                     }
                 }
             }
-
-            UnityEditor.SceneManagement.EditorSceneManager.OpenScene(activeScenePath, UnityEditor.SceneManagement.OpenSceneMode.Single);
-
+            if (!string.IsNullOrEmpty(activeScenePath))
+            {
+                UnityEditor.SceneManagement.EditorSceneManager.OpenScene(activeScenePath, UnityEditor.SceneManagement.OpenSceneMode.Single);
+            }
             EditorUtility.DisplayDialog("Success", "Creator kit update completed!", "OK");
         }
 
@@ -196,13 +198,11 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                     //If it is part of a prefab we first modify the sorce prefab and then replace the overrides in the instance.
                     if (PrefabUtility.IsPartOfPrefabInstance(interactable.gameObject))
                     {
-                        Debug.LogError("Found prefab instance with obsolete component in " + interactable.gameObject.name + " in scene " + interactable.gameObject.scene.name, interactable.gameObject);
                         GameObject sourcePrefabAsset = PrefabUtility.GetCorrespondingObjectFromSource(gameObject);
                         if (sourcePrefabAsset != null)
                         {
                             string sourcePrefabPath = AssetDatabase.GetAssetPath(sourcePrefabAsset);
                             GameObject loadedSourcePrefab = PrefabUtility.LoadPrefabContents(sourcePrefabPath);
-                            Debug.LogError("Loading prefab " + sourcePrefabPath + " in scene " + loadedSourcePrefab.gameObject.scene.name, loadedSourcePrefab);
                             // Recursively process the loaded source prefab to ensure its components are replaced
                             bool sourceModified = ReplaceComponentRecursive(loadedSourcePrefab);
                             if (sourceModified)
