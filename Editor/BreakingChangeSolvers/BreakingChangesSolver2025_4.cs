@@ -8,6 +8,7 @@ using Reflectis.CreatorKit.Worlds.Tasks;
 using Reflectis.CreatorKit.Worlds.VisualScripting;
 #endif
 using Reflectis.SDK.Core.Utilities;
+using Unity.VisualScripting;
 using UnityEditor;
 
 using UnityEngine;
@@ -185,6 +186,10 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
 
         private static bool ReplaceComponentRecursive(GameObject gameObject)
         {
+            if (gameObject.IsPrefabInstance())
+            {
+                return false; // Do not modify prefab instances directly
+            }
             InteractablePlaceholderObsolete[] interactables = gameObject.GetComponents<InteractablePlaceholderObsolete>();
             bool modified = false;
             foreach (var interactable in interactables)
