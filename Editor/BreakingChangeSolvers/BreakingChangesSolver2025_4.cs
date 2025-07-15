@@ -39,16 +39,18 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
                 {
                     PrefabUtility.SaveAsPrefabAsset(prefab, prefabPath);
                 }
+                PrefabUtility.UnloadPrefabContents(prefab);
             }
 
             foreach (string prefabPathGuid in prefabPaths)
             {
                 string prefabPath = AssetDatabase.GUIDToAssetPath(prefabPathGuid);
-                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+                GameObject prefab = PrefabUtility.LoadPrefabContents(prefabPath);
                 if (FixDetector(prefab))
                 {
                     PrefabUtility.SaveAsPrefabAsset(prefab, prefabPath);
                 }
+                PrefabUtility.UnloadPrefabContents(prefab);
             }
 
             string[] scenePaths = AssetDatabase.FindAssets("t:Scene");
@@ -85,11 +87,12 @@ namespace Reflectis.CreatorKit.Worlds.Installer.Editor
             foreach (string prefabPathGuid in prefabPaths)
             {
                 string prefabPath = AssetDatabase.GUIDToAssetPath(prefabPathGuid);
-                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+                GameObject prefab = PrefabUtility.LoadPrefabContents(prefabPath);
                 if (DestroyOldComponentInPrefab(prefab))
                 {
                     PrefabUtility.SaveAsPrefabAsset(prefab, prefabPath);
                 }
+                PrefabUtility.UnloadPrefabContents(prefab);
             }
 
             foreach (string scenePathGuid in scenePaths)
