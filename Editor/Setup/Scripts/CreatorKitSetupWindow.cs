@@ -364,21 +364,21 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             ScrollView packagesListScroll = root.Q<ListView>("packages-list-view").Q<ScrollView>();
             packagesListScroll.Clear();
 
-            for (int i = 0; i < packageManagerConfig.SelectedVersionPackageListFiltered.Count(); i++)
+            for (int i = 0; i < packageManagerConfig.SelectedVersionVisiblePackages.Count(); i++)
             {
                 VisualElement packageItem = packageItemAsset.Instantiate();
                 packagesListScroll.Add(packageItem);
                 packagesListScroll[i].dataSourcePath = PropertyPath.FromIndex(i);
 
                 Foldout packageName = packagesListScroll[i].Q<Foldout>("package-item");
-                packageName.text = $"<b>{packageManagerConfig.SelectedVersionPackageListFiltered[i].DisplayName}</b> - {packageManagerConfig.SelectedVersionPackageListFiltered[i].Version}";
+                packageName.text = $"<b>{packageManagerConfig.SelectedVersionVisiblePackages[i].DisplayName}</b> - {packageManagerConfig.SelectedVersionVisiblePackages[i].Version}";
 
                 Label packageDescription = packagesListScroll[i].Q<Label>("package-description");
-                packageDescription.text = packageManagerConfig.SelectedVersionPackageListFiltered[i].Description;
+                packageDescription.text = packageManagerConfig.SelectedVersionVisiblePackages[i].Description;
 
                 Label packageVersion = packagesListScroll[i].Q<Label>("package-url");
-                packageVersion.text = $"<i><a href=\"{packageManagerConfig.SelectedVersionPackageListFiltered[i].Url}\">{packageManagerConfig.SelectedVersionPackageListFiltered[i].Url}</a></i>";
-                packageVersion.RegisterCallback<ClickEvent>(evt => Application.OpenURL(packageManagerConfig.SelectedVersionPackageListFiltered[i].Url));
+                packageVersion.text = $"<i><a href=\"{packageManagerConfig.SelectedVersionVisiblePackages[i].Url}\">{packageManagerConfig.SelectedVersionVisiblePackages[i].Url}</a></i>";
+                packageVersion.RegisterCallback<ClickEvent>(evt => Application.OpenURL(packageManagerConfig.SelectedVersionVisiblePackages[i].Url));
 
 
                 VisualElement dependenciesList = packagesListScroll[i].Q<VisualElement>("package-dependencies");
@@ -426,7 +426,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                 });
                 installPackageButton.SetBinding(nameof(installPackageButton.enabledSelf), installPackageButtonVisibilityBinding);
 
-                PackageDefinition package = packageManagerConfig.SelectedVersionPackageListFiltered[i];
+                PackageDefinition package = packageManagerConfig.SelectedVersionVisiblePackages[i];
                 installPackageButton.clicked += () =>
                 {
                     if (packageManagerConfig.InstalledPackages.Select(x => x.Name).Contains(package.Name))
@@ -543,7 +543,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
         private void InstallPackageWithDependencies(PackageDefinition package)
         {
-            string[] dependenciesToInstall = packageManagerConfig.SelectedVersionDependenciesFull[package.Name];
+            string[] dependenciesToInstall = packageManagerConfig.SelectedVersion.FullDependencies[package.Name];
 
             foreach (var dependency in dependenciesToInstall.Select(x => packageManagerConfig.SelectedVersionPackageDictionary[x]).Append(package))
             {
@@ -586,7 +586,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
             foreach (var hiddenPackage in packageManagerConfig.InstalledPackages.Where(x => x.Visibility == EPackageVisibility.Hidden))
             {
-                if (packageManagerConfig.ReverseDependencies[hiddenPackage.Name].Intersect(packageManagerConfig.InstalledPackages.Select(x => x.Name)).Count() == 0)
+                if (packageManagerConfig.SelectedVersion.ReverseDependencies[hiddenPackage.Name].Intersect(packageManagerConfig.InstalledPackages.Select(x => x.Name)).Count() == 0)
                 {
                     packagesToRemove.Add(packageManagerConfig.SelectedVersionPackageDictionary[hiddenPackage.Name]);
                 }
@@ -671,7 +671,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
         {
             bool isDependency = false;
 
-            if (packageManagerConfig.ReverseDependencies.TryGetValue(package.Name, out List<string> deps))
+            if (packageManagerConfig.CurrentVersion.ReverseDependencies.TryGetValue(package.Name, out List<string> deps))
             {
                 foreach (string dep in deps)
                 {
@@ -695,29 +695,67 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             if (packageManagerConfig.CurrentInstallationVersion != packageManagerConfig.DisplayedReflectisVersion)
             {
                 previousInstallationVersion = packageManagerConfig.CurrentInstallationVersion;
-                packageManagerConfig.CurrentInstallationVersion = packageManagerConfig.DisplayedReflectisVersion;
 
                 Dictionary<string, PackageDefinition> packages = packageManagerConfig.AllVersionsPackageRegistry
                     .FirstOrDefault(x => x.ReflectisVersion == packageManagerConfig.CurrentInstallationVersion).Packages
                     .ToDictionary(x => x.Name, y => y);
 
                 List<PackageDefinition> installedPackagesCopy = new(packageManagerConfig.InstalledPackages);
+
+                IEnumerable<PackageDefinition> newPackages = packageManagerConfig.SelectedVersionPackageDictionary.Values.Where(x => !installedPackagesCopy.Exists(y => y.Name == x.Name));
+                //add new packages
+                foreach (PackageDefinition package in newPackages)
+                {
+                    //if (package.InstallationSource == EInstallationSource.Submodule)
+                    //{
+                    //    UnityEngine.Debug.LogWarning($"Skipping submodule package {package.Name}. Align the submodule to the correct commit.");
+                    //    continue;
+                    //}
+                    packageManagerConfig.InstalledPackages.Add(packageManagerConfig.SelectedVersionPackageDictionary[package.Name]);
+                    InstallPackages(new() { packageManagerConfig.SelectedVersionPackageDictionary[package.Name] });
+                }
+
                 foreach (PackageDefinition package in installedPackagesCopy)
                 {
-                    if (package.Version != packageManagerConfig.SelectedVersionPackageDictionary[package.Name].Version)
+                    //if (package.InstallationSource == EInstallationSource.Submodule)
+                    //{
+                    //    UnityEngine.Debug.LogWarning($"Skipping submodule package {package.Name}. Align the submodule to the correct commit.");
+                    //    continue;
+                    //}
+                    //overlapping packages
+                    if (packageManagerConfig.SelectedVersionPackageDictionary.ContainsKey(package.Name))
                     {
+                        if (package.Version != packageManagerConfig.SelectedVersionPackageDictionary[package.Name].Version)
+                        {
+                            packageManagerConfig.InstalledPackages.Remove(package);
+                            UninstallPackages(new() { package.Name });
+
+                            packageManagerConfig.InstalledPackages.Add(packageManagerConfig.SelectedVersionPackageDictionary[package.Name]);
+                            InstallPackages(new() { packageManagerConfig.SelectedVersionPackageDictionary[package.Name] });
+                            //UnityEngine.Debug.Log($"Updated package {package.Name} from version {package.Version} to version {packageManagerConfig.SelectedVersionPackageDictionary[package.Name].Version}");
+                        }
+                    }
+                    else
+                    {
+                        //old packages
+                        if (!IsPackageInstalledAsDependency(package))
+                        {
+                            ShowAlertDialog("Warning", $"The package \n{package.Name}\n is not available in the selected Reflectis version\n and has been uninstalled.", null);
+                        }
+
                         packageManagerConfig.InstalledPackages.Remove(package);
                         UninstallPackages(new() { package.Name });
-
-                        packageManagerConfig.InstalledPackages.Add(packageManagerConfig.SelectedVersionPackageDictionary[package.Name]);
-                        InstallPackages(new() { packageManagerConfig.SelectedVersionPackageDictionary[package.Name] });
+                        //If the package is not available in the selected version and is not a dependency, show a warning
                     }
                 }
+
 
                 if (packageManagerConfig.ResolveBreakingChangesAutomatically)
                 {
                     ResolveBreakingChanges();
                 }
+                packageManagerConfig.CurrentInstallationVersion = packageManagerConfig.DisplayedReflectisVersion;
+
             }
         }
 
@@ -725,8 +763,8 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
         {
             EnsureFolderExists(utilities_folder_path);
 
-            string prev = FilterPatch(previousInstallationVersion);
-            string cur = FilterPatch(packageManagerConfig.CurrentInstallationVersion);
+            string prev = FilterPatch(packageManagerConfig.CurrentInstallationVersion);
+            string cur = FilterPatch(packageManagerConfig.DisplayedReflectisVersion);
             (string, string) routineKey = (prev, cur);
 
             string routinePath = breakingChangesSolverDictionary[routineKey];
@@ -787,14 +825,37 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             messageLabel.text = message;
 
             var confirmButton = dialog.Q<Button>("dialog-confirm-button");
-            confirmButton.clicked += () =>
+
+            Action onClick = null;
+            onClick = () =>
             {
                 dialog.style.display = DisplayStyle.None;
                 callback?.Invoke();
+                confirmButton.clicked -= onClick;
             };
 
+            confirmButton.clicked += onClick;
+
             var backButton = dialog.Q<Button>("dialog-back-button");
-            backButton.clicked += () => dialog.style.display = DisplayStyle.None;
+
+            Action onBackClick = null;
+            onBackClick = () =>
+            {
+                dialog.style.display = DisplayStyle.None;
+                backButton.clicked -= onBackClick;
+            };
+            backButton.clicked += onBackClick;
+
+            if (callback == null)
+            {
+                backButton.style.display = DisplayStyle.None;
+                confirmButton.text = "OK";
+            }
+            else
+            {
+                backButton.style.display = DisplayStyle.Flex;
+                confirmButton.text = "Continue";
+            }
 
             dialog.style.display = DisplayStyle.Flex;
         }

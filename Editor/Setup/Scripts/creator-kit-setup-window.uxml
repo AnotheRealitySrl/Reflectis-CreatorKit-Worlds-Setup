@@ -1,5 +1,5 @@
 <engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <Style src="project://database/Packages/com.anotherealitysrl.reflectis-creatorkit-worlds-setup/Editor/Scripts/styles.uss?fileID=7433441132597879392&amp;guid=ca7a0c867793b12469d64e21b6c3abe7&amp;type=3#styles" />
+    <Style src="project://database/Packages/com.anotherealitysrl.reflectis-creatorkit-worlds-setup/Editor/Setup/Scripts/styles.uss?fileID=7433441132597879392&amp;guid=ca7a0c867793b12469d64e21b6c3abe7&amp;type=3#styles" />
     <engine:ScrollView name="ScrollView">
         <engine:Label text="Creator Kit setup window" name="Header" style="-unity-text-align: upper-center; -unity-font-style: bold; font-size: 24px;" />
         <engine:VisualElement name="separator" class="separator" style="flex-grow: 1;" />
@@ -77,7 +77,7 @@
                     </engine:GroupBox>
                     <engine:DropdownField label="Select another version" name="reflectis-version-dropdown" choices="Item 1,Item 2" index="0" tooltip="View available packages for another version of Reflectis Worlds. To update all packages currently in the project, click the button below." style="justify-content: space-between; -unity-text-align: middle-left;" />
                 </engine:GroupBox>
-                <engine:ListView name="packages-list-view" data-source-path="SelectedVersionPackageListFiltered" />
+                <engine:ListView name="packages-list-view" data-source-path="SelectedVersionVisiblePackages" />
                 <engine:Button text="Update packages to selected version" name="update-packages-button" tooltip="Updates the version of all packages currently installed in the project. WARNING: Updating packages to an older version of Reflectis Worlds may have undesirable effects, especially if breaking changes are involved." style="align-self: flex-end; margin-right: 8px; margin-top: 8px; margin-bottom: 8px;" />
             </engine:GroupBox>
             <engine:Foldout text="Advanced settings" name="advanced-settings-foldout" value="false" style="align-items: flex-start; justify-content: flex-start;">
