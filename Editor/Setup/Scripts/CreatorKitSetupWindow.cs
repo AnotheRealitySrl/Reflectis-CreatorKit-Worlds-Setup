@@ -690,7 +690,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             return isDependency;
         }
 
-        private void UpdatePackagesToSelectedVersion()
+        private async void UpdatePackagesToSelectedVersion()
         {
             if (packageManagerConfig.CurrentInstallationVersion != packageManagerConfig.DisplayedReflectisVersion)
             {
@@ -755,7 +755,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                     ResolveBreakingChanges();
                 }
                 packageManagerConfig.CurrentInstallationVersion = packageManagerConfig.DisplayedReflectisVersion;
-
+                await LoadData();
             }
         }
 
