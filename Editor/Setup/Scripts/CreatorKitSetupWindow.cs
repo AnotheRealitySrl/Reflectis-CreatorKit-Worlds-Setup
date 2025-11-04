@@ -755,6 +755,8 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                     ResolveBreakingChanges();
                 }
                 packageManagerConfig.CurrentInstallationVersion = packageManagerConfig.DisplayedReflectisVersion;
+
+                Client.Resolve();
                 await LoadData();
             }
         }
