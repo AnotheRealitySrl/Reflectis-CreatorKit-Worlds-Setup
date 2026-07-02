@@ -3,7 +3,7 @@
     <engine:ScrollView name="ScrollView">
         <engine:Label text="Creator Kit setup window" name="Header" style="-unity-text-align: upper-center; -unity-font-style: bold; font-size: 24px;" />
         <engine:VisualElement name="separator" class="separator" style="flex-grow: 1;" />
-        <engine:GroupBox name="project-settings">
+        <engine:GroupBox name="project-settings" style="height: 282px;">
             <engine:Label text="Project settings" name="Header" class="h1" style="-unity-font-style: bold;" />
             <engine:GroupBox name="git-installation" class="settings-group">
                 <engine:GroupBox name="git-installation-content" class="settings-group-content">
@@ -56,6 +56,24 @@
                 </engine:GroupBox>
                 <engine:GroupBox name="configure-project-settings-button-container" class="settings-button-container" style="justify-content: space-between; align-items: auto; margin-top: 0; margin-bottom: 0;">
                     <engine:Button text="Configure" name="configure-project-settings-button" tooltip="Clicking this button will overwrite some project settings. Make sure you have made a backup before proceeding." />
+                </engine:GroupBox>
+            </engine:GroupBox>
+            <engine:GroupBox name="Interpreter-settings" class="settings-group">
+                <engine:GroupBox name="Interpreter-settings-content" class="settings-group-content">
+                    <engine:Foldout text="Interpreter installation" name="Interpreter-settings-foldout" value="false">
+                        <engine:VisualElement name="Interpreter-settings-git" class="settings-item">
+                            <engine:VisualElement name="Interpreter-settings-instance-check" class="settings-item-green-icon" />
+                            <engine:Label text="Interpreter installation instance" name="Label" />
+                        </engine:VisualElement>
+                        <engine:VisualElement name="Interpreter-settings-folder" class="settings-item">
+                            <engine:VisualElement name="Interpreter-settings-folder-check" class="settings-item-green-icon" />
+                            <engine:Label text="Interpreter folder and assembly" name="Label" />
+                        </engine:VisualElement>
+                    </engine:Foldout>
+                    <engine:VisualElement name="Interpreter-settings-warning" class="settings-group-warning" />
+                </engine:GroupBox>
+                <engine:GroupBox name="configure-Interpreter-settings-button-container" class="settings-button-container" style="justify-content: space-between; align-items: auto; margin-top: 0; margin-bottom: 0;">
+                    <engine:Button text="Download" name="configure-Interpreter-settings-button" tooltip="Clicking this button will download the data needed to write custom c#, C# code need to be inside the folder HotUpdate" />
                 </engine:GroupBox>
             </engine:GroupBox>
         </engine:GroupBox>

@@ -33,6 +33,9 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
         public class ProjectConfiguration
         {
             [CreateProperty] public bool IsGitInstalled { get; set; }
+            [CreateProperty] public bool IsHybridCLRInstalled { get; set; }
+            [CreateProperty] public bool HybridCLRAssemblyReady { get; set; }
+            [CreateProperty] public bool InterpreterReady => IsHybridCLRInstalled && HybridCLRAssemblyReady;
             [CreateProperty] public string GitVersion { get; set; }
 
             [CreateProperty] public bool EditorConfigurationOk => UnityVersionIsMatching && AllEditorModulesInstalled;
@@ -72,6 +75,9 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
         private const string package_prefix = "com.anotherealitysrl.reflectis";
         private readonly List<string> packages_to_exclude = new() { "com.anotherealitysrl.reflectis-creatorkit-worlds-setup" };
+
+        private ListRequest _listRequest;
+        private AddRequest _addRequest;
 
         #region Editor window setup
 
@@ -193,6 +199,8 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             CheckGitInstallation();
             CheckEditorModulesInstallation();
             CheckProjectSettings();
+            CheckHybridCLRInstallation();
+            CheckHybridCLRAssembly();
 
             GetInstalledPackages();
             SaveAsset(packageManagerConfig);
@@ -217,6 +225,8 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                 { ("project-settings-urp-check", nameof(projectConfig.RenderPipelineURP)) },
                 { ("project-settings-configuration-check", nameof(projectConfig.PlayerSettings)) },
                 { ("project-settings-max-texture-size-check", nameof(projectConfig.MaxTextureSizeOverride)) },
+                { ("Interpreter-settings-instance-check", nameof(projectConfig.IsHybridCLRInstalled)) },
+                { ("Interpreter-settings-folder-check", nameof(projectConfig.HybridCLRAssemblyReady)) },
             };
             foreach (var entry in settingIcons)
             {
@@ -237,7 +247,8 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             {
                 { ("git-installation-warning", nameof(projectConfig.IsGitInstalled), projectSettingsSection.Q<Foldout>("git-installation-foldout")) },
                 { ("editor-configuration-warning", nameof(projectConfig.EditorConfigurationOk), projectSettingsSection.Q<Foldout>("editor-configuration-foldout")) },
-                { ("project-settings-warning", nameof(projectConfig.ProjectSettingsOk), projectSettingsSection.Q<Foldout>("project-settings-foldout")) }
+                { ("project-settings-warning", nameof(projectConfig.ProjectSettingsOk), projectSettingsSection.Q<Foldout>("project-settings-foldout")) },
+                { ("Interpreter-settings-warning", nameof(projectConfig.IsHybridCLRInstalled), projectSettingsSection.Q<Foldout>("Interpreter-settings-foldout")) }
             };
             foreach (var entry in warningIcons)
             {
@@ -285,6 +296,14 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             DataBinding configureProjectSettingsButtonBinding = new() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.ProjectSettingsOk)) };
             configureProjectSettingsButtonBinding.sourceToUiConverters.AddConverter((ref bool value) => !value);
             configureProjectSettingsButton.SetBinding(nameof(gitDownloadButton.enabledSelf), configureProjectSettingsButtonBinding);
+
+
+            Button hybridCLRDownloadButton = projectSettingsSection.Q<Button>("configure-Interpreter-settings-button");
+            hybridCLRDownloadButton.clicked += ConfigureInterpreterSettings;
+            DataBinding interpreterDownloadBinding = new() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.InterpreterReady)) };
+            interpreterDownloadBinding.sourceToUiConverters.AddConverter((ref bool value) => !value);
+            gitDownloadButton.SetBinding(nameof(gitDownloadButton.enabledSelf), interpreterDownloadBinding);
+
 
             #endregion
 
@@ -504,6 +523,85 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             projectConfig.MaxTextureSizeOverride = GetMaxTextureSizeOverride();
         }
 
+        private void CheckHybridCLRInstallation()
+        {
+            // Avvia la richiesta (asincrona)
+            _listRequest = Client.List(offlineMode: true, includeIndirectDependencies: false);
+            EditorApplication.update += OnPackageListProgress;
+        }
+
+        private void OnPackageListProgress()
+        {
+            if (!_listRequest.IsCompleted) return;
+
+            EditorApplication.update -= OnPackageListProgress;
+
+            if (_listRequest.Status == StatusCode.Success)
+            {
+                bool trovato = false;
+                foreach (var package in _listRequest.Result)
+                {
+                    if (package.name == "com.code-philosophy.hybridclr")
+                    {
+                        trovato = true;
+                        break;
+                    }
+                }
+                projectConfig.IsHybridCLRInstalled = trovato;
+            }
+            else
+            {
+                projectConfig.IsHybridCLRInstalled = false;
+            }
+        }
+
+        private void CheckHybridCLRAssembly()
+        {
+            // 1) Trova il tipo HybridCLRSettings senza referenziarlo direttamente
+            Type settingsType = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(a => { try { return a.GetTypes(); } catch { return new Type[0]; } })
+                .FirstOrDefault(t => t.FullName == "HybridCLR.Editor.Settings.HybridCLRSettings");
+
+            if (settingsType == null)
+            {
+                // HybridCLR non installato: niente da verificare
+                return;
+            }
+
+            // 2) Ottieni l'istanza delle Settings (di solito una proprieta/campo statico "Instance")
+            object settingsInstance =
+                settingsType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)?.GetValue(null)
+                ?? settingsType.GetField("Instance", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
+
+            if (settingsInstance == null)
+                return;
+
+            // 3) Leggi il campo hotUpdateAssemblyDefinitions
+            var field = settingsType.GetField("hotUpdateAssemblyDefinitions",
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
+
+            if (field == null)
+                return;
+
+            var value = field.GetValue(settingsInstance) as System.Collections.IEnumerable;
+            if (value == null)
+                return;
+
+            // 4) Controlla se tra le asmdef registrate c'e "HotUpdate"
+            foreach (var asmdef in value)
+            {
+                if (asmdef == null) continue;
+                // asmdef e' un AssemblyDefinitionAsset: il suo .name e' il nome del file
+                var nameProp = asmdef.GetType().GetProperty("name");
+                string name = nameProp?.GetValue(asmdef) as string;
+                if (name == "HotUpdate")
+                {
+                    projectConfig.HybridCLRAssemblyReady = true;
+                    return;
+                }
+            }
+        }
+
         private bool GetURPConfigurationStatus()
         {
             return GraphicsSettings.defaultRenderPipeline == renderPipelineAsset && QualitySettings.renderPipeline == renderPipelineAsset;
@@ -535,6 +633,52 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             AssetDatabase.Refresh();
 
             CheckProjectSettings();
+        }
+
+        private void ConfigureInterpreterSettings()
+        {
+            UnityEngine.Debug.LogError("COnfigureInterpreteRSettings");
+            if (!projectConfig.IsHybridCLRInstalled)
+            {
+                // Alza il flag: "dopo la ricompilazione, configura"
+                SessionState.SetBool("PENDING_HYBRIDCLR_SETUP", true);
+
+                // Avvia l'installazione (asincrona). Al termine Unity ricompila.
+                _addRequest = Client.Add("https://github.com/focus-creative-games/hybridclr_unity.git");
+                EditorApplication.update += OnAddProgress;
+            }
+            else
+            {
+                // HybridCLR gia' presente: configura subito via reflection
+                InvokeSetupperViaReflection();
+            }
+        }
+        private void OnAddProgress()
+        {
+            if (!_addRequest.IsCompleted) return;
+            EditorApplication.update -= OnAddProgress;
+
+            if (_addRequest.Status == StatusCode.Success)
+                UnityEngine.Debug.Log("[Setup] HybridCLR installato. Configurazione automatica dopo la ricompilazione...");
+            else
+                UnityEngine.Debug.LogError($"[Setup] Installazione fallita: {_addRequest.Error?.message}");
+        }
+
+        private void InvokeSetupperViaReflection()
+        {
+            Type setupperType = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(a => { try { return a.GetTypes(); } catch { return new Type[0]; } })
+                .FirstOrDefault(t => t.Name == "HotUpdateSetupper");
+
+            if (setupperType == null)
+            {
+                UnityEngine.Debug.LogError("[Setup] HotUpdateSetupper non trovato (HybridCLR non pronto?).");
+                return;
+            }
+
+            var setupMethod = setupperType.GetMethod("Setup",
+                BindingFlags.Public | BindingFlags.Static);
+            setupMethod?.Invoke(null, null);
         }
 
         #endregion
