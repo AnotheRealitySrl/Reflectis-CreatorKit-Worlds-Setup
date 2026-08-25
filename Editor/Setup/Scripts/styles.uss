@@ -115,3 +115,16 @@
     margin-bottom: 3px;
     margin-left: 3px;
 }
+
+/* Reason shown under the interpreter checks when it is not ready to build. Indented to the
+   text column of the rows above, wrapped, and dimmed so it reads as an explanation rather
+   than as another check. */
+.settings-item-message {
+    margin-left: 24px;
+    margin-right: 3px;
+    margin-top: 2px;
+    margin-bottom: 4px;
+    white-space: normal;
+    color: rgb(180, 180, 180);
+    font-size: 11px;
+}

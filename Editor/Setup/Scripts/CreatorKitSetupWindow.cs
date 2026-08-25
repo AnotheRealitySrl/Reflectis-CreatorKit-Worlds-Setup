@@ -36,6 +36,10 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             [CreateProperty] public bool IsHybridCLRInstalled { get; set; }
             [CreateProperty] public bool HybridCLRAssemblyReady { get; set; }
             [CreateProperty] public bool InterpreterReady => IsHybridCLRInstalled && HybridCLRAssemblyReady;
+
+            /// <summary>Why the interpreter is not ready, verbatim from HotUpdateSetupper, or
+            /// empty when it is. A red icon alone does not tell the author what to fix.</summary>
+            [CreateProperty] public string InterpreterIssue { get; set; } = string.Empty;
             [CreateProperty] public string GitVersion { get; set; }
 
             [CreateProperty] public bool EditorConfigurationOk => UnityVersionIsMatching && AllEditorModulesInstalled;
@@ -75,6 +79,12 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
         private const string package_prefix = "com.anotherealitysrl.reflectis";
         private readonly List<string> packages_to_exclude = new() { "com.anotherealitysrl.reflectis-creatorkit-worlds-setup" };
+
+        private const string hybridclr_package_url = "https://github.com/focus-creative-games/hybridclr_unity.git";
+
+        // Must stay in sync with HotUpdateSetupper.PENDING_SETUP_KEY: the setupper lives in another
+        // package and this assembly cannot reference it, so the key is duplicated on purpose.
+        private const string pending_hybridclr_setup_key = "PENDING_HYBRIDCLR_SETUP";
 
         private ListRequest _listRequest;
         private AddRequest _addRequest;
@@ -248,7 +258,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                 { ("git-installation-warning", nameof(projectConfig.IsGitInstalled), projectSettingsSection.Q<Foldout>("git-installation-foldout")) },
                 { ("editor-configuration-warning", nameof(projectConfig.EditorConfigurationOk), projectSettingsSection.Q<Foldout>("editor-configuration-foldout")) },
                 { ("project-settings-warning", nameof(projectConfig.ProjectSettingsOk), projectSettingsSection.Q<Foldout>("project-settings-foldout")) },
-                { ("Interpreter-settings-warning", nameof(projectConfig.IsHybridCLRInstalled), projectSettingsSection.Q<Foldout>("Interpreter-settings-foldout")) }
+                { ("Interpreter-settings-warning", nameof(projectConfig.InterpreterReady), projectSettingsSection.Q<Foldout>("Interpreter-settings-foldout")) }
             };
             foreach (var entry in warningIcons)
             {
@@ -302,7 +312,16 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             hybridCLRDownloadButton.clicked += ConfigureInterpreterSettings;
             DataBinding interpreterDownloadBinding = new() { dataSourcePath = PropertyPath.FromName(nameof(projectConfig.InterpreterReady)) };
             interpreterDownloadBinding.sourceToUiConverters.AddConverter((ref bool value) => !value);
-            gitDownloadButton.SetBinding(nameof(gitDownloadButton.enabledSelf), interpreterDownloadBinding);
+            hybridCLRDownloadButton.SetBinding(nameof(hybridCLRDownloadButton.enabledSelf), interpreterDownloadBinding);
+
+            // Spell out what is missing. The row icons say "not ready", which is not actionable
+            // on its own — the setupper already computes the reason and how to fix it.
+            Label interpreterIssueLabel = projectSettingsSection.Q<Label>("Interpreter-issue-label");
+            interpreterIssueLabel.SetBinding(nameof(interpreterIssueLabel.text), new DataBinding()
+            {
+                dataSourcePath = PropertyPath.FromName(nameof(projectConfig.InterpreterIssue)),
+                bindingMode = BindingMode.ToTarget
+            });
 
 
             #endregion
@@ -553,53 +572,45 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             {
                 projectConfig.IsHybridCLRInstalled = false;
             }
+
+            // The two flags feed the same InterpreterReady property, so re-evaluate the assembly
+            // side now that the package side has an answer.
+            CheckHybridCLRAssembly();
         }
 
+        /// <summary>
+        /// Asks HotUpdateSetupper whether this project's hot-update assembly is set up. The
+        /// setupper owns the naming rule, so the window must not hardcode an assembly name: doing
+        /// that is how the generic "HotUpdate" kept being approved, and two worlds carrying that
+        /// same name shadow each other once the player loads both.
+        /// </summary>
         private void CheckHybridCLRAssembly()
         {
-            // 1) Trova il tipo HybridCLRSettings senza referenziarlo direttamente
-            Type settingsType = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(a => { try { return a.GetTypes(); } catch { return new Type[0]; } })
-                .FirstOrDefault(t => t.FullName == "HybridCLR.Editor.Settings.HybridCLRSettings");
+            projectConfig.HybridCLRAssemblyReady = false;
 
-            if (settingsType == null)
+            Type setupperType = FindSetupperType();
+            if (setupperType == null)
             {
-                // HybridCLR non installato: niente da verificare
+                // HybridCLR not installed: the setupper's assembly does not exist yet, so the
+                // package row above is the one that explains it.
+                projectConfig.InterpreterIssue = "The interpreter package is not installed yet.";
                 return;
             }
 
-            // 2) Ottieni l'istanza delle Settings (di solito una proprieta/campo statico "Instance")
-            object settingsInstance =
-                settingsType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)?.GetValue(null)
-                ?? settingsType.GetField("Instance", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
-
-            if (settingsInstance == null)
-                return;
-
-            // 3) Leggi il campo hotUpdateAssemblyDefinitions
-            var field = settingsType.GetField("hotUpdateAssemblyDefinitions",
-                BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
-
-            if (field == null)
-                return;
-
-            var value = field.GetValue(settingsInstance) as System.Collections.IEnumerable;
-            if (value == null)
-                return;
-
-            // 4) Controlla se tra le asmdef registrate c'e "HotUpdate"
-            foreach (var asmdef in value)
+            MethodInfo getIssue = setupperType.GetMethod("GetSetupIssue", BindingFlags.Public | BindingFlags.Static);
+            if (getIssue == null)
             {
-                if (asmdef == null) continue;
-                // asmdef e' un AssemblyDefinitionAsset: il suo .name e' il nome del file
-                var nameProp = asmdef.GetType().GetProperty("name");
-                string name = nameProp?.GetValue(asmdef) as string;
-                if (name == "HotUpdate")
-                {
-                    projectConfig.HybridCLRAssemblyReady = true;
-                    return;
-                }
+                projectConfig.InterpreterIssue =
+                    "The Creator Kit Core package is older than this setup window (HotUpdateSetupper.GetSetupIssue is missing).";
+                UnityEngine.Debug.LogWarning("[Setup] " + projectConfig.InterpreterIssue);
+                return;
             }
+
+            string issue = getIssue.Invoke(null, null) as string;
+
+            projectConfig.HybridCLRAssemblyReady = issue == null;
+            // Shown verbatim under the checks: the icon says "not ready", this says what to fix.
+            projectConfig.InterpreterIssue = issue ?? string.Empty;
         }
 
         private bool GetURPConfigurationStatus()
@@ -637,49 +648,71 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
         private void ConfigureInterpreterSettings()
         {
-            UnityEngine.Debug.LogError("COnfigureInterpreteRSettings");
-            if (!projectConfig.IsHybridCLRInstalled)
+            // Ground truth for "HybridCLR is usable" is the setupper type itself: it only exists
+            // once the package is installed AND the assembly gated behind HYBRIDCLR_INSTALLED has
+            // compiled. Branching on IsHybridCLRInstalled instead would race with the async
+            // package listing on the first click after the window opens.
+            if (FindSetupperType() != null)
             {
-                // Alza il flag: "dopo la ricompilazione, configura"
-                SessionState.SetBool("PENDING_HYBRIDCLR_SETUP", true);
-
-                // Avvia l'installazione (asincrona). Al termine Unity ricompila.
-                _addRequest = Client.Add("https://github.com/focus-creative-games/hybridclr_unity.git");
-                EditorApplication.update += OnAddProgress;
-            }
-            else
-            {
-                // HybridCLR gia' presente: configura subito via reflection
+                // Configure right away, then refresh what the window shows. This is also the
+                // recovery path when the pending flag was lost (editor restarted mid-install) or
+                // when the project was configured before per-project assembly naming existed.
                 InvokeSetupperViaReflection();
+                CheckHybridCLRAssembly();
+                return;
             }
+
+            if (projectConfig.IsHybridCLRInstalled)
+            {
+                UnityEngine.Debug.LogError("[Setup] HybridCLR is installed but HotUpdateSetupper did not " +
+                                           "compile. Fix the compilation errors in the Creator Kit Core " +
+                                           "package and press the button again.");
+                return;
+            }
+
+            // The setupper's assembly does not exist yet, so it cannot be called here: raise the
+            // flag and let it pick the job up on the domain reload that follows the import.
+            SessionState.SetBool(pending_hybridclr_setup_key, true);
+
+            _addRequest = Client.Add(hybridclr_package_url);
+            EditorApplication.update += OnAddProgress;
         }
+
         private void OnAddProgress()
         {
             if (!_addRequest.IsCompleted) return;
             EditorApplication.update -= OnAddProgress;
 
             if (_addRequest.Status == StatusCode.Success)
-                UnityEngine.Debug.Log("[Setup] HybridCLR installato. Configurazione automatica dopo la ricompilazione...");
-            else
-                UnityEngine.Debug.LogError($"[Setup] Installazione fallita: {_addRequest.Error?.message}");
+            {
+                UnityEngine.Debug.Log("[Setup] HybridCLR installed. Configuring automatically after the recompilation...");
+                return;
+            }
+
+            // Nothing is going to recompile, so the pending flag would linger for the rest of the
+            // session and fire a setup on an unrelated domain reload.
+            SessionState.SetBool(pending_hybridclr_setup_key, false);
+            UnityEngine.Debug.LogError($"[Setup] Install failed: {_addRequest.Error?.message}");
         }
 
         private void InvokeSetupperViaReflection()
         {
-            Type setupperType = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(a => { try { return a.GetTypes(); } catch { return new Type[0]; } })
-                .FirstOrDefault(t => t.Name == "HotUpdateSetupper");
-
+            Type setupperType = FindSetupperType();
             if (setupperType == null)
             {
-                UnityEngine.Debug.LogError("[Setup] HotUpdateSetupper non trovato (HybridCLR non pronto?).");
+                UnityEngine.Debug.LogError("[Setup] HotUpdateSetupper not found (HybridCLR not ready?).");
                 return;
             }
 
-            var setupMethod = setupperType.GetMethod("Setup",
-                BindingFlags.Public | BindingFlags.Static);
-            setupMethod?.Invoke(null, null);
+            setupperType.GetMethod("Setup", BindingFlags.Public | BindingFlags.Static)?.Invoke(null, null);
         }
+
+        /// <summary>The setupper ships with the Creator Kit Core package but only compiles once
+        /// HybridCLR is installed, so it can only be reached by reflection.</summary>
+        private static Type FindSetupperType()
+            => AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(a => { try { return a.GetTypes(); } catch { return new Type[0]; } })
+                .FirstOrDefault(t => t.Name == "HotUpdateSetupper");
 
         #endregion
 
