@@ -20,7 +20,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
         [CreateProperty]
         public List<string> AvailableVersions => AllVersionsPackageRegistry
-                .Where(x => ShowPrereleases || x.ReflectisVersion != "develop")
+                .Where(x => ShowPrereleases || !x.Prerelease)
                 .Select(x => x.ReflectisVersion)
                 .ToList();
 
