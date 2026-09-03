@@ -536,14 +536,14 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
         private void CheckEditorModulesInstallation()
         {
-            //Check supported platforms
-            BuildTargetGroup[] buildTargetGroups = (BuildTargetGroup[])Enum.GetValues(typeof(BuildTargetGroup));
-            foreach (BuildTargetGroup group in buildTargetGroups)
-            {
-                projectConfig.InstalledModules["Android"] = BuildPipeline.IsBuildTargetSupported(group, BuildTarget.Android);
-                projectConfig.InstalledModules["Windows"] = BuildPipeline.IsBuildTargetSupported(group, BuildTarget.StandaloneWindows);
-                projectConfig.InstalledModules["WebGL"] = BuildPipeline.IsBuildTargetSupported(group, BuildTarget.WebGL);
-            }
+            // Each target is asked about with its OWN group. The previous version looped over every
+            // BuildTargetGroup and ASSIGNED inside the loop, so all three entries ended up holding
+            // the answer for whichever group Enum.GetValues yielded last — paired with targets that
+            // do not belong to it. IsBuildTargetSupported is false for every such pair, so the
+            // check reported "editor modules missing" regardless of what was actually installed.
+            projectConfig.InstalledModules["Android"] = BuildPipeline.IsBuildTargetSupported(BuildTargetGroup.Android, BuildTarget.Android);
+            projectConfig.InstalledModules["Windows"] = BuildPipeline.IsBuildTargetSupported(BuildTargetGroup.Standalone, BuildTarget.StandaloneWindows);
+            projectConfig.InstalledModules["WebGL"] = BuildPipeline.IsBuildTargetSupported(BuildTargetGroup.WebGL, BuildTarget.WebGL);
             projectConfig.AllEditorModulesInstalled = !projectConfig.InstalledModules.Values.Contains(false);
         }
 
