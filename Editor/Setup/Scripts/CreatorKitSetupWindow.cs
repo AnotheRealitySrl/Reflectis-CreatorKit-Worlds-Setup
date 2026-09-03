@@ -518,7 +518,19 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             }
             catch (Exception ex)
             {
-                EditorUtility.DisplayDialog("Git Check", "An error occurred while checking for Git:\n" + ex.Message, "OK");
+                // Two things were wrong here. The flag was never assigned, so the UI reported
+                // whatever it happened to hold — default(bool), i.e. "not installed" — for a value
+                // nobody had computed. And a modal dialog on a check that runs when the window
+                // opens blocks the editor to say something the author cannot act on.
+                //
+                // The distinction that matters: Process.Start throws Win32Exception when `git` is
+                // not on THIS PROCESS's PATH, which is not the same as git being absent — an editor
+                // launched from Unity Hub inherits an environment that a shell does not. Same red
+                // icon, different fix, so say which one it is.
+                projectConfig.IsGitInstalled = false;
+                UnityEngine.Debug.LogWarning($"[Setup] Could not run `git --version`: {ex.GetType().Name} - {ex.Message}. " +
+                                             "If git works in a terminal, it is missing from the PATH this editor " +
+                                             "process inherited — relaunch the editor from a shell where git resolves.");
             }
         }
 
