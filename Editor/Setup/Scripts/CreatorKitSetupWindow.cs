@@ -527,7 +527,10 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
                 if (process.ExitCode == 0)
                 {
-                    projectConfig.GitVersion = output;
+                    // Trimmed: `git --version` ends with a newline, and a Label holding one is two
+                    // lines tall. With align-items: center on the row, the visible line then sits
+                    // above the centre and the value reads as misaligned against its own caption.
+                    projectConfig.GitVersion = output.Trim();
                     projectConfig.IsGitInstalled = true;
                 }
                 else

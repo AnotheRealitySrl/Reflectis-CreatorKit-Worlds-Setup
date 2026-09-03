@@ -47,7 +47,7 @@
                             <engine:VisualElement name="project-settings-configuration-check" class="settings-item-green-icon" />
                             <engine:Label text="Project settings configuration" name="Label" />
                         </engine:VisualElement>
-                        <engine:VisualElement name="project-settings-max-texture-size-check" class="settings-item">
+                        <engine:VisualElement name="project-settings-max-texture-size" class="settings-item">
                             <engine:VisualElement name="project-settings-max-texture-size-check" class="settings-item-green-icon" />
                             <engine:Label text="Configure max texture size" name="Label" />
                         </engine:VisualElement>
