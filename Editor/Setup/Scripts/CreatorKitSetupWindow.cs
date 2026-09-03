@@ -811,7 +811,9 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                 // this is async void nothing could catch it. The exception went to the
                 // synchronisation context and took the window's state with it, leaving a window
                 // that looked fine and behaved as though the project were empty.
-                Debug.LogWarning("[Creator Kit Setup] Could not read the installed package list: " +
+                // Qualified because this file has `using System.Diagnostics`, which makes a bare
+                // Debug ambiguous — the rest of the file qualifies it for the same reason.
+                UnityEngine.Debug.LogWarning("[Setup] Could not read the installed package list: " +
                                  $"{listRequest.Error?.message ?? listRequest.Status.ToString()}. " +
                                  "Reopen the window to retry — the installed-packages view is stale until then.");
                 return;

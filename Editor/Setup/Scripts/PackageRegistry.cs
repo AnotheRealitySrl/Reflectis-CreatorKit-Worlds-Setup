@@ -76,7 +76,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
                     // A typo in the registry is a realistic failure: one hand-edited file, no
                     // review, no schema. Name both sides and keep going — an install the creator
                     // can see is short beats an exception thrown inside the setup window.
-                    Debug.LogError($"[Creator Kit Setup] Package '{package.Name}' declares a dependency on " +
+                    Debug.LogError($"[Setup] Package '{package.Name}' declares a dependency on " +
                                    $"'{dependency}', which is not in the package list of registry entry " +
                                    $"'{reflectisVersion}'. Skipping it — the install will be incomplete.");
                     continue;
