@@ -86,7 +86,6 @@
                     <engine:Label text="Last refresh:" name="last-refresh-text" style="-unity-text-align: middle-left; -unity-font-style: italic;" />
                     <engine:Label text="&lt;DateTime&gt;" name="last-refresh-date-time" style="-unity-text-align: middle-left; -unity-font-style: italic;" />
                     <engine:Button name="refresh-packages-button" style="padding-top: 2px; padding-right: 2px; padding-bottom: 2px; padding-left: 2px; width: 25px; height: 25px; background-color: rgba(188, 188, 188, 0.2); background-image: url(&quot;../Icons/refresh.png&quot;); background-size: 75% 75%;" />
-                    <engine:Button name="reresolve-packages-button" tooltip="Re-resolve the Virtuademy packages from git. Use after a branch has moved: packages-lock.json pins each git package to a commit, so nothing else picks up new work on the same branch.&#10;Slow - it re-clones every package." style="padding-top: 2px; padding-right: 2px; padding-bottom: 2px; padding-left: 2px; width: 25px; height: 25px; background-color: rgba(188, 188, 188, 0.2); background-image: url(&quot;../Icons/refresh.png&quot;); background-size: 75% 75%;" />
                 </engine:GroupBox>
             </engine:GroupBox>
             <engine:GroupBox name="Body" style="background-color: rgba(0, 0, 0, 0.1); border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px; border-top-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px; border-bottom-left-radius: 5px; justify-content: flex-start; margin-bottom: 6px;">
@@ -107,6 +106,8 @@
                     <engine:VisualElement name="resolve-breaking-changes-warning-icon" class="build-error-item-icon warning-item-icon" />
                     <engine:Label text="Warning: automatically resolving breaking changes can be destructive to your project. It is recommended to make a backup before proceeding. N.B. This feature only works if you update the version from one minor to another, e.g.: 2025.2 -&gt; 2025.3. It is not recommended to use this feature to change version more than one minor, as the breaking changes may not be detected." name="resolve-breaking-changes-warning-text" class="build-error-item-text warning-item-text" />
                 </engine:VisualElement>
+                <engine:VisualElement class="separator" style="height: 1px; margin-top: 6px; margin-bottom: 6px; align-self: stretch;" />
+                <engine:Button text="Re-resolve packages from git" name="reresolve-packages-button" class="advanced-settings-item" tooltip="Re-clones every Virtuademy package at the ref the manifest asks for. Needed when a branch has moved: packages-lock.json pins each git package to a commit, so refreshing the version list does not pick up new work on the same branch.&#10;Slow, and it discards the resolved commits." />
             </engine:Foldout>
         </engine:GroupBox>
         <engine:VisualElement name="separator" class="separator" style="flex-grow: 1; height: 1px; border-left-color: rgba(0, 0, 0, 0); border-right-color: rgba(0, 0, 0, 0); border-top-color: rgba(0, 0, 0, 0); border-bottom-color: rgba(0, 0, 0, 0); background-color: rgb(0, 0, 0);" />
