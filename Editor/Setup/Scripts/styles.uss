@@ -17,15 +17,23 @@
     flex-direction: row;
 }
 
+/* Both icons ship inside this package, and the paths are relative so they carry no
+   asset GUID and no dependency on another package.
+   They used to point at Check.png in com.unity.multiplayer.center and
+   iconconflicted.png in com.unity.collab-proxy — two packages this one has nothing
+   to do with and does not declare. In a project that happens to have them, as
+   Virtuademy-Unity does, it worked; in a creator's project the URLs did not resolve,
+   so every icon fell back to the missing-asset placeholder and rendered as the same
+   yellow warning triangle whatever the underlying state was. */
 .settings-item-green-icon {
-    background-image: url("project://database/Packages/com.unity.multiplayer.center/Editor/MultiplayerCenterWindow/UI/Icons/Check.png?fileID=2800000&guid=4f78a544322c742b89e63fb68557b1d2&type=3#Check");
+    background-image: url("../Icons/check.png");
     width: 20px;
     height: 20px;
     align-self: center;
 }
 
 .settings-item-red-icon {
-    background-image: url("project://database/Packages/com.unity.collab-proxy/Editor/Assets/Images/iconconflicted.png?fileID=2800000&guid=d1c88f142eee55b4eb2b2cfd7b3624ce&type=3#iconconflicted");
+    background-image: url("../Icons/error.png");
     width: 20px;
     height: 20px;
     align-self: center;
@@ -78,7 +86,7 @@
 
 .warning-item-icon {
     background-size: 20px 20px;
-    background-image: url("project://database/Packages/com.unity.timeline/Editor/StyleSheets/Images/Shared/TimelineWarning.png?fileID=2800000&guid=1732e542f535d374bbfa7565fc78414e&type=3#TimelineWarning");
+    background-image: url("../Icons/warning.png");
     width: 20px;
     height: 20px;
     margin-top: 5px;
@@ -107,7 +115,7 @@
 
 .settings-group-warning {
     flex-grow: 1;
-    background-image: url("project://database/Packages/com.unity.timeline/Editor/StyleSheets/Images/Shared/TimelineWarning.png?fileID=2800000&guid=1732e542f535d374bbfa7565fc78414e&type=3#TimelineWarning");
+    background-image: url("../Icons/warning.png");
     width: 20px;
     height: 20px;
     margin-top: 3px;
