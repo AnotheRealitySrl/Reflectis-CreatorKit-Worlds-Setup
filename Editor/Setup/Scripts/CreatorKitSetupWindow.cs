@@ -77,8 +77,27 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
         private const string settings_folder_path = "Assets/CreatorKit/Editor/Settings";
         private const string setup_configuration_path = "CreatorKitSetupConfiguration.asset";
 
-        private const string package_prefix = "com.anotherealitysrl.reflectis";
-        private readonly List<string> packages_to_exclude = new() { "com.anotherealitysrl.reflectis-creatorkit-worlds-setup" };
+        // Both prefixes, because a project can hold either: packages published before the brand
+        // rename are com.anotherealitysrl.reflectis-*, everything from the rename on is
+        // com.anotherealitysrl.virtuademy-*. With only the old one, GetInstalledPackages matched
+        // nothing in a renamed project — the window went blind to the very packages it had just
+        // installed, so its InstalledPackages list could never be confirmed against reality or
+        // pruned, and version-switching and uninstall reasoned from a list nothing maintained.
+        private static readonly string[] package_prefixes =
+        {
+            "com.anotherealitysrl.virtuademy",
+            "com.anotherealitysrl.reflectis",
+        };
+
+        // The installer excludes itself. Listed under both names for the same reason as above.
+        private readonly List<string> packages_to_exclude = new()
+        {
+            "com.anotherealitysrl.virtuademy-creatorkit-worlds-setup",
+            "com.anotherealitysrl.reflectis-creatorkit-worlds-setup",
+        };
+
+        private static bool IsOurPackage(string packageName)
+            => package_prefixes.Any(prefix => packageName.StartsWith(prefix, StringComparison.Ordinal));
 
         private const string hybridclr_package_url = "https://github.com/focus-creative-games/hybridclr_unity.git";
 
@@ -835,7 +854,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
             foreach (var package in listRequest.Result)
             {
-                if (package.name.StartsWith(package_prefix) && !packages_to_exclude.Contains(package.name))
+                if (IsOurPackage(package.name) && !packages_to_exclude.Contains(package.name))
                 {
                     PackageDefinition installedPackage = new()
                     {
