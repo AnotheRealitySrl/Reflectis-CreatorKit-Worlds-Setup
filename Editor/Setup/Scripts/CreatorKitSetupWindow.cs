@@ -369,6 +369,9 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
             Button refreshPackagesButton = packageManagerSection.Q<Button>("refresh-packages-button");
             refreshPackagesButton.clicked += SetupWindowData;
 
+            Button reResolvePackagesButton = packageManagerSection.Q<Button>("reresolve-packages-button");
+            reResolvePackagesButton.clicked += ReResolvePackages;
+
             InstantiatePackagesInPackageList();
 
             Button updatePackagesButton = packageManagerSection.Q<Button>("update-packages-button");
@@ -769,6 +772,60 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
             InstallPackages(dependenciesToInstall.Append(package.Name).Select(x => packageManagerConfig.SelectedVersionPackageDictionary[x]).ToList());
 
+            Client.Resolve();
+        }
+
+        /// <summary>
+        /// Drops this project's Virtuademy git packages from <c>packages-lock.json</c> and asks UPM
+        /// to resolve again, so a branch that has moved is actually picked up.
+        ///
+        /// The lock pins each git dependency to a resolved COMMIT, not to the ref the manifest
+        /// asked for. Nothing else moves it: not the refresh button, which re-reads the registry;
+        /// not <c>Client.Resolve</c> on its own, which honours the lock; not deleting
+        /// Library/PackageCache, which re-clones the same locked hash. Dropping the entry is what
+        /// lets UPM look the branch up again.
+        ///
+        /// Only entries whose source is git are touched — a registry package's pin is a version,
+        /// and re-resolving those is not what anyone pressing this wants.
+        /// </summary>
+        private void ReResolvePackages()
+        {
+            string lockFilePath = Path.Combine(Application.dataPath, "../Packages/packages-lock.json");
+            if (!File.Exists(lockFilePath))
+            {
+                UnityEngine.Debug.LogWarning("[Setup] There is no packages-lock.json to re-resolve from.");
+                return;
+            }
+
+            JObject lockObj = JObject.Parse(File.ReadAllText(lockFilePath));
+            if (lockObj["dependencies"] is not JObject dependencies)
+            {
+                UnityEngine.Debug.LogWarning("[Setup] packages-lock.json has no dependencies section.");
+                return;
+            }
+
+            List<string> unpinned = new();
+            foreach (JProperty entry in dependencies.Properties().ToList())
+            {
+                if (!IsOurPackage(entry.Name) || (string)entry.Value["source"] != "git")
+                {
+                    continue;
+                }
+
+                entry.Remove();
+                unpinned.Add(entry.Name);
+            }
+
+            if (unpinned.Count == 0)
+            {
+                UnityEngine.Debug.Log("[Setup] No Virtuademy git packages are pinned — nothing to re-resolve.");
+                return;
+            }
+
+            File.WriteAllText(lockFilePath, lockObj.ToString());
+            UnityEngine.Debug.Log($"[Setup] Unpinned {unpinned.Count} git package(s), re-resolving. " +
+                                  "Each one is re-cloned, so give it a moment:\n  " +
+                                  string.Join("\n  ", unpinned));
             Client.Resolve();
         }
 
