@@ -3,7 +3,7 @@
     <engine:ScrollView name="ScrollView">
         <engine:Label text="Creator Kit setup window" name="Header" style="-unity-text-align: upper-center; -unity-font-style: bold; font-size: 24px;" />
         <engine:VisualElement name="separator" class="separator" style="flex-grow: 1;" />
-        <engine:GroupBox name="project-settings" style="height: 282px;">
+        <engine:GroupBox name="project-settings">
             <engine:Label text="Project settings" name="Header" class="h1" style="-unity-font-style: bold;" />
             <engine:GroupBox name="git-installation" class="settings-group">
                 <engine:GroupBox name="git-installation-content" class="settings-group-content">
