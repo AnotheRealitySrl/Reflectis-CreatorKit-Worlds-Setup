@@ -797,9 +797,25 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
         private async void GetInstalledPackages()
         {
-            ListRequest listRequest = Client.List();
+            // offlineMode, because the question is local: what did this project resolve. Answering
+            // it used to require the registry, which made a local question fail whenever the
+            // network did. Everything read below — name, version, source — is available offline.
+            ListRequest listRequest = Client.List(offlineMode: true, includeIndirectDependencies: false);
             while (!listRequest.IsCompleted)
                 await Task.Yield();
+
+            if (listRequest.Status != StatusCode.Success)
+            {
+                // Result is null on anything other than Success. Observed 2026-09-03: the network
+                // dropped, the request failed, and dereferencing Result here threw — and because
+                // this is async void nothing could catch it. The exception went to the
+                // synchronisation context and took the window's state with it, leaving a window
+                // that looked fine and behaved as though the project were empty.
+                Debug.LogWarning("[Creator Kit Setup] Could not read the installed package list: " +
+                                 $"{listRequest.Error?.message ?? listRequest.Status.ToString()}. " +
+                                 "Reopen the window to retry — the installed-packages view is stale until then.");
+                return;
+            }
 
             List<PackageDefinition> installedPackages = new();
 
