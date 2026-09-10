@@ -9,7 +9,7 @@ using UnityEngine.Events;
 
 namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 {
-    [CreateAssetMenu(fileName = "CreatorKitSetupConfiguration", menuName = "Reflectis Worlds/Creator Kit/Setup/CreatorKitSetupConfiguration")]
+    [CreateAssetMenu(fileName = "CreatorKitSetupConfiguration", menuName = "Virtuademy/Setup/SetupConfiguration")]
     public class PackageManagerConfiguration : ScriptableObject
     {
         public PackageRegistry[] AllVersionsPackageRegistry { get; set; } = new PackageRegistry[0];

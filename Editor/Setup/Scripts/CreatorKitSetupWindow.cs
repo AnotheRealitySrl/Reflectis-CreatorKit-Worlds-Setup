@@ -73,9 +73,9 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
         private readonly ProjectConfiguration projectConfig = new();
         private PackageManagerConfiguration packageManagerConfig;
 
-        private const string utilities_folder_path = "Assets/CreatorKit/Editor/Scripts";
-        private const string settings_folder_path = "Assets/CreatorKit/Editor/Settings";
-        private const string setup_configuration_path = "CreatorKitSetupConfiguration.asset";
+        private const string utilities_folder_path = "Assets/Virtuademy/Editor/Scripts";
+        private const string settings_folder_path = "Assets/Virtuademy/Editor/Settings";
+        private const string setup_configuration_path = "SetupConfiguration.asset";
 
         // Both prefixes, because a project can hold either: packages published before the brand
         // rename are com.anotherealitysrl.reflectis-*, everything from the rename on is
@@ -132,7 +132,7 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
 
         #endregion
 
-        [MenuItem("Reflectis Worlds/Creator Kit/Setup/Setup project")]
+        [MenuItem("Virtuademy/Setup/Setup project")]
         public static void ShowWindow()
         {
             CreatorKitSetupWindow wnd = GetWindow<CreatorKitSetupWindow>();
