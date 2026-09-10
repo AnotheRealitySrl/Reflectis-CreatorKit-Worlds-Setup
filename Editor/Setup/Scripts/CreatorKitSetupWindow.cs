@@ -77,16 +77,23 @@ namespace Reflectis.CreatorKit.Worlds.Setup.Editor
         private const string settings_folder_path = "Assets/Virtuademy/Editor/Settings";
         private const string setup_configuration_path = "SetupConfiguration.asset";
 
-        // Both prefixes, because a project can hold either: packages published before the brand
-        // rename are com.anotherealitysrl.reflectis-*, everything from the rename on is
-        // com.anotherealitysrl.virtuademy-*. With only the old one, GetInstalledPackages matched
-        // nothing in a renamed project — the window went blind to the very packages it had just
-        // installed, so its InstalledPackages list could never be confirmed against reality or
-        // pruned, and version-switching and uninstall reasoned from a list nothing maintained.
+        // Every prefix a package of ours has ever shipped under, because a project can hold any
+        // of them: reflectis-* predates the brand rename, virtuademy-* came with it, and spacs-*
+        // is what the pieces carrying no platform are called — SPACS-Utility first, on
+        // 2026-09-10.
+        //
+        // Missing one is not a cosmetic bug. Everything below reasons about "our" packages
+        // through this list: with only the old prefix, GetInstalledPackages matched nothing in a
+        // renamed project and the window went blind to the very packages it had just installed,
+        // so its InstalledPackages list could never be confirmed against reality or pruned, and
+        // version-switching and uninstall reasoned from a list nothing maintained. A package
+        // missing here is also never unpinned in packages-lock, so it stays frozen at the commit
+        // it first resolved to while everything around it moves.
         private static readonly string[] package_prefixes =
         {
             "com.anotherealitysrl.virtuademy",
             "com.anotherealitysrl.reflectis",
+            "com.anotherealitysrl.spacs",
         };
 
         // The installer excludes itself. Listed under both names for the same reason as above.
